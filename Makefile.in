@@ -1,0 +1,22 @@
+CPPFLAGS = @CPPFLAGS@
+LDFLAGS = @LDFLAGS@
+
+#CFLAGS := -Wall -O3
+CFLAGS := @CFLAGS@
+#LIB = -ljack -framework CoreAudio
+LIB = -lm -ljack
+CC = gcc
+
+all : jmage-sampler
+
+jmage-sampler : structures.o jmage-sampler.o
+	$(CC) $(LIB) $(LDFLAGS) -o $@ $^
+
+structures.o : src/jmage/structures.c src/jmage/structures.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -Isrc -c -o $@ $<
+
+jmage-sampler.o : src/jmage-sampler.c src/jmage/structures.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -Isrc -c -o $@ $<
+
+clean:
+	rm -f jmage-sampler jmage-sampler.o structures.o
