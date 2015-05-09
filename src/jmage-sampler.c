@@ -12,7 +12,7 @@
 #include "jmage/structures.h"
 
 #define UE_Q_SIZE 10
-#define WAV_OFF_Q_SIZE 1
+#define WAV_OFF_Q_SIZE 10
 
 jack_client_t *client;
 jack_port_t *output_port1;
