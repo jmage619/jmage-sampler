@@ -67,10 +67,10 @@ void destroy_ph_list(playhead_list* phl) {
   free(phl->arr);
 }
 
-void ph_list_add(playhead_list* phl, struct playhead* ph) {
+void ph_list_add(playhead_list* phl, struct playhead ph) {
   struct ph_list_el* pel;
   jm_q_remove(&phl->unused, &pel);
-  pel->ph = *ph;
+  pel->ph = ph;
   pel->next = phl->head;
   phl->head = pel;
   phl->size++;
@@ -80,35 +80,38 @@ size_t ph_list_size(playhead_list* phl) {
   return phl->size;
 }
 
-void init_ph_list_iterator(playhead_list* phl, ph_list_iterator* phl_it) {
-  phl_it->p = phl->head;
-  phl_it->prev = NULL;
-  phl_it->prev_prev = NULL;
-  phl_it->phl = phl;
+ph_list_iterator ph_list_get_iterator(playhead_list* phl) {
+  ph_list_iterator it;
+  it.p = phl->head;
+  it.prev = NULL;
+  it.prev_prev = NULL;
+  it.phl = phl;
+
+  return it;
 }
 
-struct playhead* ph_list_iter_next(ph_list_iterator* phl_it) {
-  if(phl_it->p == NULL)
+struct playhead* ph_list_iter_next(ph_list_iterator* it) {
+  if(it->p == NULL)
     return NULL;
 
-  struct playhead* ph = &phl_it->p->ph;
-  phl_it->prev_prev = phl_it->prev;
-  phl_it->prev = phl_it->p;
-  phl_it->p = phl_it->p->next;
+  struct playhead* ph = &it->p->ph;
+  it->prev_prev = it->prev;
+  it->prev = it->p;
+  it->p = it->p->next;
   return ph;
 }
 
-void ph_list_iter_remove(ph_list_iterator* phl_it) {
-  jm_q_add(&phl_it->phl->unused, &phl_it->prev);
-  if (phl_it->prev == phl_it->phl->head) {
-    phl_it->phl->head = phl_it->phl->head->next;
-    phl_it->prev = NULL;
-    phl_it->phl->size--;
+void ph_list_iter_remove(ph_list_iterator* it) {
+  jm_q_add(&it->phl->unused, &it->prev);
+  if (it->prev == it->phl->head) {
+    it->phl->head = it->phl->head->next;
+    it->prev = NULL;
+    it->phl->size--;
     return;
   }
-  phl_it->prev_prev->next = phl_it->prev->next;
-  phl_it->prev = phl_it->prev_prev;
-  phl_it->phl->size--;
+  it->prev_prev->next = it->prev->next;
+  it->prev = it->prev_prev;
+  it->phl->size--;
 }
 
 int in_zone(struct key_zone z, int pitch) {

@@ -12,7 +12,7 @@
 #include "jmage/structures.h"
 
 #define UE_Q_SIZE 10
-#define WAV_OFF_Q_SIZE 10
+#define WAV_OFF_Q_SIZE 1
 
 jack_client_t *client;
 jack_port_t *output_port1;
@@ -57,16 +57,15 @@ process_audio (jack_nframes_t nframes)
   struct playhead ph;
   while (jm_q_remove(&user_events, &ph) != NULL) {
     if (ph_list_size(&playheads) < WAV_OFF_Q_SIZE)
-      ph_list_add(&playheads, &ph);
+      ph_list_add(&playheads, ph);
       printf("poly: %zu note: %f\n", ph_list_size(&playheads), 12 * log2(ph.speed));
   }
 
   memset (buffer1, 0, sizeof (jack_default_audio_sample_t) * nframes);
   memset (buffer2, 0, sizeof (jack_default_audio_sample_t) * nframes);
-  ph_list_iterator it;
-  struct playhead* ph_p;
-  init_ph_list_iterator(&playheads, &it);
 
+  ph_list_iterator it = ph_list_get_iterator(&playheads);
+  struct playhead* ph_p;
   while ((ph_p = ph_list_iter_next(&it)) != NULL) {
     jack_nframes_t to_copy = nframes;
     if (wave_length - ph_p->position < nframes * ph_p->speed)
