@@ -56,9 +56,13 @@ process_audio (jack_nframes_t nframes)
 
   struct playhead ph;
   while (jm_q_remove(&user_events, &ph) != NULL) {
-    if (ph_list_size(&playheads) < WAV_OFF_Q_SIZE)
-      ph_list_add(&playheads, ph);
-      printf("poly: %zu note: %f\n", ph_list_size(&playheads), 12 * log2(ph.speed));
+    if (ph_list_size(&playheads) >= WAV_OFF_Q_SIZE) {
+      ph_list_iterator it = ph_list_get_iterator(&playheads);
+      while (ph_list_iter_next(&it) != NULL);
+      ph_list_iter_remove(&it);
+    }
+    ph_list_add(&playheads, ph);
+    printf("poly: %zu note: %f\n", ph_list_size(&playheads), 12 * log2(ph.speed));
   }
 
   memset (buffer1, 0, sizeof (jack_default_audio_sample_t) * nframes);
