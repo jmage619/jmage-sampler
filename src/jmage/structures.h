@@ -29,10 +29,12 @@ struct playhead {
 struct ph_list_el {
   struct playhead ph;
   struct ph_list_el* next;
+  struct ph_list_el* prev;
 };
 
 typedef struct playhead_list {
   struct ph_list_el* head;
+  struct ph_list_el* tail;
   struct ph_list_el* arr;
   size_t length;
   size_t size;
@@ -42,13 +44,14 @@ typedef struct playhead_list {
 typedef struct ph_list_iterator {
   struct ph_list_el* p;
   struct ph_list_el* prev;
-  struct ph_list_el* prev_prev;
   playhead_list* phl;
 } ph_list_iterator;
 
 void init_ph_list(playhead_list* phl, size_t length);
 void destroy_ph_list(playhead_list* phl);
 void ph_list_add(playhead_list* phl, struct playhead ph);
+void ph_list_remove(playhead_list* phl, struct ph_list_el* pel);
+void ph_list_remove_last(playhead_list* phl);
 size_t ph_list_size(playhead_list* phl);
 ph_list_iterator ph_list_get_iterator(playhead_list* phl);
 struct playhead* ph_list_iter_next(ph_list_iterator* it);

@@ -51,6 +51,7 @@ void* jm_q_inc_ptr(jm_queue* jmq, void* p) {
 
 void init_ph_list(playhead_list* phl, size_t length) {
   phl->head = NULL;
+  phl->tail = NULL;
   phl->length = length;
   phl->size = 0;
   phl->arr = malloc(sizeof(struct ph_list_el) * phl->length);
@@ -72,8 +73,34 @@ void ph_list_add(playhead_list* phl, struct playhead ph) {
   jm_q_remove(&phl->unused, &pel);
   pel->ph = ph;
   pel->next = phl->head;
+  pel->prev = NULL;
+  if (pel->next == NULL)
+    phl->tail = pel;
+  else
+    pel->next->prev = pel;
+
   phl->head = pel;
   phl->size++;
+}
+
+void ph_list_remove(playhead_list* phl, struct ph_list_el* pel) {
+  jm_q_add(&phl->unused, &pel);
+
+  if (pel == phl->head)
+    phl->head = phl->head->next;
+  else
+    pel->prev->next = pel->next;
+
+  if (pel == phl->tail)
+    phl->tail = phl->tail->prev;
+  else
+    pel->next->prev = pel->prev;
+
+  phl->size--;
+}
+
+void ph_list_remove_last(playhead_list* phl) {
+  ph_list_remove(phl, phl->tail);
 }
 
 size_t ph_list_size(playhead_list* phl) {
@@ -84,7 +111,6 @@ ph_list_iterator ph_list_get_iterator(playhead_list* phl) {
   ph_list_iterator it;
   it.p = phl->head;
   it.prev = NULL;
-  it.prev_prev = NULL;
   it.phl = phl;
 
   return it;
@@ -95,23 +121,13 @@ struct playhead* ph_list_iter_next(ph_list_iterator* it) {
     return NULL;
 
   struct playhead* ph = &it->p->ph;
-  it->prev_prev = it->prev;
   it->prev = it->p;
   it->p = it->p->next;
   return ph;
 }
 
 void ph_list_iter_remove(ph_list_iterator* it) {
-  jm_q_add(&it->phl->unused, &it->prev);
-  if (it->prev == it->phl->head) {
-    it->phl->head = it->phl->head->next;
-    it->prev = NULL;
-    it->phl->size--;
-    return;
-  }
-  it->prev_prev->next = it->prev->next;
-  it->prev = it->prev_prev;
-  it->phl->size--;
+  ph_list_remove(it->phl, it->prev);
 }
 
 int in_zone(struct key_zone z, int pitch) {
