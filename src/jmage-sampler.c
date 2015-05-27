@@ -131,7 +131,8 @@ main (int argc, char *argv[])
   uint32_t num32;
   uint16_t num16;
   //wav = fopen("shawn.wav", "rb");
-  wav = fopen("Glass.wav", "rb");
+  //wav = fopen("Glass.wav", "rb");
+  wav = fopen("rhodes_note.wav", "rb");
   //wav = fopen("Leaving_rh_remix.wav", "rb");
 
   fread(text, 1, 4, wav);
@@ -195,7 +196,7 @@ main (int argc, char *argv[])
   }
 
   struct key_zone zones[1];
-  zones[0].origin = 12;
+  zones[0].origin = 0;
   zones[0].lower_bound = INT_MIN;
   zones[0].upper_bound = INT_MAX;
   zones[0].wave[0] = wave1;
