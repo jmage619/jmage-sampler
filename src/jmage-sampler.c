@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <jack/jack.h>
+#include <jack/midiport.h>
 #include <jack/transport.h>
 #include <getopt.h>
 #include <string.h>
@@ -15,6 +16,7 @@
 #define WAV_OFF_Q_SIZE 10
 
 jack_client_t *client;
+jack_port_t *input_port;
 jack_port_t *output_port1;
 jack_port_t *output_port2;
 jack_nframes_t wave_length;
@@ -22,8 +24,8 @@ sample_t *wave1;
 sample_t *wave2;
 double amp[17];
 volatile int level = 1;
-jm_queue user_events;
 playhead_list playheads;
+struct key_zone zones[1];
 
 void
 usage ()
@@ -54,34 +56,48 @@ process_audio (jack_nframes_t nframes)
   sample_t *buffer1 = (sample_t *) jack_port_get_buffer (output_port1, nframes);
   sample_t *buffer2 = (sample_t *) jack_port_get_buffer (output_port2, nframes);
 
-  struct playhead ph;
-  while (jm_q_remove(&user_events, &ph) != NULL) {
-    if (ph_list_size(&playheads) >= WAV_OFF_Q_SIZE) {
-      ph_list_remove_last(&playheads);
-    }
-    ph_list_add(&playheads, ph);
-    printf("poly: %zu note: %f\n", ph_list_size(&playheads), 12 * log2(ph.speed));
-  }
-
   memset (buffer1, 0, sizeof (jack_default_audio_sample_t) * nframes);
   memset (buffer2, 0, sizeof (jack_default_audio_sample_t) * nframes);
 
-  ph_list_iterator it = ph_list_get_iterator(&playheads);
-  struct playhead* ph_p;
-  while ((ph_p = ph_list_iter_next(&it)) != NULL) {
-    jack_nframes_t to_copy = nframes;
-    if (wave_length - ph_p->position < nframes * ph_p->speed)
-      to_copy = (jack_nframes_t) ((wave_length - ph_p->position) / ph_p->speed);
+  void* midi_buf = jack_port_get_buffer(input_port, nframes);
 
-    int i;
-    for (i = 0; i < to_copy; i++) {
-      buffer1[i] += amp[level] * wave1[(jack_nframes_t) (ph_p->position + i * ph_p->speed)];
-      buffer2[i] += amp[level] * wave2[(jack_nframes_t) (ph_p->position + i * ph_p->speed)];
+  uint32_t event_count = jack_midi_get_event_count(midi_buf);
+  uint32_t cur_event = 0;
+  jack_midi_event_t event;
+  if (event_count > 0)
+    jack_midi_event_get(&event, midi_buf, cur_event);
+
+  ph_list_iterator it;
+  struct playhead* ph_p;
+  jack_nframes_t i;
+  for (i = 0; i <= nframes; i++) {
+    if (cur_event < event_count) {
+      while (i == event.time) {
+        if ((event.buffer[0] & 0xf0) == 0x90) {
+          struct playhead ph = zone_to_ph(zones, 1, event.buffer[1]);
+
+          if (ph_list_size(&playheads) >= WAV_OFF_Q_SIZE)
+            ph_list_remove_last(&playheads);
+
+          ph_list_add(&playheads, ph);
+          printf("poly: %zu note: %f\n", ph_list_size(&playheads), 12 * log2(ph.speed));
+        }
+        cur_event++;
+        if (cur_event == event_count)
+          break;
+        jack_midi_event_get(&event, midi_buf, cur_event);
+      }
     }
-    ph_p->position += to_copy * ph_p->speed;
-    if ((jack_nframes_t) ((wave_length - ph_p->position) / ph_p->speed) == 0) {
-      ph_list_iter_remove(&it);
-      printf("poly: %zu\n", ph_list_size(&playheads));
+
+    it = ph_list_get_iterator(&playheads);
+    while ((ph_p = ph_list_iter_next(&it)) != NULL) {
+      buffer1[i] += amp[level] * wave1[(jack_nframes_t) ph_p->position];
+      buffer2[i] += amp[level] * wave2[(jack_nframes_t) ph_p->position];
+      ph_p->position += ph_p->speed;
+      if ((jack_nframes_t) ph_p->position >= wave_length) {
+        ph_list_iter_remove(&it);
+        printf("poly: %zu\n", ph_list_size(&playheads));
+      }
     }
   }
 }
@@ -121,6 +137,7 @@ main (int argc, char *argv[])
     return 1;
   }
   jack_set_process_callback (client, process, 0);
+  input_port = jack_port_register (client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
   output_port1 = jack_port_register (client, "out1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
   output_port2 = jack_port_register (client, "out2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
   // Build the wave tables
@@ -187,7 +204,6 @@ main (int argc, char *argv[])
 
   amp[0] = 0.0;
   
-  jm_init_queue(&user_events, sizeof(struct playhead), UE_Q_SIZE);
   init_ph_list(&playheads, WAV_OFF_Q_SIZE);
 
   if (jack_activate (client)) {
@@ -195,15 +211,11 @@ main (int argc, char *argv[])
     return 1;
   }
 
-  struct key_zone zones[1];
-  zones[0].origin = 0;
+  zones[0].origin = 0x30;
   zones[0].lower_bound = INT_MIN;
   zones[0].upper_bound = INT_MAX;
   zones[0].wave[0] = wave1;
   zones[0].wave[1] = wave2;
-
-  int octave = 0;
-  int pitch;
 
   int c;
   while (1) {
@@ -217,7 +229,6 @@ main (int argc, char *argv[])
 
         free(wave1);
         free(wave2);
-        jm_destroy_queue(&user_events);
         destroy_ph_list(&playheads);
         return 0;
       case '[':
@@ -230,73 +241,8 @@ main (int argc, char *argv[])
           level++;
         printf("level: %i\n", level);
         continue;
-      case '1':
-        octave -= 1;
-        printf("octave: %i\n", octave);
-        continue;
-      case '2':
-        octave += 1;
-        printf("octave: %i\n", octave);
-        continue;
-      case 'a':
-        pitch = 0 + 12 * octave;
-        break;
-      case 'w':
-        pitch = 1 + 12 * octave;
-        break;
-      case 's':
-        pitch = 2 + 12 * octave;
-        break;
-      case 'e':
-        pitch = 3 + 12 * octave;
-        break;
-      case 'd':
-        pitch = 4 + 12 * octave;
-        break;
-      case 'f':
-        pitch = 5 + 12 * octave;
-        break;
-      case 't':
-        pitch = 6 + 12 * octave;
-        break;
-      case 'g':
-        pitch = 7 + 12 * octave;
-        break;
-      case 'y':
-        pitch = 8 + 12 * octave;
-        break;
-      case 'h':
-        pitch = 9 + 12 * octave;
-        break;
-      case 'u':
-        pitch = 10 + 12 * octave;
-        break;
-      case 'j':
-        pitch = 11 + 12 * octave;
-        break;
-      case 'k':
-        pitch = 12 + 12 * octave;
-        break;
-      case 'o':
-        pitch = 13 + 12 * octave;
-        break;
-      case 'l':
-        pitch = 14 + 12 * octave;
-        break;
-      case 'p':
-        pitch = 15 + 12 * octave;
-        break;
-      case ';':
-        pitch = 16 + 12 * octave;
-        break;
-      case '\'':
-        pitch = 17 + 12 * octave;
-        break;
       default:
         continue;
     }
-    //printf("pitch: %i\n", pitch);
-    struct playhead ph = zone_to_ph(zones, 1, pitch);
-    jm_q_add(&user_events, &ph);
   }
 }
