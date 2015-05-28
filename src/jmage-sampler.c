@@ -82,6 +82,18 @@ process_audio (jack_nframes_t nframes)
           ph_list_add(&playheads, ph);
           printf("poly: %zu note: %f\n", ph_list_size(&playheads), 12 * log2(ph.speed));
         }
+        else if ((event.buffer[0] & 0xf0) == 0x80) {
+          it = ph_list_get_iterator(&playheads);
+
+          while ((ph_p = ph_list_iter_next(&it)) != NULL) {
+            printf("calc note: %f note: %d\n", 0x30 + 12 * log2(ph_p->speed), event.buffer[1]);
+            if (0x30 + 12 * log2(ph_p->speed) == event.buffer[1]) {
+              ph_list_iter_remove(&it);
+              printf("poly: %zu\n", ph_list_size(&playheads));
+              break;
+            }
+          }
+        }
         cur_event++;
         if (cur_event == event_count)
           break;
