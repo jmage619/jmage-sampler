@@ -87,13 +87,13 @@ process_audio (jack_nframes_t nframes)
               if (ph_list_size(&playheads) >= WAV_OFF_Q_SIZE)
                 ph_list_remove_last(&playheads);
 
-              ph_list_add(&playheads, ph);
+              ph_list_add(&playheads, &ph);
               //printf("poly: %zu note: %f\n", ph_list_size(&playheads), 12 * log2(ph.speed));
             }
           }
         }
         else if ((event.buffer[0] & 0xf0) == 0x80) {
-          it = ph_list_get_iterator(&playheads);
+          init_ph_list_iterator(&playheads, &it);
 
           while ((ph_p = ph_list_iter_next(&it)) != NULL) {
             //printf("calc note: %f note: %d\n", 0x30 + 12 * log2(ph_p->speed), event.buffer[1]);
@@ -111,7 +111,7 @@ process_audio (jack_nframes_t nframes)
       }
     }
 
-    it = ph_list_get_iterator(&playheads);
+    init_ph_list_iterator(&playheads, &it);
     while ((ph_p = ph_list_iter_next(&it)) != NULL) {
       buffer1[n] += amp[level] * wave1[(jack_nframes_t) ph_p->position];
       buffer2[n] += amp[level] * wave2[(jack_nframes_t) ph_p->position];

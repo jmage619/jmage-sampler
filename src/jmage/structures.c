@@ -68,10 +68,10 @@ void destroy_ph_list(playhead_list* phl) {
   free(phl->arr);
 }
 
-void ph_list_add(playhead_list* phl, struct playhead ph) {
+void ph_list_add(playhead_list* phl, struct playhead* ph) {
   struct ph_list_el* pel;
   jm_q_remove(&phl->unused, &pel);
-  pel->ph = ph;
+  pel->ph = *ph;
   pel->next = phl->head;
   pel->prev = NULL;
   if (pel->next == NULL)
@@ -107,13 +107,10 @@ size_t ph_list_size(playhead_list* phl) {
   return phl->size;
 }
 
-ph_list_iterator ph_list_get_iterator(playhead_list* phl) {
-  ph_list_iterator it;
-  it.p = phl->head;
-  it.prev = NULL;
-  it.phl = phl;
-
-  return it;
+void init_ph_list_iterator(playhead_list* phl, ph_list_iterator* it) {
+  it->p = phl->head;
+  it->prev = NULL;
+  it->phl = phl;
 }
 
 struct playhead* ph_list_iter_next(ph_list_iterator* it) {

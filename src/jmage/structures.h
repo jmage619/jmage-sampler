@@ -50,11 +50,11 @@ typedef struct ph_list_iterator {
 
 void init_ph_list(playhead_list* phl, size_t length);
 void destroy_ph_list(playhead_list* phl);
-void ph_list_add(playhead_list* phl, struct playhead ph);
+void ph_list_add(playhead_list* phl, struct playhead* ph);
 void ph_list_remove(playhead_list* phl, struct ph_list_el* pel);
 void ph_list_remove_last(playhead_list* phl);
 size_t ph_list_size(playhead_list* phl);
-ph_list_iterator ph_list_get_iterator(playhead_list* phl);
+void init_ph_list_iterator(playhead_list* phl, ph_list_iterator* it);
 struct playhead* ph_list_iter_next(ph_list_iterator* it);
 void ph_list_iter_remove(ph_list_iterator* it);
 
