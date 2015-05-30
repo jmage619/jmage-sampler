@@ -137,6 +137,7 @@ int in_zone(struct key_zone* z, int pitch) {
 }
 
 void zone_to_ph(struct key_zone* zone, struct playhead* ph, int pitch) {
+  ph->pitch = pitch;
   ph->position = 0;
   ph->speed = pow(2, (pitch - zone->origin) / 12.);
   ph->wave[0] = zone->wave[0];

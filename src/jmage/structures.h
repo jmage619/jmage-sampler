@@ -21,6 +21,7 @@ void* jm_q_get_head(jm_queue* jmq);
 void* jm_q_inc_ptr(jm_queue* jmq, void* p);
 
 struct playhead {
+  int pitch;
   double speed;
   double position;
   sample_t* wave[2];
