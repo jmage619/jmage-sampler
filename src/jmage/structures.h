@@ -22,6 +22,7 @@ void* jm_q_inc_ptr(jm_queue* jmq, void* p);
 
 struct playhead {
   int pitch;
+  double amp;
   double speed;
   double position;
   sample_t* wave[2];
@@ -67,6 +68,6 @@ struct key_zone {
 };
 
 int in_zone(struct key_zone* z, int pitch);
-void zone_to_ph(struct key_zone* zone, struct playhead* ph, int pitch);
+void zone_to_ph(struct key_zone* zone, struct playhead* ph, int pitch, int velocity);
 
 #endif

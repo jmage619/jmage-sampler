@@ -75,24 +75,24 @@ process_audio (jack_nframes_t nframes)
   for (n = 0; n <= nframes; n++) {
     if (cur_event < event_count) {
       while (n == event.time) {
-        if (event.buffer[0] != 0xfe)
-          printf("time: %" PRIu32 " event: 0x%x\n", n, event.buffer[0]);
         if ((event.buffer[0] & 0xf0) == 0x90) {
           int i;
           for (i = 0; i < NUM_ZONES; i++) {
             if (in_zone(&zones[i], event.buffer[1])) {
               struct playhead ph;
-              zone_to_ph(&zones[i], &ph, event.buffer[1]);
+              zone_to_ph(&zones[i], &ph, event.buffer[1], event.buffer[2]);
 
               if (ph_list_size(&playheads) >= WAV_OFF_Q_SIZE)
                 ph_list_remove_last(&playheads);
 
               ph_list_add(&playheads, &ph);
+              printf("event: note on;  note: %i; vel: %i; amp: %f\n", event.buffer[1], event.buffer[2], ph.amp);
               //printf("poly: %zu note: %f\n", ph_list_size(&playheads), 12 * log2(ph.speed));
             }
           }
         }
         else if ((event.buffer[0] & 0xf0) == 0x80) {
+          printf("event: note off; note: %i\n", event.buffer[1]);
           init_ph_list_iterator(&playheads, &it);
 
           while ((ph_p = ph_list_iter_next(&it)) != NULL) {
@@ -104,6 +104,8 @@ process_audio (jack_nframes_t nframes)
             }
           }
         }
+        else if (event.buffer[0] != 0xfe)
+          printf("event: 0x%x\n", event.buffer[0]);
         cur_event++;
         if (cur_event == event_count)
           break;
@@ -113,8 +115,8 @@ process_audio (jack_nframes_t nframes)
 
     init_ph_list_iterator(&playheads, &it);
     while ((ph_p = ph_list_iter_next(&it)) != NULL) {
-      buffer1[n] += amp[level] * wave1[(jack_nframes_t) ph_p->position];
-      buffer2[n] += amp[level] * wave2[(jack_nframes_t) ph_p->position];
+      buffer1[n] += amp[level] * ph_p->amp * wave1[(jack_nframes_t) ph_p->position];
+      buffer2[n] += amp[level] * ph_p->amp * wave2[(jack_nframes_t) ph_p->position];
       ph_p->position += ph_p->speed;
       if ((jack_nframes_t) ph_p->position >= wave_length) {
         ph_list_iter_remove(&it);
