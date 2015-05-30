@@ -15,6 +15,7 @@
 #define UE_Q_SIZE 10
 #define WAV_OFF_Q_SIZE 10
 #define VOL_STEPS 17
+#define NUM_ZONES 1
 
 jack_client_t *client;
 jack_port_t *input_port;
@@ -26,7 +27,7 @@ sample_t *wave2;
 double amp[VOL_STEPS];
 volatile int level = VOL_STEPS - 1;
 playhead_list playheads;
-struct key_zone zones[1];
+struct key_zone zones[NUM_ZONES];
 
 void
 usage ()
@@ -70,20 +71,26 @@ process_audio (jack_nframes_t nframes)
 
   ph_list_iterator it;
   struct playhead* ph_p;
-  jack_nframes_t i;
-  for (i = 0; i <= nframes; i++) {
+  jack_nframes_t n;
+  for (n = 0; n <= nframes; n++) {
     if (cur_event < event_count) {
-      while (i == event.time) {
+      while (n == event.time) {
         if (event.buffer[0] != 0xfe)
-          printf("time: %" PRIu32 " event: 0x%x\n", i, event.buffer[0]);
+          printf("time: %" PRIu32 " event: 0x%x\n", n, event.buffer[0]);
         if ((event.buffer[0] & 0xf0) == 0x90) {
-          struct playhead ph = zone_to_ph(zones, 1, event.buffer[1]);
+          int i;
+          for (i = 0; i < NUM_ZONES; i++) {
+            if (in_zone(&zones[i], event.buffer[1])) {
+              struct playhead ph;
+              zone_to_ph(&zones[i], &ph, event.buffer[1]);
 
-          if (ph_list_size(&playheads) >= WAV_OFF_Q_SIZE)
-            ph_list_remove_last(&playheads);
+              if (ph_list_size(&playheads) >= WAV_OFF_Q_SIZE)
+                ph_list_remove_last(&playheads);
 
-          ph_list_add(&playheads, ph);
-          //printf("poly: %zu note: %f\n", ph_list_size(&playheads), 12 * log2(ph.speed));
+              ph_list_add(&playheads, ph);
+              //printf("poly: %zu note: %f\n", ph_list_size(&playheads), 12 * log2(ph.speed));
+            }
+          }
         }
         else if ((event.buffer[0] & 0xf0) == 0x80) {
           it = ph_list_get_iterator(&playheads);
@@ -106,8 +113,8 @@ process_audio (jack_nframes_t nframes)
 
     it = ph_list_get_iterator(&playheads);
     while ((ph_p = ph_list_iter_next(&it)) != NULL) {
-      buffer1[i] += amp[level] * wave1[(jack_nframes_t) ph_p->position];
-      buffer2[i] += amp[level] * wave2[(jack_nframes_t) ph_p->position];
+      buffer1[n] += amp[level] * wave1[(jack_nframes_t) ph_p->position];
+      buffer2[n] += amp[level] * wave2[(jack_nframes_t) ph_p->position];
       ph_p->position += ph_p->speed;
       if ((jack_nframes_t) ph_p->position >= wave_length) {
         ph_list_iter_remove(&it);

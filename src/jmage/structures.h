@@ -65,7 +65,7 @@ struct key_zone {
   int origin;
 };
 
-int in_zone(struct key_zone z, int pitch);
-struct playhead zone_to_ph(struct key_zone zones[], int length, int pitch);
+int in_zone(struct key_zone* z, int pitch);
+void zone_to_ph(struct key_zone* zone, struct playhead* ph, int pitch);
 
 #endif

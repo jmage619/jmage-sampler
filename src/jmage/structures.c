@@ -130,24 +130,15 @@ void ph_list_iter_remove(ph_list_iterator* it) {
   ph_list_remove(it->phl, it->prev);
 }
 
-int in_zone(struct key_zone z, int pitch) {
-  if (pitch >= z.lower_bound && pitch <= z.upper_bound)
+int in_zone(struct key_zone* z, int pitch) {
+  if (pitch >= z->lower_bound && pitch <= z->upper_bound)
     return 1;
   return 0;
 }
 
-struct playhead zone_to_ph(struct key_zone zones[], int length, int pitch) {
-  struct playhead ph;
-  int i;
-  for (i = 0; i < length; i++) {
-    if (in_zone(zones[i], pitch)) {
-      struct playhead ph;
-      ph.position = 0;
-      ph.speed = pow(2, (pitch - zones[i].origin) / 12.);
-      ph.wave[0] = zones[i].wave[0];
-      ph.wave[1] = zones[i].wave[1];
-      return ph;
-    }
-  }
-  return ph;
+void zone_to_ph(struct key_zone* zone, struct playhead* ph, int pitch) {
+  ph->position = 0;
+  ph->speed = pow(2, (pitch - zone->origin) / 12.);
+  ph->wave[0] = zone->wave[0];
+  ph->wave[1] = zone->wave[1];
 }
