@@ -14,6 +14,7 @@
 
 #define UE_Q_SIZE 10
 #define WAV_OFF_Q_SIZE 10
+#define VOL_STEPS 17
 
 jack_client_t *client;
 jack_port_t *input_port;
@@ -22,8 +23,8 @@ jack_port_t *output_port2;
 jack_nframes_t wave_length;
 sample_t *wave1;
 sample_t *wave2;
-double amp[17];
-volatile int level = 1;
+double amp[VOL_STEPS];
+volatile int level = VOL_STEPS - 1;
 playhead_list playheads;
 struct key_zone zones[1];
 
@@ -73,6 +74,8 @@ process_audio (jack_nframes_t nframes)
   for (i = 0; i <= nframes; i++) {
     if (cur_event < event_count) {
       while (i == event.time) {
+        if (event.buffer[0] != 0xfe)
+          printf("time: %" PRIu32 " event: 0x%x\n", i, event.buffer[0]);
         if ((event.buffer[0] & 0xf0) == 0x90) {
           struct playhead ph = zone_to_ph(zones, 1, event.buffer[1]);
 
@@ -80,16 +83,16 @@ process_audio (jack_nframes_t nframes)
             ph_list_remove_last(&playheads);
 
           ph_list_add(&playheads, ph);
-          printf("poly: %zu note: %f\n", ph_list_size(&playheads), 12 * log2(ph.speed));
+          //printf("poly: %zu note: %f\n", ph_list_size(&playheads), 12 * log2(ph.speed));
         }
         else if ((event.buffer[0] & 0xf0) == 0x80) {
           it = ph_list_get_iterator(&playheads);
 
           while ((ph_p = ph_list_iter_next(&it)) != NULL) {
-            printf("calc note: %f note: %d\n", 0x30 + 12 * log2(ph_p->speed), event.buffer[1]);
+            //printf("calc note: %f note: %d\n", 0x30 + 12 * log2(ph_p->speed), event.buffer[1]);
             if (0x30 + 12 * log2(ph_p->speed) == event.buffer[1]) {
               ph_list_iter_remove(&it);
-              printf("poly: %zu\n", ph_list_size(&playheads));
+              //printf("poly: %zu\n", ph_list_size(&playheads));
               break;
             }
           }
@@ -108,7 +111,7 @@ process_audio (jack_nframes_t nframes)
       ph_p->position += ph_p->speed;
       if ((jack_nframes_t) ph_p->position >= wave_length) {
         ph_list_iter_remove(&it);
-        printf("poly: %zu\n", ph_list_size(&playheads));
+        //printf("poly: %zu\n", ph_list_size(&playheads));
       }
     }
   }
@@ -201,20 +204,32 @@ main (int argc, char *argv[])
   // assuming 16 bit and 2 channel
   int16_t sample;
   int i;
+  sample_t min = 0;
+  sample_t max = 0;
   for (i = 0; i < wave_length; i++) {
     fread(&sample, 2, 1, wav);
-    wave1[i] = sample;
+    wave1[i] = (double) sample / INT16_MAX;
+    if (wave1[i] < min)
+      min = wave1[i];
+    if (wave1[i] > max)
+      max = wave1[i];
     fread(&sample, 2, 1, wav);
-    wave2[i] = sample;
+    wave2[i] = (double) sample / INT16_MAX;
   }
+
+  printf("min val: %f max val: %f\n", min, max);
 
   fclose(wav);
 
-  for (i = 0; i < 17; i++) {
-    amp[i]  = pow(10, - (16 - i) * 6 / 20.);
+  for (i = 0; i < VOL_STEPS; i++) {
+    //amp[i]  = (double) i / (VOL_STEPS - 1);
+    amp[i]  = 1 / 90. * (pow(10, 2 * i / (VOL_STEPS - 1.0)) - 1);
   }
-
-  amp[0] = 0.0;
+  //printf("step: %i gain: %f\n", 1, amp[1]);
+  amp[VOL_STEPS - 1] = 1.0;
+  for (i = 0; i < VOL_STEPS; i++) {
+    printf("step: %i gain: %f\n", i, amp[i]);
+  }
   
   init_ph_list(&playheads, WAV_OFF_Q_SIZE);
 
@@ -249,7 +264,7 @@ main (int argc, char *argv[])
         printf("level: %i\n", level);
         continue;
       case ']':
-        if (level < 16)
+        if (level < VOL_STEPS - 1)
           level++;
         printf("level: %i\n", level);
         continue;
