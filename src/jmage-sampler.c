@@ -71,8 +71,7 @@ process_audio (jack_nframes_t nframes)
   if (event_count > 0)
     jack_midi_event_get(&event, midi_buf, cur_event);
 
-  ph_list_iterator it;
-  struct playhead* ph_p;
+  ph_list_el* pel;
   jack_nframes_t n;
   for (n = 0; n <= nframes; n++) {
     if (cur_event < event_count) {
@@ -95,21 +94,18 @@ process_audio (jack_nframes_t nframes)
         }
         else if ((event.buffer[0] & 0xf0) == 0x80) {
           printf("event: note off; note: %i\n", event.buffer[1]);
-          init_ph_list_iterator(&playheads, &it);
-
-          while ((ph_p = ph_list_iter_next(&it)) != NULL) {
+          for (pel = playheads.head; pel != NULL; pel = pel->next) {
             //printf("calc note: %f note: %d\n", 0x30 + 12 * log2(ph_p->speed), event.buffer[1]);
-            if (ph_p->pitch == event.buffer[1]) {
+            if (pel->ph.pitch == event.buffer[1]) {
               if (sustain_on) {
                 if (jm_q_size(&note_off_q) >= WAV_OFF_Q_SIZE) {
                   jm_q_remove(&note_off_q, NULL);
                 }
 
-                struct ph_list_el* el_p = ph_list_iter_get_el(&it);
-                jm_q_add(&note_off_q, &el_p);
+                jm_q_add(&note_off_q, &pel);
               }
               else
-                ph_list_iter_remove(&it);
+                ph_list_remove(&playheads, pel);
               //printf("poly: %zu\n", ph_list_size(&playheads));
             }
           }
@@ -118,10 +114,9 @@ process_audio (jack_nframes_t nframes)
           if (event.buffer[2] >= 64)
             sustain_on = 1;
           else {
-            struct ph_list_el* el_p;
-            while (jm_q_remove(&note_off_q, &el_p) != NULL) {
-              if (ph_list_in(&playheads, el_p))
-                ph_list_remove(&playheads, el_p);
+            while (jm_q_remove(&note_off_q, &pel) != NULL) {
+              if (ph_list_in(&playheads, pel))
+                ph_list_remove(&playheads, pel);
             }
 
             sustain_on = 0;
@@ -137,13 +132,12 @@ process_audio (jack_nframes_t nframes)
       }
     }
 
-    init_ph_list_iterator(&playheads, &it);
-    while ((ph_p = ph_list_iter_next(&it)) != NULL) {
-      buffer1[n] += amp[level] * ph_p->amp * wave1[(jack_nframes_t) ph_p->position];
-      buffer2[n] += amp[level] * ph_p->amp * wave2[(jack_nframes_t) ph_p->position];
-      ph_p->position += ph_p->speed;
-      if ((jack_nframes_t) ph_p->position >= wave_length) {
-        ph_list_iter_remove(&it);
+    for (pel = playheads.head; pel != NULL; pel = pel->next) {
+      buffer1[n] += amp[level] * pel->ph.amp * wave1[(jack_nframes_t) pel->ph.position];
+      buffer2[n] += amp[level] * pel->ph.amp * wave2[(jack_nframes_t) pel->ph.position];
+      pel->ph.position += pel->ph.speed;
+      if ((jack_nframes_t) pel->ph.position >= wave_length) {
+        ph_list_remove(&playheads, pel);
         //printf("poly: %zu\n", ph_list_size(&playheads));
       }
     }
@@ -265,7 +259,7 @@ main (int argc, char *argv[])
   }
   
   init_ph_list(&playheads, WAV_OFF_Q_SIZE);
-  jm_init_queue(&note_off_q, sizeof(struct ph_list_el*), WAV_OFF_Q_SIZE);
+  jm_init_queue(&note_off_q, sizeof(ph_list_el*), WAV_OFF_Q_SIZE);
 
   if (jack_activate (client)) {
     fprintf (stderr, "cannot activate client");

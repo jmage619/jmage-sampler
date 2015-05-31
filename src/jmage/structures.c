@@ -62,12 +62,12 @@ void init_ph_list(playhead_list* phl, size_t length) {
   phl->tail = NULL;
   phl->length = length;
   phl->size = 0;
-  phl->arr = malloc(sizeof(struct ph_list_el) * phl->length);
-  jm_init_queue(&phl->unused, sizeof(struct ph_list_el*), phl->length);
+  phl->arr = malloc(sizeof(ph_list_el) * phl->length);
+  jm_init_queue(&phl->unused, sizeof(ph_list_el*), phl->length);
   size_t i;
   for (i = 0; i < phl->length; i++) {
-    struct ph_list_el* el_p = phl->arr + i;
-    jm_q_add(&phl->unused, &el_p);
+    ph_list_el* pel = phl->arr + i;
+    jm_q_add(&phl->unused, &pel);
   }
 }
 
@@ -77,7 +77,7 @@ void destroy_ph_list(playhead_list* phl) {
 }
 
 void ph_list_add(playhead_list* phl, struct playhead* ph) {
-  struct ph_list_el* pel;
+  ph_list_el* pel;
   jm_q_remove(&phl->unused, &pel);
   pel->ph = *ph;
   pel->next = phl->head;
@@ -91,8 +91,8 @@ void ph_list_add(playhead_list* phl, struct playhead* ph) {
   phl->size++;
 }
 
-int ph_list_in(playhead_list* phl, struct ph_list_el* pel) {
-  struct ph_list_el* p;
+int ph_list_in(playhead_list* phl, ph_list_el* pel) {
+  ph_list_el* p;
   for (p = phl->head; p != NULL; p = p->next) {
     if (p == pel)
       return 1;
@@ -100,7 +100,7 @@ int ph_list_in(playhead_list* phl, struct ph_list_el* pel) {
   return 0;
 }
 
-void ph_list_remove(playhead_list* phl, struct ph_list_el* pel) {
+void ph_list_remove(playhead_list* phl, ph_list_el* pel) {
   jm_q_add(&phl->unused, &pel);
 
   if (pel == phl->head)
@@ -122,30 +122,6 @@ void ph_list_remove_last(playhead_list* phl) {
 
 size_t ph_list_size(playhead_list* phl) {
   return phl->size;
-}
-
-void init_ph_list_iterator(playhead_list* phl, ph_list_iterator* it) {
-  it->p = phl->head;
-  it->prev = NULL;
-  it->phl = phl;
-}
-
-struct playhead* ph_list_iter_next(ph_list_iterator* it) {
-  if(it->p == NULL)
-    return NULL;
-
-  struct playhead* ph = &it->p->ph;
-  it->prev = it->p;
-  it->p = it->p->next;
-  return ph;
-}
-
-struct ph_list_el* ph_list_iter_get_el(ph_list_iterator* it) {
-  return it->prev;
-}
-
-void ph_list_iter_remove(ph_list_iterator* it) {
-  ph_list_remove(it->phl, it->prev);
 }
 
 int in_zone(struct key_zone* z, int pitch) {
