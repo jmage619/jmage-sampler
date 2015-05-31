@@ -5,6 +5,8 @@
 #include "jmage/structures.h"
 
 #define MAX_VELOCITY 127
+// boost for controllers that don't reach 127 easily
+#define VELOCITY_BOOST 1.5
 // queue functions
 
 void jm_init_queue(jm_queue* jmq, size_t el_size, size_t length) {
@@ -136,8 +138,7 @@ int in_zone(struct key_zone* z, int pitch) {
 
 void zone_to_ph(struct key_zone* zone, struct playhead* ph, int pitch, int velocity) {
   ph->pitch = pitch;
-  // 1.5 boost helps oxygen 8 go to 1.0
-  double calc_amp = 1.5 * velocity / MAX_VELOCITY;
+  double calc_amp = VELOCITY_BOOST * velocity / MAX_VELOCITY;
   ph->amp = calc_amp > 1.0 ? 1.0 : calc_amp;
   ph->position = 0;
   ph->speed = pow(2, (pitch - zone->origin) / 12.);
