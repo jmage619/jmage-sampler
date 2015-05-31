@@ -94,7 +94,7 @@ process_audio (jack_nframes_t nframes)
         }
         else if ((event.buffer[0] & 0xf0) == 0x80) {
           printf("event: note off; note: %i\n", event.buffer[1]);
-          for (pel = playheads.head; pel != NULL; pel = pel->next) {
+          for (pel = ph_list_head(&playheads); pel != NULL; pel = pel->next) {
             //printf("calc note: %f note: %d\n", 0x30 + 12 * log2(ph_p->speed), event.buffer[1]);
             if (pel->ph.pitch == event.buffer[1]) {
               if (sustain_on) {
@@ -132,7 +132,7 @@ process_audio (jack_nframes_t nframes)
       }
     }
 
-    for (pel = playheads.head; pel != NULL; pel = pel->next) {
+    for (pel = ph_list_head(&playheads); pel != NULL; pel = pel->next) {
       buffer1[n] += amp[level] * pel->ph.amp * wave1[(jack_nframes_t) pel->ph.position];
       buffer2[n] += amp[level] * pel->ph.amp * wave2[(jack_nframes_t) pel->ph.position];
       pel->ph.position += pel->ph.speed;

@@ -38,7 +38,7 @@ void* jm_q_remove(jm_queue* jmq, void* p) {
   return p;
 }
 
-void* jm_q_get_head(jm_queue* jmq) {
+void* jm_q_head(jm_queue* jmq) {
   if (jmq->head == jmq->tail)
     return NULL;
   return jmq->arr + jmq->head * jmq->el_size;
@@ -74,6 +74,10 @@ void init_ph_list(playhead_list* phl, size_t length) {
 void destroy_ph_list(playhead_list* phl) {
   jm_destroy_queue(&phl->unused);
   free(phl->arr);
+}
+
+ph_list_el* ph_list_head(playhead_list* phl) {
+  return phl->head;
 }
 
 void ph_list_add(playhead_list* phl, struct playhead* ph) {
