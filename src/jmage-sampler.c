@@ -77,6 +77,12 @@ process_audio (jack_nframes_t nframes)
     if (cur_event < event_count) {
       while (n == event.time) {
         if ((event.buffer[0] & 0xf0) == 0x90) {
+          if (sustain_on) {
+            for (pel = ph_list_head(&playheads); pel != NULL; pel = pel->next) {
+              if (pel->ph.pitch == event.buffer[1])
+                pel->ph.released = 1;
+            }
+          }
           int i;
           for (i = 0; i < NUM_ZONES; i++) {
             if (in_zone(&zones[i], event.buffer[1])) {
