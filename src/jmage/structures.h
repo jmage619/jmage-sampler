@@ -10,7 +10,6 @@ typedef struct jm_queue {
   volatile int tail;
   size_t el_size;
   size_t length;
-  size_t size;
   char* arr;
 } jm_queue;
 
@@ -18,7 +17,6 @@ void jm_init_queue(jm_queue* jmq, size_t el_size, size_t length);
 void jm_destroy_queue(jm_queue* jmq);
 void jm_q_add(jm_queue* jmq, void* p);
 void* jm_q_remove(jm_queue* jmq, void* p);
-size_t jm_q_size(jm_queue* jmq);
 void* jm_q_head(jm_queue* jmq);
 void* jm_q_inc_ptr(jm_queue* jmq, void* p);
 
@@ -28,6 +26,7 @@ struct playhead {
   double speed;
   double position;
   int released;
+  int note_off;
   int rel_time;
   sample_t* wave[2];
 };
@@ -51,7 +50,6 @@ void init_ph_list(playhead_list* phl, size_t length);
 void destroy_ph_list(playhead_list* phl);
 ph_list_el* ph_list_head(playhead_list* phl);
 void ph_list_add(playhead_list* phl, struct playhead* ph);
-int ph_list_in(playhead_list* phl, ph_list_el* pel);
 void ph_list_remove(playhead_list* phl, ph_list_el* pel);
 void ph_list_remove_last(playhead_list* phl);
 size_t ph_list_size(playhead_list* phl);

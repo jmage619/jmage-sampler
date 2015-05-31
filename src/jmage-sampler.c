@@ -16,7 +16,7 @@
 #define WAV_OFF_Q_SIZE 10
 #define VOL_STEPS 17
 #define NUM_ZONES 1
-#define RELEASE_RATE  1000 / 44100.
+#define RELEASE_TIME  (44100. / 1000.)
 
 jack_client_t *client;
 jack_port_t *input_port;
@@ -28,7 +28,6 @@ sample_t *wave2;
 double amp[VOL_STEPS];
 volatile int level = VOL_STEPS - 1;
 playhead_list playheads;
-jm_queue note_off_q;
 int sustain_on = 0;
 struct key_zone zones[NUM_ZONES];
 
@@ -89,40 +88,34 @@ process_audio (jack_nframes_t nframes)
 
               ph_list_add(&playheads, &ph);
               printf("event: note on;  note: %i; vel: %i; amp: %f\n", event.buffer[1], event.buffer[2], ph.amp);
-              //printf("poly: %zu note: %f\n", ph_list_size(&playheads), 12 * log2(ph.speed));
             }
           }
         }
         else if ((event.buffer[0] & 0xf0) == 0x80) {
           printf("event: note off; note: %i\n", event.buffer[1]);
           for (pel = ph_list_head(&playheads); pel != NULL; pel = pel->next) {
-            //printf("calc note: %f note: %d\n", 0x30 + 12 * log2(ph_p->speed), event.buffer[1]);
             if (pel->ph.pitch == event.buffer[1]) {
               if (sustain_on) {
-                if (jm_q_size(&note_off_q) >= WAV_OFF_Q_SIZE) {
-                  jm_q_remove(&note_off_q, NULL);
-                }
-
-                jm_q_add(&note_off_q, &pel);
+                pel->ph.note_off = 1;
               }
               else
-                //ph_list_remove(&playheads, pel);
                 pel->ph.released = 1;
-              //printf("poly: %zu\n", ph_list_size(&playheads));
             }
           }
         }
         else if ((event.buffer[0] & 0xf0) == 0xb0 && event.buffer[1] == 0x40) {
-          if (event.buffer[2] >= 64)
+          if (event.buffer[2] >= 64) {
             sustain_on = 1;
+            printf("sustain on\n");
+          }
           else {
-            while (jm_q_remove(&note_off_q, &pel) != NULL) {
-              if (ph_list_in(&playheads, pel))
-                //ph_list_remove(&playheads, pel);
+            for (pel = ph_list_head(&playheads); pel != NULL; pel = pel->next) {
+              if (pel->ph.note_off)
                 pel->ph.released = 1;
             }
 
             sustain_on = 0;
+            printf("sustain off\n");
           }
         }
         else if (event.buffer[0] != 0xfe)
@@ -137,8 +130,7 @@ process_audio (jack_nframes_t nframes)
 
     for (pel = ph_list_head(&playheads); pel != NULL; pel = pel->next) {
       if (pel->ph.released) {
-        double rel_amp = - RELEASE_RATE * pel->ph.rel_time + 1.0;
-        rel_amp = rel_amp < 0.0 ? 0.0 : rel_amp;
+        double rel_amp = - pel->ph.rel_time / RELEASE_TIME + 1.0;
         pel->ph.rel_time++;
         buffer1[n] += amp[level] * rel_amp * pel->ph.amp * wave1[(jack_nframes_t) pel->ph.position];
         buffer2[n] += amp[level] * rel_amp * pel->ph.amp * wave2[(jack_nframes_t) pel->ph.position];
@@ -148,9 +140,8 @@ process_audio (jack_nframes_t nframes)
         buffer2[n] += amp[level] * pel->ph.amp * wave2[(jack_nframes_t) pel->ph.position];
       }
       pel->ph.position += pel->ph.speed;
-      if ((jack_nframes_t) pel->ph.position >= wave_length) {
+      if ((jack_nframes_t) pel->ph.position >= wave_length || pel->ph.rel_time >= RELEASE_TIME) {
         ph_list_remove(&playheads, pel);
-        //printf("poly: %zu\n", ph_list_size(&playheads));
       }
     }
   }
@@ -264,14 +255,13 @@ main (int argc, char *argv[])
     //amp[i]  = (double) i / (VOL_STEPS - 1);
     amp[i]  = 1 / 90. * (pow(10, 2 * i / (VOL_STEPS - 1.0)) - 1);
   }
-  //printf("step: %i gain: %f\n", 1, amp[1]);
   amp[VOL_STEPS - 1] = 1.0;
-  for (i = 0; i < VOL_STEPS; i++) {
+  /*for (i = 0; i < VOL_STEPS; i++) {
     printf("step: %i gain: %f\n", i, amp[i]);
   }
+  */
   
   init_ph_list(&playheads, WAV_OFF_Q_SIZE);
-  jm_init_queue(&note_off_q, sizeof(ph_list_el*), WAV_OFF_Q_SIZE);
 
   if (jack_activate (client)) {
     fprintf (stderr, "cannot activate client");
@@ -297,7 +287,6 @@ main (int argc, char *argv[])
         free(wave1);
         free(wave2);
         destroy_ph_list(&playheads);
-        jm_destroy_queue(&note_off_q);
         return 0;
       case '[':
         if (level > 0)

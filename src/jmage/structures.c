@@ -15,7 +15,6 @@ void jm_init_queue(jm_queue* jmq, size_t el_size, size_t length) {
   jmq->el_size = el_size;
   jmq->length = length + 1;
   jmq->arr = malloc(jmq->el_size * jmq->length);
-  jmq->size = 0;
 } 
 
 void jm_destroy_queue(jm_queue* jmq) {
@@ -25,7 +24,6 @@ void jm_destroy_queue(jm_queue* jmq) {
 void jm_q_add(jm_queue* jmq, void* p) {
   memcpy(jmq->arr + jmq->tail * jmq->el_size, p, jmq->el_size);
   jmq->tail = (jmq->tail + 1) % jmq->length;
-  jmq->size++;
 }
 
 void* jm_q_remove(jm_queue* jmq, void* p) {
@@ -36,7 +34,6 @@ void* jm_q_remove(jm_queue* jmq, void* p) {
     memcpy(p, jmq->arr + jmq->head * jmq->el_size, jmq->el_size);
 
   jmq->head = (jmq->head + 1) % jmq->length;
-  jmq->size--;
   return p;
 }
 
@@ -44,10 +41,6 @@ void* jm_q_head(jm_queue* jmq) {
   if (jmq->head == jmq->tail)
     return NULL;
   return jmq->arr + jmq->head * jmq->el_size;
-}
-
-size_t jm_q_size(jm_queue* jmq) {
-  return jmq->size;
 }
 
 void* jm_q_inc_ptr(jm_queue* jmq, void* p) {
@@ -97,15 +90,6 @@ void ph_list_add(playhead_list* phl, struct playhead* ph) {
   phl->size++;
 }
 
-int ph_list_in(playhead_list* phl, ph_list_el* pel) {
-  ph_list_el* p;
-  for (p = phl->head; p != NULL; p = p->next) {
-    if (p == pel)
-      return 1;
-  }
-  return 0;
-}
-
 void ph_list_remove(playhead_list* phl, ph_list_el* pel) {
   jm_q_add(&phl->unused, &pel);
 
@@ -145,5 +129,6 @@ void zone_to_ph(struct key_zone* zone, struct playhead* ph, int pitch, int veloc
   ph->wave[0] = zone->wave[0];
   ph->wave[1] = zone->wave[1];
   ph->released = 0;
+  ph->note_off = 0;
   ph->rel_time = 0;
 }
