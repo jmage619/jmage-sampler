@@ -27,6 +27,8 @@ sample_t *wave2;
 double amp[VOL_STEPS];
 volatile int level = VOL_STEPS - 1;
 playhead_list playheads;
+jm_queue note_off_q;
+int sustain_on = 0;
 struct key_zone zones[NUM_ZONES];
 
 void
@@ -98,14 +100,36 @@ process_audio (jack_nframes_t nframes)
           while ((ph_p = ph_list_iter_next(&it)) != NULL) {
             //printf("calc note: %f note: %d\n", 0x30 + 12 * log2(ph_p->speed), event.buffer[1]);
             if (ph_p->pitch == event.buffer[1]) {
-              ph_list_iter_remove(&it);
+              if (sustain_on) {
+                if (jm_q_size(&note_off_q) >= WAV_OFF_Q_SIZE) {
+                  jm_q_remove(&note_off_q, NULL);
+                }
+
+                struct ph_list_el* el_p = ph_list_iter_get_el(&it);
+                jm_q_add(&note_off_q, &el_p);
+              }
+              else
+                ph_list_iter_remove(&it);
               //printf("poly: %zu\n", ph_list_size(&playheads));
-              break;
             }
+          }
+        }
+        else if ((event.buffer[0] & 0xf0) == 0xb0 && event.buffer[1] == 0x40) {
+          if (event.buffer[2] >= 64)
+            sustain_on = 1;
+          else {
+            struct ph_list_el* el_p;
+            while (jm_q_remove(&note_off_q, &el_p) != NULL) {
+              if (ph_list_in(&playheads, el_p))
+                ph_list_remove(&playheads, el_p);
+            }
+
+            sustain_on = 0;
           }
         }
         else if (event.buffer[0] != 0xfe)
           printf("event: 0x%x\n", event.buffer[0]);
+
         cur_event++;
         if (cur_event == event_count)
           break;
@@ -241,6 +265,7 @@ main (int argc, char *argv[])
   }
   
   init_ph_list(&playheads, WAV_OFF_Q_SIZE);
+  jm_init_queue(&note_off_q, sizeof(struct ph_list_el*), WAV_OFF_Q_SIZE);
 
   if (jack_activate (client)) {
     fprintf (stderr, "cannot activate client");
@@ -266,6 +291,7 @@ main (int argc, char *argv[])
         free(wave1);
         free(wave2);
         destroy_ph_list(&playheads);
+        jm_destroy_queue(&note_off_q);
         return 0;
       case '[':
         if (level > 0)
