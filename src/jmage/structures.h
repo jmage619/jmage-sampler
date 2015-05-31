@@ -27,6 +27,8 @@ struct playhead {
   double amp;
   double speed;
   double position;
+  int released;
+  int rel_time;
   sample_t* wave[2];
 };
 

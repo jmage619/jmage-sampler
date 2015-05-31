@@ -6,7 +6,7 @@
 
 #define MAX_VELOCITY 127
 // boost for controllers that don't reach 127 easily
-#define VELOCITY_BOOST 1.5
+#define VELOCITY_BOOST 1.2
 // queue functions
 
 void jm_init_queue(jm_queue* jmq, size_t el_size, size_t length) {
@@ -144,4 +144,6 @@ void zone_to_ph(struct key_zone* zone, struct playhead* ph, int pitch, int veloc
   ph->speed = pow(2, (pitch - zone->origin) / 12.);
   ph->wave[0] = zone->wave[0];
   ph->wave[1] = zone->wave[1];
+  ph->released = 0;
+  ph->rel_time = 0;
 }

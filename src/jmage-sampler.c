@@ -16,6 +16,7 @@
 #define WAV_OFF_Q_SIZE 10
 #define VOL_STEPS 17
 #define NUM_ZONES 1
+#define RELEASE_RATE  1000 / 44100.
 
 jack_client_t *client;
 jack_port_t *input_port;
@@ -105,7 +106,8 @@ process_audio (jack_nframes_t nframes)
                 jm_q_add(&note_off_q, &pel);
               }
               else
-                ph_list_remove(&playheads, pel);
+                //ph_list_remove(&playheads, pel);
+                pel->ph.released = 1;
               //printf("poly: %zu\n", ph_list_size(&playheads));
             }
           }
@@ -116,7 +118,8 @@ process_audio (jack_nframes_t nframes)
           else {
             while (jm_q_remove(&note_off_q, &pel) != NULL) {
               if (ph_list_in(&playheads, pel))
-                ph_list_remove(&playheads, pel);
+                //ph_list_remove(&playheads, pel);
+                pel->ph.released = 1;
             }
 
             sustain_on = 0;
@@ -133,8 +136,17 @@ process_audio (jack_nframes_t nframes)
     }
 
     for (pel = ph_list_head(&playheads); pel != NULL; pel = pel->next) {
-      buffer1[n] += amp[level] * pel->ph.amp * wave1[(jack_nframes_t) pel->ph.position];
-      buffer2[n] += amp[level] * pel->ph.amp * wave2[(jack_nframes_t) pel->ph.position];
+      if (pel->ph.released) {
+        double rel_amp = - RELEASE_RATE * pel->ph.rel_time + 1.0;
+        rel_amp = rel_amp < 0.0 ? 0.0 : rel_amp;
+        pel->ph.rel_time++;
+        buffer1[n] += amp[level] * rel_amp * pel->ph.amp * wave1[(jack_nframes_t) pel->ph.position];
+        buffer2[n] += amp[level] * rel_amp * pel->ph.amp * wave2[(jack_nframes_t) pel->ph.position];
+      }
+      else {
+        buffer1[n] += amp[level] * pel->ph.amp * wave1[(jack_nframes_t) pel->ph.position];
+        buffer2[n] += amp[level] * pel->ph.amp * wave2[(jack_nframes_t) pel->ph.position];
+      }
       pel->ph.position += pel->ph.speed;
       if ((jack_nframes_t) pel->ph.position >= wave_length) {
         ph_list_remove(&playheads, pel);
