@@ -23,7 +23,6 @@ jack_client_t *client;
 jack_port_t *input_port;
 jack_port_t *output_port1;
 jack_port_t *output_port2;
-jack_nframes_t wave_length;
 sample_t *wave1;
 sample_t *wave2;
 double amp[VOL_STEPS];
@@ -139,15 +138,15 @@ process_audio (jack_nframes_t nframes)
       if (pel->ph.released) {
         double rel_amp = - pel->ph.rel_time / RELEASE_TIME + 1.0;
         pel->ph.rel_time++;
-        buffer1[n] += amp[level] * rel_amp * pel->ph.amp * wave1[(jack_nframes_t) pel->ph.position];
-        buffer2[n] += amp[level] * rel_amp * pel->ph.amp * wave2[(jack_nframes_t) pel->ph.position];
+        buffer1[n] += amp[level] * rel_amp * pel->ph.amp * pel->ph.wave[0][(jack_nframes_t) pel->ph.position];
+        buffer2[n] += amp[level] * rel_amp * pel->ph.amp * pel->ph.wave[1][(jack_nframes_t) pel->ph.position];
       }
       else {
-        buffer1[n] += amp[level] * pel->ph.amp * wave1[(jack_nframes_t) pel->ph.position];
-        buffer2[n] += amp[level] * pel->ph.amp * wave2[(jack_nframes_t) pel->ph.position];
+        buffer1[n] += amp[level] * pel->ph.amp * pel->ph.wave[0][(jack_nframes_t) pel->ph.position];
+        buffer2[n] += amp[level] * pel->ph.amp * pel->ph.wave[1][(jack_nframes_t) pel->ph.position];
       }
       pel->ph.position += pel->ph.speed;
-      if ((jack_nframes_t) pel->ph.position >= wave_length || pel->ph.rel_time >= RELEASE_TIME) {
+      if ((jack_nframes_t) pel->ph.position >= pel->ph.wave_length || pel->ph.rel_time >= RELEASE_TIME) {
         ph_list_remove(&playheads, pel);
       }
     }
@@ -202,16 +201,14 @@ main (int argc, char *argv[])
   
   SNDFILE* wav = sf_open("rhodes_note.wav", SFM_READ, &sf_info);
 
-  wave_length = sf_info.frames;
-
-  printf("calculated wave length: %i\n", wave_length);
-  wave1 = (sample_t*) malloc(sizeof(sample_t) * wave_length);
-  wave2 = (sample_t*) malloc(sizeof(sample_t) * wave_length);
+  printf("wave length: %" PRIi64 "\n", sf_info.frames);
+  wave1 = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
+  wave2 = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
 
   // assuming 2 channel
   double frame[2];
-  int i;
-  for (i = 0; i < wave_length; i++) {
+  sf_count_t i;
+  for (i = 0; i < sf_info.frames; i++) {
     sf_readf_double(wav, frame, 1);
     wave1[i] = frame[0];
     wave2[i] = frame[1];
@@ -241,6 +238,7 @@ main (int argc, char *argv[])
   zones[0].upper_bound = INT_MAX;
   zones[0].wave[0] = wave1;
   zones[0].wave[1] = wave2;
+  zones[0].wave_length =  sf_info.frames;
 
   int c;
   while (1) {

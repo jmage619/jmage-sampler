@@ -128,6 +128,7 @@ void zone_to_ph(struct key_zone* zone, struct playhead* ph, int pitch, int veloc
   ph->speed = pow(2, (pitch - zone->origin) / 12.);
   ph->wave[0] = zone->wave[0];
   ph->wave[1] = zone->wave[1];
+  ph->wave_length = zone->wave_length;
   ph->released = 0;
   ph->note_off = 0;
   ph->rel_time = 0;

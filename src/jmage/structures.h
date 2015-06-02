@@ -29,6 +29,7 @@ struct playhead {
   int note_off;
   int rel_time;
   sample_t* wave[2];
+  jack_nframes_t wave_length;
 };
 
 typedef struct ph_list_el {
