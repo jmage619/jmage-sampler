@@ -16,7 +16,7 @@
 #define UE_Q_SIZE 10
 #define WAV_OFF_Q_SIZE 10
 #define VOL_STEPS 17
-#define NUM_ZONES 1
+#define NUM_ZONES 2
 #define RELEASE_TIME  (44100. / 1000.)
 
 jack_client_t *client;
@@ -194,7 +194,8 @@ main (int argc, char *argv[])
   //wav = fopen("Glass.wav", "rb");
   //wav = fopen("Leaving_rh_remix.wav", "rb");
 
-  zones[0].origin = 0x30;
+  /**** load wav 1 ***/
+  zones[0].origin = 48;
   zones[0].lower_bound = INT_MIN;
   zones[0].upper_bound = INT_MAX;
 
@@ -218,6 +219,31 @@ main (int argc, char *argv[])
   }
 
   sf_close(wav);
+
+  /**** load wav 2 ***/
+  zones[1].origin = 50;
+  zones[1].lower_bound = INT_MIN;
+  zones[1].upper_bound = INT_MAX;
+
+  sf_info.format = 0;
+  
+  wav = sf_open("Glass.wav", SFM_READ, &sf_info);
+
+  printf("wave length: %" PRIi64 "\n", sf_info.frames);
+  zones[1].wave_length =  sf_info.frames;
+  zones[1].wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
+  zones[1].wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
+
+  // assuming 2 channel
+  for (i = 0; i < sf_info.frames; i++) {
+    sf_readf_double(wav, frame, 1);
+    zones[1].wave[0][i] = frame[0];
+    zones[1].wave[1][i] = frame[1];
+  }
+
+  sf_close(wav);
+
+  /* end load wav 2 ***/
 
   for (i = 0; i < VOL_STEPS; i++) {
     //amp[i]  = (double) i / (VOL_STEPS - 1);
@@ -246,8 +272,11 @@ main (int argc, char *argv[])
         jack_deactivate(client);
         jack_client_close(client);
 
-        free(zones[0].wave[0]);
-        free(zones[0].wave[1]);
+        int i;
+        for (i = 0; i < NUM_ZONES; i ++) {
+          free(zones[i].wave[0]);
+          free(zones[i].wave[1]);
+        }
         destroy_ph_list(&playheads);
         return 0;
       case '[':
