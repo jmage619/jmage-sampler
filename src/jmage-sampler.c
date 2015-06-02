@@ -23,8 +23,6 @@ jack_client_t *client;
 jack_port_t *input_port;
 jack_port_t *output_port1;
 jack_port_t *output_port2;
-sample_t *wave1;
-sample_t *wave2;
 double amp[VOL_STEPS];
 volatile int level = VOL_STEPS - 1;
 playhead_list playheads;
@@ -196,22 +194,27 @@ main (int argc, char *argv[])
   //wav = fopen("Glass.wav", "rb");
   //wav = fopen("Leaving_rh_remix.wav", "rb");
 
+  zones[0].origin = 0x30;
+  zones[0].lower_bound = INT_MIN;
+  zones[0].upper_bound = INT_MAX;
+
   SF_INFO sf_info;
   sf_info.format = 0;
   
   SNDFILE* wav = sf_open("rhodes_note.wav", SFM_READ, &sf_info);
 
   printf("wave length: %" PRIi64 "\n", sf_info.frames);
-  wave1 = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
-  wave2 = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
+  zones[0].wave_length =  sf_info.frames;
+  zones[0].wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
+  zones[0].wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
 
   // assuming 2 channel
   double frame[2];
   sf_count_t i;
   for (i = 0; i < sf_info.frames; i++) {
     sf_readf_double(wav, frame, 1);
-    wave1[i] = frame[0];
-    wave2[i] = frame[1];
+    zones[0].wave[0][i] = frame[0];
+    zones[0].wave[1][i] = frame[1];
   }
 
   sf_close(wav);
@@ -233,13 +236,6 @@ main (int argc, char *argv[])
     return 1;
   }
 
-  zones[0].origin = 0x30;
-  zones[0].lower_bound = INT_MIN;
-  zones[0].upper_bound = INT_MAX;
-  zones[0].wave[0] = wave1;
-  zones[0].wave[1] = wave2;
-  zones[0].wave_length =  sf_info.frames;
-
   int c;
   while (1) {
     c=getch();
@@ -250,8 +246,8 @@ main (int argc, char *argv[])
         jack_deactivate(client);
         jack_client_close(client);
 
-        free(wave1);
-        free(wave2);
+        free(zones[0].wave[0]);
+        free(zones[0].wave[1]);
         destroy_ph_list(&playheads);
         return 0;
       case '[':
