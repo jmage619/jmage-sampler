@@ -4,7 +4,7 @@ LDFLAGS = @LDFLAGS@
 #CFLAGS := -Wall -O3
 CFLAGS := @CFLAGS@
 #LIB = -ljack -framework CoreAudio
-LIB = -lm -ljack
+LIB = -lm -ljack -lsndfile
 CC = gcc
 
 all : jmage-sampler

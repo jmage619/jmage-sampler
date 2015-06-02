@@ -6,6 +6,7 @@
 #include <jack/jack.h>
 #include <jack/midiport.h>
 #include <jack/transport.h>
+#include <sndfile.h>
 #include <getopt.h>
 #include <string.h>
 #include <termios.h>
@@ -191,71 +192,32 @@ main (int argc, char *argv[])
   input_port = jack_port_register (client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
   output_port1 = jack_port_register (client, "out1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
   output_port2 = jack_port_register (client, "out2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
-  // Build the wave tables
-  FILE* wav;
-  char text[5];
-  text[4] = '\0';
 
-  uint32_t num32;
-  uint16_t num16;
   //wav = fopen("shawn.wav", "rb");
   //wav = fopen("Glass.wav", "rb");
-  wav = fopen("rhodes_note.wav", "rb");
   //wav = fopen("Leaving_rh_remix.wav", "rb");
 
-  fread(text, 1, 4, wav);
-  printf("ChunkID: \"%s\"\n", text);
-  fread(&num32, 4, 1, wav);
-  printf("ChunkSize: %" PRIu32 "\n", num32);
-  fread(text, 1, 4, wav);
-  printf("Format: \"%s\"\n", text);
-  fread(text, 1, 4, wav);
-  printf("Subchunk1ID: \"%s\"\n", text);
-  fread(&num32, 4, 1, wav);
-  printf("Subchunk1Size: %" PRIu32 "\n", num32);
-  fread(&num16, 2, 1, wav);
-  printf("AudioFormat: %" PRIu16 "\n", num16);
-  fread(&num16, 2, 1, wav);
-  printf("NumChannels: %" PRIu16 "\n", num16);
-  fread(&num32, 4, 1, wav);
-  printf("SampleRate: %" PRIu32 "\n", num32);
-  fread(&num32, 4, 1, wav);
-  printf("ByteRate: %" PRIu32 "\n", num32);
-  fread(&num16, 2, 1, wav);
-  printf("BlockAlign: %" PRIu16 "\n", num16);
-  int block_align = num16;
-  fread(&num16, 2, 1, wav);
-  printf("BitsPerSample: %" PRIu16 "\n", num16);
-  fread(text, 1, 4, wav);
-  printf("Subchunk2ID: \"%s\"\n", text);
-  fread(&num32, 4, 1, wav);
-  printf("Subchunk2Size: %" PRIu32 "\n", num32);
-  int data_size = num32;
+  SF_INFO sf_info;
+  sf_info.format = 0;
+  
+  SNDFILE* wav = sf_open("rhodes_note.wav", SFM_READ, &sf_info);
 
-  wave_length = data_size / block_align;
+  wave_length = sf_info.frames;
+
   printf("calculated wave length: %i\n", wave_length);
   wave1 = (sample_t*) malloc(sizeof(sample_t) * wave_length);
   wave2 = (sample_t*) malloc(sizeof(sample_t) * wave_length);
 
-  // assuming 16 bit and 2 channel
-  int16_t sample;
+  // assuming 2 channel
+  double frame[2];
   int i;
-  sample_t min = 0;
-  sample_t max = 0;
   for (i = 0; i < wave_length; i++) {
-    fread(&sample, 2, 1, wav);
-    wave1[i] = (double) sample / INT16_MAX;
-    if (wave1[i] < min)
-      min = wave1[i];
-    if (wave1[i] > max)
-      max = wave1[i];
-    fread(&sample, 2, 1, wav);
-    wave2[i] = (double) sample / INT16_MAX;
+    sf_readf_double(wav, frame, 1);
+    wave1[i] = frame[0];
+    wave2[i] = frame[1];
   }
 
-  printf("min val: %f max val: %f\n", min, max);
-
-  fclose(wav);
+  sf_close(wav);
 
   for (i = 0; i < VOL_STEPS; i++) {
     //amp[i]  = (double) i / (VOL_STEPS - 1);
