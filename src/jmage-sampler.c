@@ -208,6 +208,8 @@ main (int argc, char *argv[])
   zones[0].wave_length =  sf_info.frames;
   zones[0].wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
   zones[0].wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
+  zones[0].amp = 1.0;
+  zones[0].pitch_corr = 0.0;
 
   // assuming 2 channel
   double frame[2];
@@ -224,6 +226,8 @@ main (int argc, char *argv[])
   zones[1].origin = 50;
   zones[1].lower_bound = INT_MIN;
   zones[1].upper_bound = INT_MAX;
+  zones[1].amp = 0.1;
+  zones[1].pitch_corr = 0.5;
 
   sf_info.format = 0;
   

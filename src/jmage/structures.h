@@ -61,6 +61,8 @@ struct key_zone {
   int lower_bound;
   int upper_bound;
   int origin;
+  double amp;
+  double pitch_corr;
 };
 
 int in_zone(struct key_zone* z, int pitch);
