@@ -251,9 +251,9 @@ main (int argc, char *argv[])
 
   for (i = 0; i < VOL_STEPS; i++) {
     //amp[i]  = (double) i / (VOL_STEPS - 1);
-    amp[i]  = 1 / 90. * (pow(10, 2 * i / (VOL_STEPS - 1.0)) - 1);
+    amp[i]  = 1 / 100. * pow(10, 2 * i / (VOL_STEPS - 1.0));
   }
-  amp[VOL_STEPS - 1] = 1.0;
+  amp[0] = 0.0;
   /*for (i = 0; i < VOL_STEPS; i++) {
     printf("step: %i gain: %f\n", i, amp[i]);
   }
