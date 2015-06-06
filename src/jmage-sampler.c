@@ -41,13 +41,13 @@ usage ()
 
 // crazy shit to imitate getch in linux / os x
 char getch() {
-  struct termios old, new;
-  tcgetattr(0, &old);
-  new = old;
-  new.c_lflag &= ~ (ICANON | ECHO);
-  tcsetattr(0, TCSANOW, &new);
+  struct termios term_old, term_new;
+  tcgetattr(0, &term_old);
+  term_new = term_old;
+  term_new.c_lflag &= ~ (ICANON | ECHO);
+  tcsetattr(0, TCSANOW, &term_new);
   char c = getchar();
-  tcsetattr(0, TCSANOW, &old);
+  tcsetattr(0, TCSANOW, &term_old);
   return c;
 }
 

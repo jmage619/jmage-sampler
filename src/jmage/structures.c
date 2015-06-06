@@ -14,7 +14,7 @@ void jm_init_queue(jm_queue* jmq, size_t el_size, size_t length) {
   jmq->tail = 0;
   jmq->el_size = el_size;
   jmq->length = length + 1;
-  jmq->arr = malloc(jmq->el_size * jmq->length);
+  jmq->arr = (char*) malloc(jmq->el_size * jmq->length);
 } 
 
 void jm_destroy_queue(jm_queue* jmq) {
@@ -57,7 +57,7 @@ void init_ph_list(playhead_list* phl, size_t length) {
   phl->tail = NULL;
   phl->length = length;
   phl->size = 0;
-  phl->arr = malloc(sizeof(ph_list_el) * phl->length);
+  phl->arr = (ph_list_el*) malloc(sizeof(ph_list_el) * phl->length);
   jm_init_queue(&phl->unused, sizeof(ph_list_el*), phl->length);
   size_t i;
   for (i = 0; i < phl->length; i++) {

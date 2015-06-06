@@ -1,22 +1,22 @@
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 
-#CFLAGS := -Wall -O3
-CFLAGS := @CFLAGS@
+#CXXFLAGS := -Wall -O3
+CXXFLAGS := @CXXFLAGS@
 #LIB = -ljack -framework CoreAudio
 LIB = -lm -ljack -lsndfile
-CC = gcc
+CXX = g++
 
 all : jmage-sampler
 
 jmage-sampler : structures.o jmage-sampler.o
-	$(CC) $(LIB) $(LDFLAGS) -o $@ $^
+	$(CXX) $(LIB) $(LDFLAGS) -o $@ $^
 
 structures.o : src/jmage/structures.c src/jmage/structures.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -Isrc -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -Isrc -c -o $@ $<
 
 jmage-sampler.o : src/jmage-sampler.c src/jmage/structures.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -Isrc -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -Isrc -c -o $@ $<
 
 clean:
 	rm -f jmage-sampler jmage-sampler.o structures.o
