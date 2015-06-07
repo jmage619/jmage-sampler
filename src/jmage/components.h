@@ -54,7 +54,7 @@ class KeyZone {
     double pitch_corr;
 
     KeyZone();
-    bool in(int pitch);
+    bool contains(int pitch);
     void to_ph(Playhead& ph, int pitch, int velocity);
 };
 

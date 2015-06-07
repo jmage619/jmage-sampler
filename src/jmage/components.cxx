@@ -61,7 +61,7 @@ KeyZone::KeyZone():
   lower_bound(INT_MIN),upper_bound(INT_MAX),origin(48),amp(1.0) {
 }
 
-bool KeyZone::in(int pitch) {
+bool KeyZone::contains(int pitch) {
   if (pitch >= lower_bound && pitch <= upper_bound)
     return true;
   return false;

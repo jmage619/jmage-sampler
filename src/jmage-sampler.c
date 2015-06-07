@@ -11,7 +11,7 @@
 #include <string.h>
 #include <termios.h>
 #include <limits.h>
-#include "jmage/structures.h"
+#include "jmage/components.h"
 
 #define UE_Q_SIZE 10
 #define WAV_OFF_Q_SIZE 10
@@ -25,9 +25,9 @@ jack_port_t *output_port1;
 jack_port_t *output_port2;
 double amp[VOL_STEPS];
 volatile int level = VOL_STEPS - 1;
-playhead_list playheads;
+PlayheadList playheads(WAV_OFF_Q_SIZE);
 int sustain_on = 0;
-struct key_zone zones[NUM_ZONES];
+KeyZone zones[NUM_ZONES];
 
 void
 usage ()
@@ -76,28 +76,28 @@ process_audio (jack_nframes_t nframes)
       while (n == event.time) {
         if ((event.buffer[0] & 0xf0) == 0x90) {
           if (sustain_on) {
-            for (pel = ph_list_head(&playheads); pel != NULL; pel = pel->next) {
+            for (pel = playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
               if (pel->ph.pitch == event.buffer[1])
                 pel->ph.released = 1;
             }
           }
           int i;
           for (i = 0; i < NUM_ZONES; i++) {
-            if (in_zone(&zones[i], event.buffer[1])) {
-              struct playhead ph;
-              zone_to_ph(&zones[i], &ph, event.buffer[1], event.buffer[2]);
+            if (zones[i].contains(event.buffer[1])) {
+              Playhead ph;
+              zones[i].to_ph(ph, event.buffer[1], event.buffer[2]);
 
-              if (ph_list_size(&playheads) >= WAV_OFF_Q_SIZE)
-                ph_list_remove_last(&playheads);
+              if (playheads.size() >= WAV_OFF_Q_SIZE)
+                playheads.remove_last();
 
-              ph_list_add(&playheads, &ph);
+              playheads.add(ph);
               printf("event: note on;  note: %i; vel: %i; amp: %f\n", event.buffer[1], event.buffer[2], ph.amp);
             }
           }
         }
         else if ((event.buffer[0] & 0xf0) == 0x80) {
           printf("event: note off; note: %i\n", event.buffer[1]);
-          for (pel = ph_list_head(&playheads); pel != NULL; pel = pel->next) {
+          for (pel = playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
             if (pel->ph.pitch == event.buffer[1]) {
               if (sustain_on) {
                 pel->ph.note_off = 1;
@@ -113,7 +113,7 @@ process_audio (jack_nframes_t nframes)
             printf("sustain on\n");
           }
           else {
-            for (pel = ph_list_head(&playheads); pel != NULL; pel = pel->next) {
+            for (pel = playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
               if (pel->ph.note_off)
                 pel->ph.released = 1;
             }
@@ -132,7 +132,7 @@ process_audio (jack_nframes_t nframes)
       }
     }
 
-    for (pel = ph_list_head(&playheads); pel != NULL; pel = pel->next) {
+    for (pel = playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
       if (pel->ph.released) {
         double rel_amp = - pel->ph.rel_time / RELEASE_TIME + 1.0;
         pel->ph.rel_time++;
@@ -145,7 +145,7 @@ process_audio (jack_nframes_t nframes)
       }
       pel->ph.position += pel->ph.speed;
       if ((jack_nframes_t) pel->ph.position >= pel->ph.wave_length || pel->ph.rel_time >= RELEASE_TIME) {
-        ph_list_remove(&playheads, pel);
+        playheads.remove(pel);
       }
     }
   }
@@ -259,8 +259,6 @@ main (int argc, char *argv[])
   }
   */
   
-  init_ph_list(&playheads, WAV_OFF_Q_SIZE);
-
   if (jack_activate (client)) {
     fprintf (stderr, "cannot activate client");
     return 1;
@@ -281,7 +279,6 @@ main (int argc, char *argv[])
           free(zones[i].wave[0]);
           free(zones[i].wave[1]);
         }
-        destroy_ph_list(&playheads);
         return 0;
       case '[':
         if (level > 0)
