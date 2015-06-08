@@ -133,16 +133,17 @@ process_audio (jack_nframes_t nframes)
     }
 
     for (pel = playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
+      double rel_amp;
       if (pel->ph.released) {
-        double rel_amp = - pel->ph.rel_time / RELEASE_TIME + 1.0;
+        rel_amp = - pel->ph.rel_time / RELEASE_TIME + 1.0;
         pel->ph.rel_time++;
-        buffer1[n] += amp[level] * rel_amp * pel->ph.amp * pel->ph.wave[0][(jack_nframes_t) pel->ph.position];
-        buffer2[n] += amp[level] * rel_amp * pel->ph.amp * pel->ph.wave[1][(jack_nframes_t) pel->ph.position];
       }
-      else {
-        buffer1[n] += amp[level] * pel->ph.amp * pel->ph.wave[0][(jack_nframes_t) pel->ph.position];
-        buffer2[n] += amp[level] * pel->ph.amp * pel->ph.wave[1][(jack_nframes_t) pel->ph.position];
-      }
+      else
+        rel_amp = 1.0;
+
+      buffer1[n] += amp[level] * rel_amp * pel->ph.amp * pel->ph.wave[0][(jack_nframes_t) pel->ph.position];
+      buffer2[n] += amp[level] * rel_amp * pel->ph.amp * pel->ph.wave[1][(jack_nframes_t) pel->ph.position];
+
       pel->ph.position += pel->ph.speed;
       if ((jack_nframes_t) pel->ph.position >= pel->ph.wave_length || pel->ph.rel_time >= RELEASE_TIME) {
         playheads.remove(pel);
