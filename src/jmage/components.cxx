@@ -6,13 +6,12 @@
 // boost for controllers that don't reach 127 easily
 #define VELOCITY_BOOST 1.2
 
-Playhead::Playhead(): state(PLAYING), rel_amp(1.0), position(0) {}
+Playhead::Playhead(): state(PLAYING), position(0) {}
 
 void Playhead::inc() {
-  if (state == RELEASED) {
-    rel_amp = - (rel_timer / rel_time) + 1.0;
+  if (state == RELEASED)
     rel_timer++;
-  }
+
   position += speed;
 
   if ((jack_nframes_t) position >= wave_length || rel_timer >= rel_time)
@@ -20,7 +19,7 @@ void Playhead::inc() {
 }
 
 double Playhead::get_amp() {
-  return amp * rel_amp;
+  return state == RELEASED ? amp * (-(rel_timer / rel_time) + 1.0) : amp;
 }
 
 PlayheadList::PlayheadList(size_t length): 
