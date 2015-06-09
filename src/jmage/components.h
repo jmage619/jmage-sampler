@@ -8,15 +8,26 @@ typedef jack_default_audio_sample_t sample_t;
 
 class Playhead {
   public:
+    enum State {
+      PLAYING,
+      RELEASED,
+      NOTE_OFF,
+      FINISHED
+    };
+    State state;
     int pitch;
     double amp;
+    double rel_amp;
     double speed;
     double position;
-    int released;
-    int note_off;
-    int rel_time;
+    double rel_time;
+    jack_nframes_t rel_timer;
     sample_t* wave[2];
     jack_nframes_t wave_length;
+
+    Playhead();
+    void inc();
+    double get_amp();
 };
 
 struct ph_list_el {
@@ -51,6 +62,7 @@ class KeyZone {
     int upper_bound;
     int origin;
     double amp;
+    double rel_time;
     double pitch_corr;
 
     KeyZone();

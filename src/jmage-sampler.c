@@ -78,7 +78,7 @@ process_audio (jack_nframes_t nframes)
           if (sustain_on) {
             for (pel = playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
               if (pel->ph.pitch == event.buffer[1])
-                pel->ph.released = 1;
+                pel->ph.state = Playhead::RELEASED;
             }
           }
           int i;
@@ -100,10 +100,10 @@ process_audio (jack_nframes_t nframes)
           for (pel = playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
             if (pel->ph.pitch == event.buffer[1]) {
               if (sustain_on) {
-                pel->ph.note_off = 1;
+                pel->ph.state = Playhead::NOTE_OFF;
               }
               else
-                pel->ph.released = 1;
+                pel->ph.state = Playhead::RELEASED;
             }
           }
         }
@@ -114,8 +114,8 @@ process_audio (jack_nframes_t nframes)
           }
           else {
             for (pel = playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
-              if (pel->ph.note_off)
-                pel->ph.released = 1;
+              if (pel->ph.state == Playhead::NOTE_OFF)
+                pel->ph.state = Playhead::RELEASED;
             }
 
             sustain_on = 0;
@@ -133,21 +133,12 @@ process_audio (jack_nframes_t nframes)
     }
 
     for (pel = playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
-      double rel_amp;
-      if (pel->ph.released) {
-        rel_amp = - pel->ph.rel_time / RELEASE_TIME + 1.0;
-        pel->ph.rel_time++;
-      }
-      else
-        rel_amp = 1.0;
+      buffer1[n] += amp[level] * pel->ph.get_amp() * pel->ph.wave[0][(jack_nframes_t) pel->ph.position];
+      buffer2[n] += amp[level] * pel->ph.get_amp() * pel->ph.wave[1][(jack_nframes_t) pel->ph.position];
 
-      buffer1[n] += amp[level] * rel_amp * pel->ph.amp * pel->ph.wave[0][(jack_nframes_t) pel->ph.position];
-      buffer2[n] += amp[level] * rel_amp * pel->ph.amp * pel->ph.wave[1][(jack_nframes_t) pel->ph.position];
-
-      pel->ph.position += pel->ph.speed;
-      if ((jack_nframes_t) pel->ph.position >= pel->ph.wave_length || pel->ph.rel_time >= RELEASE_TIME) {
+      pel->ph.inc();
+      if (pel->ph.state == Playhead::FINISHED)
         playheads.remove(pel);
-      }
     }
   }
 }
@@ -199,6 +190,7 @@ main (int argc, char *argv[])
   zones[0].origin = 48;
   zones[0].lower_bound = INT_MIN;
   zones[0].upper_bound = INT_MAX;
+  zones[0].rel_time = RELEASE_TIME;
 
   SF_INFO sf_info;
   sf_info.format = 0;
@@ -229,6 +221,7 @@ main (int argc, char *argv[])
   zones[1].upper_bound = INT_MAX;
   zones[1].amp = 0.1;
   zones[1].pitch_corr = 0.5;
+  zones[1].rel_time = RELEASE_TIME;
 
   sf_info.format = 0;
   
