@@ -16,7 +16,7 @@
 #define UE_Q_SIZE 10
 #define WAV_OFF_Q_SIZE 10
 #define VOL_STEPS 17
-#define NUM_ZONES 2
+#define NUM_ZONES 1
 #define RELEASE_TIME  (44100. / 1000.)
 
 jack_client_t *client;
@@ -195,14 +195,18 @@ main (int argc, char *argv[])
   SF_INFO sf_info;
   sf_info.format = 0;
   
-  SNDFILE* wav = sf_open("rhodes_note.wav", SFM_READ, &sf_info);
+  //SNDFILE* wav = sf_open("rhodes_note.wav", SFM_READ, &sf_info);
+  SNDFILE* wav = sf_open("afx.wav", SFM_READ, &sf_info);
 
   printf("wave length: %" PRIi64 "\n", sf_info.frames);
-  zones[0].wave_length =  sf_info.frames;
+  zones[0].start = 0;
+  zones[0].left = 44100;
+  zones[0].right = 3 * 44100 + 5 * 44100 / 8;
   zones[0].wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
   zones[0].wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
   zones[0].amp = 1.0;
   zones[0].pitch_corr = 0.0;
+  zones[0].loop_on = true;
 
   // assuming 2 channel
   double frame[2];
@@ -216,7 +220,7 @@ main (int argc, char *argv[])
   sf_close(wav);
 
   /**** load wav 2 ***/
-  zones[1].origin = 50;
+  /*zones[1].origin = 50;
   zones[1].lower_bound = INT_MIN;
   zones[1].upper_bound = INT_MAX;
   zones[1].amp = 0.1;
@@ -228,7 +232,7 @@ main (int argc, char *argv[])
   wav = sf_open("Glass.wav", SFM_READ, &sf_info);
 
   printf("wave length: %" PRIi64 "\n", sf_info.frames);
-  zones[1].wave_length =  sf_info.frames;
+  zones[1].right =  sf_info.frames;
   zones[1].wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
   zones[1].wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
 
@@ -240,7 +244,7 @@ main (int argc, char *argv[])
   }
 
   sf_close(wav);
-
+  */
   /* end load wav 2 ***/
 
   for (i = 0; i < VOL_STEPS; i++) {

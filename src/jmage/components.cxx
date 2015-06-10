@@ -6,7 +6,7 @@
 // boost for controllers that don't reach 127 easily
 #define VELOCITY_BOOST 1.2
 
-Playhead::Playhead(): state(PLAYING), position(0) {}
+Playhead::Playhead(): state(PLAYING) {}
 
 void Playhead::inc() {
   if (state == RELEASED)
@@ -14,8 +14,16 @@ void Playhead::inc() {
 
   position += speed;
 
-  if ((jack_nframes_t) position >= wave_length || rel_timer >= rel_time)
+  if (state == RELEASED && rel_timer >= rel_time) {
     state = FINISHED;
+    return;
+  }
+  if ((jack_nframes_t) position >= right) {
+    if (loop_on)
+      position = left;
+    else
+      state = FINISHED;
+  }
 }
 
 double Playhead::get_amp() {
@@ -74,11 +82,15 @@ void PlayheadList::remove_last() {
 }
 
 KeyZone::KeyZone():
+  start(0),
+  left(0),
   lower_bound(INT_MIN),
   upper_bound(INT_MAX),
   origin(48),
   amp(1.0),
-  rel_time(0.0) {}
+  rel_time(0.0),
+  pitch_corr(0.0),
+  loop_on(false) {}
 
 bool KeyZone::contains(int pitch) {
   if (pitch >= lower_bound && pitch <= upper_bound)
@@ -93,7 +105,11 @@ void KeyZone::to_ph(Playhead& ph, int pitch, int velocity) {
   ph.speed = pow(2, (pitch + pitch_corr- origin) / 12.);
   ph.wave[0] = wave[0];
   ph.wave[1] = wave[1];
-  ph.wave_length = wave_length;
+  ph.start = start;
+  ph.position = (double) start;
+  ph.left = left;
+  ph.right = right;
   ph.rel_time = rel_time;
   ph.rel_timer = 0;
+  ph.loop_on = loop_on;
 }

@@ -15,15 +15,18 @@ class Playhead {
       FINISHED
     };
     State state;
+    bool loop_on;
     int pitch;
     double amp;
     double rel_amp;
     double speed;
-    double position;
     double rel_time;
     jack_nframes_t rel_timer;
     sample_t* wave[2];
-    jack_nframes_t wave_length;
+    jack_nframes_t start;
+    jack_nframes_t left;
+    jack_nframes_t right;
+    double position;
 
     Playhead();
     void inc();
@@ -57,13 +60,16 @@ class PlayheadList {
 class KeyZone {
   public:
     sample_t* wave[2];
-    jack_nframes_t wave_length;
+    jack_nframes_t start;
+    jack_nframes_t left;
+    jack_nframes_t right;
     int lower_bound;
     int upper_bound;
     int origin;
     double amp;
     double rel_time;
     double pitch_corr;
+    bool loop_on;
 
     KeyZone();
     bool contains(int pitch);
