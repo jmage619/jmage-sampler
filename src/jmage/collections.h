@@ -16,19 +16,18 @@ template<class T> class JMQueue {
     void add(T item);
     bool remove();
     bool remove(T& item);
+    T* get_head_ptr();
+    T* inc_ptr(T* p);
     ~JMQueue();
 };
 
 template<class T> JMQueue<T>::JMQueue(size_t length):
   head(0), tail(0), length(length + 1) {
-
   arr = new T[this->length];
-  std::cout << typeid(arr[0]).name() << std::endl;
 }
 
 template<class T> JMQueue<T>::~JMQueue() {
   delete [] arr;
-  std::cout << " JMQ arr deleted" << std::endl;
 }
 
 template<class T> void JMQueue<T>::add(T item) {
@@ -51,6 +50,19 @@ template<class T> bool JMQueue<T>::remove(T& item) {
   item = arr[head];
   head = (head + 1) % length;
   return true;
+}
+
+template<class T> T* JMQueue<T>::get_head_ptr() {
+  if (head == tail)
+    return NULL;
+  return arr + head;
+}
+
+template<class T> T* JMQueue<T>::inc_ptr(T* p) {
+  size_t new_off = (p - arr + 1) % length;
+  if (new_off == tail)
+    return NULL;
+  return arr + new_off;
 }
 
 #endif

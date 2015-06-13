@@ -22,15 +22,21 @@ class Playhead {
     double speed;
     double rel_time;
     jack_nframes_t rel_timer;
+    bool crossfading;
+    jack_nframes_t cf_timer;
     sample_t* wave[2];
     jack_nframes_t start;
     jack_nframes_t left;
     jack_nframes_t right;
-    double position;
+    double positions[2];
+    int first_pos;
+    int pos_size;
+    jack_nframes_t crossfade;
 
     Playhead();
     void inc();
     double get_amp();
+    void get_values(double values[]);
 };
 
 struct ph_list_el {
@@ -70,6 +76,7 @@ class KeyZone {
     double rel_time;
     double pitch_corr;
     bool loop_on;
+    jack_nframes_t crossfade;
 
     KeyZone();
     bool contains(int pitch);

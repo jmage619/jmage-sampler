@@ -24,7 +24,7 @@ jack_port_t *input_port;
 jack_port_t *output_port1;
 jack_port_t *output_port2;
 double amp[VOL_STEPS];
-volatile int level = VOL_STEPS - 1;
+volatile int level = VOL_STEPS - 8;
 PlayheadList playheads(WAV_OFF_Q_SIZE);
 int sustain_on = 0;
 KeyZone zones[NUM_ZONES];
@@ -133,8 +133,10 @@ process_audio (jack_nframes_t nframes)
     }
 
     for (pel = playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
-      buffer1[n] += amp[level] * pel->ph.get_amp() * pel->ph.wave[0][(jack_nframes_t) pel->ph.position];
-      buffer2[n] += amp[level] * pel->ph.get_amp() * pel->ph.wave[1][(jack_nframes_t) pel->ph.position];
+      double values[2];
+      pel->ph.get_values(values);
+      buffer1[n] += amp[level] * values[0];
+      buffer2[n] += amp[level] * values[1];
 
       pel->ph.inc();
       if (pel->ph.state == Playhead::FINISHED)
@@ -207,6 +209,7 @@ main (int argc, char *argv[])
   zones[0].amp = 1.0;
   zones[0].pitch_corr = 0.0;
   zones[0].loop_on = true;
+  zones[0].crossfade = 22050;
 
   // assuming 2 channel
   double frame[2];

@@ -6,28 +6,65 @@
 // boost for controllers that don't reach 127 easily
 #define VELOCITY_BOOST 1.2
 
-Playhead::Playhead(): state(PLAYING) {}
+Playhead::Playhead():
+  state(PLAYING),
+  rel_timer(0),
+  crossfading(false),
+  cf_timer(0),
+  first_pos(0) {}
 
 void Playhead::inc() {
   if (state == RELEASED)
     rel_timer++;
 
-  position += speed;
-
   if (state == RELEASED && rel_timer >= rel_time) {
     state = FINISHED;
     return;
   }
-  if ((jack_nframes_t) position >= right) {
-    if (loop_on)
-      position = left;
-    else
-      state = FINISHED;
+
+  for (int i = 0; i < pos_size; i++) {
+    positions[(first_pos + i) % 2] += speed;
   }
+
+  if (loop_on) {
+    if (crossfading && positions[first_pos] >= right + speed * crossfade / 2.0) {
+      first_pos = (first_pos + 1) % 2;
+      pos_size--;
+      crossfading = false;
+      cf_timer = 0;
+    }
+    else if (positions[first_pos] >= right - speed * crossfade / 2.0) {
+      if (!crossfading) {
+        positions[(first_pos + 1) % 2] = left;
+        pos_size++;
+        crossfading = true;
+      }
+      cf_timer++;
+    }
+  }
+  else if ((jack_nframes_t) positions[first_pos] >= right)
+    state = FINISHED;
 }
 
 double Playhead::get_amp() {
   return state == RELEASED ? amp * (-(rel_timer / rel_time) + 1.0) : amp;
+}
+
+void Playhead::get_values(double values[]) {
+  if (crossfading) {
+    values[0] = 0;
+    values[1] = 0;
+    double fade_out = -1.0 * cf_timer / crossfade + 1.0;
+    double fade_in = 1.0 * cf_timer / crossfade;
+    values[0] += get_amp() * fade_out * wave[0][(jack_nframes_t) positions[first_pos]];
+    values[1] += get_amp() * fade_out * wave[1][(jack_nframes_t) positions[first_pos]];
+    values[0] += get_amp() * fade_in * wave[0][(jack_nframes_t) positions[(first_pos + 1) % 2]];
+    values[1] += get_amp() * fade_in * wave[1][(jack_nframes_t) positions[(first_pos + 1) % 2]];
+  }
+  else {
+    values[0] = get_amp() * wave[0][(jack_nframes_t) positions[first_pos]];
+    values[1] = get_amp() * wave[1][(jack_nframes_t) positions[first_pos]];
+  }
 }
 
 PlayheadList::PlayheadList(size_t length): 
@@ -42,7 +79,6 @@ PlayheadList::PlayheadList(size_t length):
 
 PlayheadList::~PlayheadList() {
   delete [] arr;
-  std::cout << " PlayheadList arr deleted" << std::endl;
 }
 
 void PlayheadList::add(Playhead ph) {
@@ -90,7 +126,8 @@ KeyZone::KeyZone():
   amp(1.0),
   rel_time(0.0),
   pitch_corr(0.0),
-  loop_on(false) {}
+  loop_on(false),
+  crossfade(0) {}
 
 bool KeyZone::contains(int pitch) {
   if (pitch >= lower_bound && pitch <= upper_bound)
@@ -106,10 +143,11 @@ void KeyZone::to_ph(Playhead& ph, int pitch, int velocity) {
   ph.wave[0] = wave[0];
   ph.wave[1] = wave[1];
   ph.start = start;
-  ph.position = (double) start;
+  ph.positions[0] = start;
+  ph.pos_size = 1;
   ph.left = left;
   ph.right = right;
   ph.rel_time = rel_time;
-  ph.rel_timer = 0;
   ph.loop_on = loop_on;
+  ph.crossfade = crossfade;
 }
