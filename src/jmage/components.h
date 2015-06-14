@@ -25,6 +25,7 @@ class Playhead {
     bool crossfading;
     jack_nframes_t cf_timer;
     sample_t* wave[2];
+    jack_nframes_t wave_length;
     jack_nframes_t start;
     jack_nframes_t left;
     jack_nframes_t right;
@@ -66,6 +67,7 @@ class PlayheadList {
 class KeyZone {
   public:
     sample_t* wave[2];
+    jack_nframes_t wave_length;
     jack_nframes_t start;
     jack_nframes_t left;
     jack_nframes_t right;

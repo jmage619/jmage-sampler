@@ -206,6 +206,7 @@ main (int argc, char *argv[])
   zones[0].right = 3 * 44100 + 5 * 44100 / 8;
   zones[0].wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
   zones[0].wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
+  zones[0].wave_length = sf_info.frames;
   zones[0].amp = 1.0;
   zones[0].pitch_corr = 0.0;
   zones[0].loop_on = true;
@@ -238,6 +239,7 @@ main (int argc, char *argv[])
   zones[1].right =  sf_info.frames;
   zones[1].wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
   zones[1].wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
+  zones[1].wave_length = sf_info.frames;
 
   // assuming 2 channel
   for (i = 0; i < sf_info.frames; i++) {
