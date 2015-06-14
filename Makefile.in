@@ -9,14 +9,14 @@ CXX = g++
 
 all : jmage-sampler
 
-jmage-sampler : structures.o jmage-sampler.o
+jmage-sampler : components.o jmage-sampler.o
 	$(CXX) $(LIB) $(LDFLAGS) -o $@ $^
 
-structures.o : src/jmage/structures.c src/jmage/structures.h
+components.o : src/jmage/components.cxx src/jmage/components.h src/jmage/collections.h
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -Isrc -c -o $@ $<
 
-jmage-sampler.o : src/jmage-sampler.c src/jmage/structures.h
+jmage-sampler.o : src/jmage-sampler.c src/jmage/components.h
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -Isrc -c -o $@ $<
 
 clean:
-	rm -f jmage-sampler jmage-sampler.o structures.o
+	rm -f jmage-sampler jmage-sampler.o components.o
