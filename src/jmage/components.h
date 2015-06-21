@@ -1,8 +1,10 @@
 #ifndef JM_COMPONENTS_H
 #define JM_COMPONENTS_H
 
-#include <jack/jack.h>
+#include <jack/types.h>
+
 #include "jmage/collections.h"
+#include "jmage/sampler.h"
 
 typedef jack_default_audio_sample_t sample_t;
 
@@ -18,7 +20,6 @@ class Playhead {
     bool loop_on;
     int pitch;
     double amp;
-    double rel_amp;
     double speed;
     double rel_time;
     jack_nframes_t rel_timer;
@@ -35,6 +36,7 @@ class Playhead {
     jack_nframes_t crossfade;
 
     Playhead();
+    Playhead(jm_key_zone& zone, int pitch, int velocity);
     void inc();
     double get_amp();
     void get_values(double values[]);
@@ -62,27 +64,6 @@ class PlayheadList {
     void add(Playhead ph);
     void remove(ph_list_el* pel);
     void remove_last();
-};
-
-class KeyZone {
-  public:
-    sample_t* wave[2];
-    jack_nframes_t wave_length;
-    jack_nframes_t start;
-    jack_nframes_t left;
-    jack_nframes_t right;
-    int lower_bound;
-    int upper_bound;
-    int origin;
-    double amp;
-    double rel_time;
-    double pitch_corr;
-    bool loop_on;
-    jack_nframes_t crossfade;
-
-    KeyZone();
-    bool contains(int pitch);
-    void to_ph(Playhead& ph, int pitch, int velocity);
 };
 
 #endif

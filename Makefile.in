@@ -7,16 +7,25 @@ CXXFLAGS := @CXXFLAGS@
 LIB = -lm -ljack -lsndfile
 CXX = g++
 
-all : jmage-sampler
+all : test_sampler
 
-jmage-sampler : components.o jmage-sampler.o
-	$(CXX) $(LIB) $(LDFLAGS) -o $@ $^
+test_sampler : test_sampler.o libjm_sampler.so
+	$(CXX) $(LIB) $(LDFLAGS) -L. -ljm_sampler -o $@ $<
+
+test_sampler.o: src/test_sampler.c src/jmage/sampler.h
+	gcc -Wall -g -Isrc -c -o $@ $<
+
+libjm_sampler.so: sampler.o control.o components.o
+	$(CXX) $(LIB) $(LDFLAGS) -shared -o $@ $^
+
+sampler.o : src/jmage/sampler.cxx src/jmage/sampler.h src/jmage/collections.h src/jmage/control.h
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -fPIC -Isrc -c -o $@ $<
+
+control.o : src/jmage/control.cxx src/jmage/control.h src/jmage/components.h src/jmage/sampler.h
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -fPIC -Isrc -c -o $@ $<
 
 components.o : src/jmage/components.cxx src/jmage/components.h src/jmage/collections.h
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -Isrc -c -o $@ $<
-
-jmage-sampler.o : src/jmage-sampler.c src/jmage/components.h
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -Isrc -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -fPIC -Isrc -c -o $@ $<
 
 clean:
-	rm -f jmage-sampler jmage-sampler.o components.o
+	rm -f test_sampler test_sampler.o libjm_sampler.so sampler.o control.o components.o

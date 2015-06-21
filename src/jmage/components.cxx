@@ -1,6 +1,10 @@
 #include <limits.h>
 #include <math.h>
+
+#include <jack/types.h>
+
 #include "jmage/components.h"
+#include "jmage/sampler.h"
 
 #define MAX_VELOCITY 127
 // boost for controllers that don't reach 127 easily
@@ -11,7 +15,31 @@ Playhead::Playhead():
   rel_timer(0),
   crossfading(false),
   cf_timer(0),
-  first_pos(0) {}
+  first_pos(0),
+  pos_size(1) {}
+
+Playhead::Playhead(jm_key_zone& zone, int pitch, int velocity):
+    state(PLAYING),
+    loop_on(zone.loop_on),
+    pitch(pitch),
+    rel_time(zone.rel_time),
+    rel_timer(0),
+    crossfading(false),
+    cf_timer(0),
+    wave_length(zone.wave_length),
+    start(zone.start),
+    left(zone.left),
+    right(zone.right),
+    first_pos(0),
+    pos_size(1),
+    crossfade(zone.crossfade) {
+  double calc_amp = zone.amp * VELOCITY_BOOST * velocity / MAX_VELOCITY;
+  amp = calc_amp > 1.0 ? 1.0 : calc_amp;
+  speed = pow(2, (pitch + zone.pitch_corr - zone.origin) / 12.);
+  wave[0] = zone.wave[0];
+  wave[1] = zone.wave[1];
+  positions[0] = zone.start;
+}
 
 void Playhead::inc() {
   if (state == RELEASED)
@@ -123,38 +151,3 @@ void PlayheadList::remove_last() {
   remove(tail);
 }
 
-KeyZone::KeyZone():
-  start(0),
-  left(0),
-  lower_bound(INT_MIN),
-  upper_bound(INT_MAX),
-  origin(48),
-  amp(1.0),
-  rel_time(0.0),
-  pitch_corr(0.0),
-  loop_on(false),
-  crossfade(0) {}
-
-bool KeyZone::contains(int pitch) {
-  if (pitch >= lower_bound && pitch <= upper_bound)
-    return true;
-  return false;
-}
-
-void KeyZone::to_ph(Playhead& ph, int pitch, int velocity) {
-  ph.pitch = pitch;
-  double calc_amp = amp * VELOCITY_BOOST * velocity / MAX_VELOCITY;
-  ph.amp = calc_amp > 1.0 ? 1.0 : calc_amp;
-  ph.speed = pow(2, (pitch + pitch_corr- origin) / 12.);
-  ph.wave[0] = wave[0];
-  ph.wave[1] = wave[1];
-  ph.wave_length = wave_length;
-  ph.start = start;
-  ph.positions[0] = start;
-  ph.pos_size = 1;
-  ph.left = left;
-  ph.right = right;
-  ph.rel_time = rel_time;
-  ph.loop_on = loop_on;
-  ph.crossfade = crossfade;
-}
