@@ -115,7 +115,7 @@ PlayheadList::~PlayheadList() {
   delete [] arr;
 }
 
-void PlayheadList::add(Playhead ph) {
+void PlayheadList::add(Playhead& ph) {
   ph_list_el* pel;
   unused.remove(pel);
   pel->ph = ph;

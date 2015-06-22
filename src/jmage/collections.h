@@ -13,7 +13,7 @@ template<class T> class JMQueue {
 
   public:
     JMQueue(size_t length);
-    void add(T item);
+    void add(T& item);
     bool remove();
     bool remove(T& item);
     T* get_head_ptr();
@@ -30,7 +30,7 @@ template<class T> JMQueue<T>::~JMQueue() {
   delete [] arr;
 }
 
-template<class T> void JMQueue<T>::add(T item) {
+template<class T> void JMQueue<T>::add(T& item) {
   arr[tail] = item;
   tail = (tail + 1) % length;
 }

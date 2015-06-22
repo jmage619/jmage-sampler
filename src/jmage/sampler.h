@@ -7,8 +7,6 @@
 
 typedef jack_default_audio_sample_t sample_t;
 
-extern volatile int level;
-
 typedef struct {
   sample_t* wave[2];
   jack_nframes_t wave_length;
@@ -25,6 +23,13 @@ typedef struct {
   jack_nframes_t crossfade;
 } jm_key_zone;
 
+typedef enum {MT_VOLUME} msg_type;
+
+typedef struct {
+  msg_type type;
+  void* data;
+} jm_msg;
+
 extern jm_key_zone* jm_zones;
 extern int jm_num_zones;
 
@@ -36,6 +41,9 @@ extern "C" {
 
   jack_client_t* jm_init_sampler();
   void jm_destroy_sampler(jack_client_t* client);
+
+  void jm_send_msg(jm_msg* msg);
+  int jm_receive_msg(jm_msg* msg);
 #ifdef __cplusplus
 }
 #endif

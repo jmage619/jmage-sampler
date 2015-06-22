@@ -7,8 +7,6 @@
 jm_key_zone* jm_zones;
 int jm_num_zones; 
 
-volatile int level = VOL_STEPS - 8;
-
 // why aren't we initializing zone->right
 void jm_init_key_zone(jm_key_zone* zone) {
   zone->start = 0;
@@ -56,4 +54,14 @@ jack_client_t* jm_init_sampler() {
 void jm_destroy_sampler(jack_client_t *client) {
   jack_deactivate(client);
   jack_client_close(client);
+}
+
+void jm_send_msg(jm_msg* msg) {
+  msg_q_in.add(*msg);
+}
+
+int jm_receive_msg(jm_msg* msg) {
+  if (msg_q_out.remove(*msg))
+    return 1;
+  return 0;
 }

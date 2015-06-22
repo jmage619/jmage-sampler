@@ -61,7 +61,7 @@ class PlayheadList {
     ~PlayheadList();
     ph_list_el* get_head_ptr() {return head;}
     size_t size() {return m_size;}
-    void add(Playhead ph);
+    void add(Playhead& ph);
     void remove(ph_list_el* pel);
     void remove_last();
 };

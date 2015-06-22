@@ -11,12 +11,17 @@
 #include "jmage/sampler.h"
 
 #define WAV_OFF_Q_SIZE 10
+#define MSG_Q_SIZE 32
 
 jack_port_t *input_port;
 jack_port_t *output_port1;
 jack_port_t *output_port2;
+JMQueue<jm_msg> msg_q_in(MSG_Q_SIZE);
+JMQueue<jm_msg> msg_q_out(MSG_Q_SIZE);
 
 static double amp[VOL_STEPS];
+static int level = VOL_STEPS - 1;
+
 static int sustain_on = 0;
 static PlayheadList playheads(WAV_OFF_Q_SIZE);
 
@@ -34,6 +39,16 @@ int jm_process_audio(jack_nframes_t nframes, void *arg) {
   memset (buffer1, 0, sizeof (jack_default_audio_sample_t) * nframes);
   memset (buffer2, 0, sizeof (jack_default_audio_sample_t) * nframes);
 
+  // handle any UI messages
+  jm_msg msg;
+  while (msg_q_in.remove(msg)) {
+    if (msg.type == MT_VOLUME) {
+      level = *((int*)msg.data);
+    }
+    msg_q_out.add(msg);
+  }
+
+  // capture midi event
   void* midi_buf = jack_port_get_buffer(input_port, nframes);
 
   uint32_t event_count = jack_midi_get_event_count(midi_buf);
