@@ -6,8 +6,6 @@
 #include "jmage/collections.h"
 #include "jmage/sampler.h"
 
-typedef jack_default_audio_sample_t sample_t;
-
 class Playhead {
   public:
     enum State {

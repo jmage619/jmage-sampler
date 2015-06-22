@@ -29,7 +29,7 @@ int jm_zone_contains(jm_key_zone* zone, int pitch) {
 
 jack_client_t* jm_init_sampler() {
   // init amplitude array
-  jm_init_amp();
+  ctrl::init_amp();
 
   // init jack
   jack_client_t* client;
@@ -39,10 +39,10 @@ jack_client_t* jm_init_sampler() {
     return NULL;
   }
 
-  jack_set_process_callback(client, jm_process_audio, 0);
-  input_port = jack_port_register(client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
-  output_port1 = jack_port_register(client, "out1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
-  output_port2 = jack_port_register(client, "out2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
+  jack_set_process_callback(client, ctrl::process_callback, 0);
+  ctrl::input_port = jack_port_register(client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
+  ctrl::output_port1 = jack_port_register(client, "out1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
+  ctrl::output_port2 = jack_port_register(client, "out2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 
   if (jack_activate(client)) {
     //fprintf (stderr, "cannot activate client");
@@ -57,11 +57,11 @@ void jm_destroy_sampler(jack_client_t *client) {
 }
 
 void jm_send_msg(jm_msg* msg) {
-  msg_q_in.add(*msg);
+  ctrl::msg_q_in.add(*msg);
 }
 
 int jm_receive_msg(jm_msg* msg) {
-  if (msg_q_out.remove(*msg))
+  if (ctrl::msg_q_out.remove(*msg))
     return 1;
   return 0;
 }
