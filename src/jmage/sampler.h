@@ -27,7 +27,9 @@ typedef enum {MT_VOLUME} msg_type;
 
 typedef struct {
   msg_type type;
-  void* data;
+  union {
+    int i;
+  } data;
 } jm_msg;
 
 extern jm_key_zone* jm_zones;
@@ -42,8 +44,10 @@ extern "C" {
   jack_client_t* jm_init_sampler();
   void jm_destroy_sampler(jack_client_t* client);
 
+  jm_msg* jm_new_msg();
+  void jm_destroy_msg(jm_msg* msg);
   void jm_send_msg(jm_msg* msg);
-  int jm_receive_msg(jm_msg* msg);
+  int jm_receive_msg(jm_msg** msg);
 #ifdef __cplusplus
 }
 #endif

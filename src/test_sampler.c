@@ -105,28 +105,18 @@ int main() {
   int c;
   int level = VOL_STEPS - 8;
 
-  jm_msg msg;
-  msg.type = MT_VOLUME;
-  msg.data = malloc(sizeof(int));
-  *((int*) msg.data) = level;
-  jm_send_msg(&msg);
+  jm_msg* msg = jm_new_msg();
+  msg->type = MT_VOLUME;
+  msg->data.i = level;
+  jm_send_msg(msg);
 
   while (1) {
-    // cleanup any acks
-    while (jm_receive_msg(&msg)) {
-      free(msg.data);
-    }
     c = getch();
     //printf("key typed: %c\n",c);
 
     switch(c) {
       case 'x':
         jm_destroy_sampler(client);
-
-        // cleanup any acks
-        while (jm_receive_msg(&msg)) {
-          free(msg.data);
-        }
 
         int i;
         for (i = 0; i < NUM_ZONES; i ++) {
@@ -138,20 +128,20 @@ int main() {
       case '[':
         if (level > 0) {
           level--;
-          msg.type = MT_VOLUME;
-          msg.data = malloc(sizeof(int));
-          *((int*) msg.data) = level;
-          jm_send_msg(&msg);
+          msg = jm_new_msg();
+          msg->type = MT_VOLUME;
+          msg->data.i = level;
+          jm_send_msg(msg);
         }
         printf("level: %i\n", level);
         continue;
       case ']':
         if (level < VOL_STEPS - 1) {
           level++;
-          msg.type = MT_VOLUME;
-          msg.data = malloc(sizeof(int));
-          *((int*) msg.data) = level;
-          jm_send_msg(&msg);
+          msg = jm_new_msg();
+          msg->type = MT_VOLUME;
+          msg->data.i = level;
+          jm_send_msg(msg);
         }
         printf("level: %i\n", level);
         continue;

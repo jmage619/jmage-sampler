@@ -1,4 +1,5 @@
 #include <limits.h>
+#include <stdlib.h>
 #include <jack/jack.h>
 #include <jack/types.h>
 #include "jmage/sampler.h"
@@ -54,13 +55,27 @@ jack_client_t* jm_init_sampler() {
 void jm_destroy_sampler(jack_client_t *client) {
   jack_deactivate(client);
   jack_client_close(client);
+
+  // clean up any lingering messages
+  jm_msg* msg;
+  while (ctrl::msg_q_in.remove(msg)) {
+    jm_destroy_msg(msg);
+  }
+}
+
+jm_msg* jm_new_msg() {
+  return new jm_msg;
+}
+
+void jm_destroy_msg(jm_msg* msg) {
+  delete msg;
 }
 
 void jm_send_msg(jm_msg* msg) {
-  ctrl::msg_q_in.add(*msg);
+  ctrl::msg_q_in.add(msg);
 }
 
-int jm_receive_msg(jm_msg* msg) {
+int jm_receive_msg(jm_msg** msg) {
   if (ctrl::msg_q_out.remove(*msg))
     return 1;
   return 0;

@@ -25,8 +25,8 @@ namespace ctrl {
   jack_port_t *input_port;
   jack_port_t *output_port1;
   jack_port_t *output_port2;
-  JMQueue<jm_msg> msg_q_in(MSG_Q_SIZE);
-  JMQueue<jm_msg> msg_q_out(MSG_Q_SIZE);
+  JMQueue<jm_msg*> msg_q_in(MSG_Q_SIZE);
+  JMQueue<jm_msg*> msg_q_out(MSG_Q_SIZE);
 
   void init_amp() {
     for (int i = 0; i < VOL_STEPS; i++) {
@@ -43,12 +43,12 @@ namespace ctrl {
     memset (buffer2, 0, sizeof (jack_default_audio_sample_t) * nframes);
 
     // handle any UI messages
-    jm_msg msg;
+    jm_msg* msg;
     while (msg_q_in.remove(msg)) {
-      if (msg.type == MT_VOLUME) {
-        level = *((int*)msg.data);
+      if (msg->type == MT_VOLUME) {
+        level = msg->data.i;
       }
-      msg_q_out.add(msg);
+      jm_destroy_msg(msg);
     }
 
     // capture midi event

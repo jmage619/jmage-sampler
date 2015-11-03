@@ -10,8 +10,8 @@ namespace ctrl {
   extern jack_port_t *input_port;
   extern jack_port_t *output_port1;
   extern jack_port_t *output_port2;
-  extern JMQueue<jm_msg> msg_q_in;
-  extern JMQueue<jm_msg> msg_q_out;
+  extern JMQueue<jm_msg*> msg_q_in;
+  extern JMQueue<jm_msg*> msg_q_out;
 
   void init_amp();
   int process_callback(jack_nframes_t nframes, void *arg);
