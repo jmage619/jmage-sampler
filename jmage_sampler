@@ -1,0 +1,129 @@
+#!/usr/bin/env python
+
+import sys
+import tty
+import termios
+import wave
+import struct
+
+import ctypes
+from time import sleep
+from ctypes import pointer
+from ctypes import byref
+from ctypes import cast 
+from ctypes import sizeof 
+
+from ctypes import Union
+from ctypes import Structure
+from ctypes import POINTER
+from ctypes import c_int
+from ctypes import c_double
+from ctypes import c_float
+from ctypes import c_uint32
+from ctypes import c_void_p
+from ctypes import c_size_t
+
+INT16_MAX = 2**16 / 2 - 1
+INT_MAX = 2**32 / 2 - 1
+INT_MIN  = - INT_MAX - 1
+RELEASE_TIME  = 44100 / 1000.
+MT_VOLUME = 0
+VOL_STEPS  = 17
+
+class jack_client_t(Structure):
+  pass
+
+class jm_key_zone(Structure):
+  _fields_ = [('wave', (POINTER(c_float) * 2)),
+    ('wave_length', c_uint32),
+    ('start', c_uint32),
+    ('left', c_uint32),
+    ('right', c_uint32),
+    ('lower_bound', c_int),
+    ('upper_bound', c_int),
+    ('origin', c_int),
+    ('amp', c_double),
+    ('rel_time', c_double),
+    ('pitch_corr', c_double),
+    ('loop_on', c_int),
+    ('crossfade', c_uint32)
+  ]
+
+
+class jm_msg_data(Union):
+  _fields_ = [('i', c_int)]
+
+class jm_msg(Structure):
+  _fields_ = [('type', c_int), ('data', jm_msg_data)]
+
+# imitate getch in python
+def getch():
+  fd = sys.stdin.fileno()
+  fd_flags = termios.tcgetattr(fd)
+  tty.setraw(fd)
+  key = sys.stdin.read(1)
+  termios.tcsetattr(fd, termios.TCSADRAIN, fd_flags)
+  return key
+
+lib = ctypes.cdll.LoadLibrary('libjm_sampler.so')
+lib.jm_init_sampler.restype = POINTER(jack_client_t)
+lib.jm_destroy_sampler.argtypes = [POINTER(jack_client_t)]
+lib.jm_init_key_zone.argtypes = [POINTER(jm_key_zone)]
+lib.jm_new_msg.restype = POINTER(jm_msg)
+lib.jm_destroy_msg.argtypes = [POINTER(jm_msg)]
+lib.jm_send_msg.argtypes = [POINTER(jm_msg)]
+lib.jm_receive_msg.argtypes = [POINTER(POINTER(jm_msg))]
+
+if __name__ == '__main__':
+  jm_zones = POINTER(jm_key_zone).in_dll(lib, 'jm_zones')
+  jm_num_zones = c_int.in_dll(lib, 'jm_num_zones')
+  jm_num_zones.value = 1
+  
+  jm_zones.contents = jm_key_zone()
+  lib.jm_init_key_zone(jm_zones)
+  wav_file = wave.open('afx.wav')
+
+  wave_length = wav_file.getnframes()
+
+  jm_zones[0].wave[0] = ((c_float * wave_length))()
+  jm_zones[0].wave[1] = ((c_float * wave_length))()
+
+  for i in range(wave_length):
+    frame = struct.unpack('<hh', wav_file.readframes(1))
+    jm_zones[0].wave[0][i] = frame[0] / float(INT16_MAX)
+    jm_zones[0].wave[1][i] = frame[1] / float(INT16_MAX)
+
+  wav_file.close()
+
+  jm_zones[0].origin = 48
+  jm_zones[0].lower_bound = INT_MIN
+  jm_zones[0].upper_bound = INT_MAX
+  jm_zones[0].rel_time = RELEASE_TIME
+  jm_zones[0].start = 0
+  jm_zones[0].left = 44100
+  jm_zones[0].right = 3 * 44100 + 5 * 44100 / 8
+  jm_zones[0].wave_length = wave_length
+  jm_zones[0].amp = 1.0
+  jm_zones[0].pitch_corr = 0.0
+  jm_zones[0].loop_on = 1
+  jm_zones[0].crossfade = 22050
+
+  print jm_zones.contents.wave[0][0]
+
+  client = lib.jm_init_sampler()
+
+  #level = VOL_STEPS - 16 
+  level = 16
+
+  msg = lib.jm_new_msg()
+  msg.contents.type = MT_VOLUME
+  
+  msg.contents.data.i = level
+  lib.jm_send_msg(msg)
+
+  while True:
+    key = sys.stdin.read(1)
+    if key == 'x':
+      lib.jm_destroy_sampler(client)
+      print "exiting..."
+      break
