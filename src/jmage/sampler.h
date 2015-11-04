@@ -1,5 +1,5 @@
-#ifndef JMAGE_SAMPLER_H
-#define JMAGE_SAMPLER_H
+#ifndef JM_SAMPLER_H
+#define JM_SAMPLER_H
 
 #include <jack/types.h>
 

@@ -48,6 +48,7 @@ namespace ctrl {
       if (msg->type == MT_VOLUME) {
         level = msg->data.i;
       }
+      // THIS CALLS DELETE!! FIXME!!
       jm_destroy_msg(msg);
     }
 
