@@ -32,8 +32,11 @@ typedef struct {
   } data;
 } jm_msg;
 
-extern jm_key_zone* jm_zones;
-extern int jm_num_zones;
+//extern jm_key_zone* jm_zones;
+//extern int jm_num_zones;
+
+// opaque type for the sampler object
+typedef struct JMSampler JMSampler;
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,13 +44,17 @@ extern "C" {
   void jm_init_key_zone(jm_key_zone* zone);
   int jm_zone_contains(jm_key_zone* zone, int pitch);
 
-  jack_client_t* jm_init_sampler();
-  void jm_destroy_sampler(jack_client_t* client);
+  JMSampler* jm_new_sampler();
+  void jm_destroy_sampler(JMSampler* jms);
+
+  void jm_add_zone(JMSampler* jms, int key, jm_key_zone* zone);
+  void jm_remove_zone(JMSampler* jms, int key);
 
   jm_msg* jm_new_msg();
   void jm_destroy_msg(jm_msg* msg);
-  void jm_send_msg(jm_msg* msg);
-  int jm_receive_msg(jm_msg** msg);
+
+  void jm_send_msg(JMSampler* jms, jm_msg* msg);
+  int jm_receive_msg(JMSampler* jms, jm_msg** msg);
 #ifdef __cplusplus
 }
 #endif

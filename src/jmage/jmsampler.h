@@ -1,5 +1,7 @@
-#ifndef JM_JM_SAMPLER_H
-#define JM_JM_SAMPLER_H
+#ifndef JM_JMSAMPLER_H
+#define JM_JMSAMPLER_H
+
+#include <tr1/unordered_map>
 
 #include <jack/types.h>
 
@@ -30,6 +32,7 @@ class JMSampler {
     int level;
 
     jm_key_zone jm_zones[NUM_ZONES];
+    std::tr1::unordered_map<int, jm_key_zone*> zone_map;
 
     // state
     bool sustain_on;
@@ -40,6 +43,10 @@ class JMSampler {
   public:
     JMSampler();
     ~JMSampler();
+    void add_zone(int key, jm_key_zone* zone);
+    void remove_zone(int key);
+    void send_msg(jm_msg* msg);
+    bool receive_msg(jm_msg*& msg);
     static int process_callback(jack_nframes_t nframes, void *arg);
 };
 

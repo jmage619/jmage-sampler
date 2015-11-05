@@ -22,21 +22,21 @@ char getch() {
 }
 
 int main() {
-  jm_num_zones = NUM_ZONES;
-  jm_zones = (jm_key_zone*) malloc(sizeof(jm_key_zone) * jm_num_zones);
-  int i;
-  for (i = 0; i < NUM_ZONES; i++)
-    jm_init_key_zone(&jm_zones[i]);
+  //jm_num_zones = NUM_ZONES;
+  //jm_zones = (jm_key_zone*) malloc(sizeof(jm_key_zone) * jm_num_zones);
+  //int i;
+  jm_key_zone* zone1 = (jm_key_zone*) malloc(sizeof(jm_key_zone));
+  jm_init_key_zone(zone1);
 
   //wav = fopen("shawn.wav", "rb");
   //wav = fopen("Glass.wav", "rb");
   //wav = fopen("Leaving_rh_remix.wav", "rb");
 
   /**** load wav 1 ***/
-  jm_zones[0].origin = 48;
-  jm_zones[0].lower_bound = INT_MIN;
-  jm_zones[0].upper_bound = INT_MAX;
-  jm_zones[0].rel_time = RELEASE_TIME;
+  zone1->origin = 48;
+  zone1->lower_bound = INT_MIN;
+  zone1->upper_bound = INT_MAX;
+  zone1->rel_time = RELEASE_TIME;
 
   SF_INFO sf_info;
   sf_info.format = 0;
@@ -45,24 +45,24 @@ int main() {
   SNDFILE* wav = sf_open("afx.wav", SFM_READ, &sf_info);
 
   printf("wave length: %" PRIi64 "\n", sf_info.frames);
-  jm_zones[0].start = 0;
-  jm_zones[0].left = 44100;
-  jm_zones[0].right = 3 * 44100 + 5 * 44100 / 8;
-  jm_zones[0].wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
-  jm_zones[0].wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
-  jm_zones[0].wave_length = sf_info.frames;
-  jm_zones[0].amp = 1.0;
-  jm_zones[0].pitch_corr = 0.0;
-  jm_zones[0].loop_on = 1;
-  jm_zones[0].crossfade = 22050;
+  zone1->start = 0;
+  zone1->left = 44100;
+  zone1->right = 3 * 44100 + 5 * 44100 / 8;
+  zone1->wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
+  zone1->wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
+  zone1->wave_length = sf_info.frames;
+  zone1->amp = 1.0;
+  zone1->pitch_corr = 0.0;
+  zone1->loop_on = 1;
+  zone1->crossfade = 22050;
 
   // assuming 2 channel
   double frame[2];
   sf_count_t f;
   for (f = 0; f < sf_info.frames; f++) {
     sf_readf_double(wav, frame, 1);
-    jm_zones[0].wave[0][f] = frame[0];
-    jm_zones[0].wave[1][f] = frame[1];
+    zone1->wave[0][f] = frame[0];
+    zone1->wave[1][f] = frame[1];
   }
 
   sf_close(wav);
@@ -96,9 +96,9 @@ int main() {
   */
   /* end load wav 2 ***/
 
-  jack_client_t* client;
-  if ((client = jm_init_sampler()) == NULL) {
-    fprintf (stderr, "cannot activate jmage");
+  JMSampler* jms;
+  if ((jms = jm_new_sampler()) == NULL) {
+    fprintf (stderr, "cannot activate jmage\n");
     return 1;
   }
 
@@ -108,7 +108,9 @@ int main() {
   jm_msg* msg = jm_new_msg();
   msg->type = MT_VOLUME;
   msg->data.i = level;
-  jm_send_msg(msg);
+  jm_send_msg(jms, msg);
+
+  jm_add_zone(jms, 0, zone1);
 
   while (1) {
     c = getch();
@@ -116,14 +118,14 @@ int main() {
 
     switch(c) {
       case 'x':
-        jm_destroy_sampler(client);
-
-        int i;
-        for (i = 0; i < NUM_ZONES; i ++) {
-          free(jm_zones[i].wave[0]);
-          free(jm_zones[i].wave[1]);
-        }
-        free(jm_zones);
+        jm_remove_zone(jms, 0);
+        jm_destroy_sampler(jms);
+        //int i;
+        //for (i = 0; i < NUM_ZONES; i ++) {
+          free(zone1->wave[0]);
+          free(zone1->wave[1]);
+        //}
+        free(zone1);
         return 0;
       case '[':
         if (level > 0) {
@@ -131,7 +133,7 @@ int main() {
           msg = jm_new_msg();
           msg->type = MT_VOLUME;
           msg->data.i = level;
-          jm_send_msg(msg);
+          jm_send_msg(jms, msg);
         }
         printf("level: %i\n", level);
         continue;
@@ -141,7 +143,7 @@ int main() {
           msg = jm_new_msg();
           msg->type = MT_VOLUME;
           msg->data.i = level;
-          jm_send_msg(msg);
+          jm_send_msg(jms, msg);
         }
         printf("level: %i\n", level);
         continue;

@@ -2,6 +2,8 @@
 #include <cmath>
 #include <cstdio>
 
+#include <tr1/unordered_map>
+
 #include <jack/types.h>
 #include <jack/jack.h>
 #include <jack/midiport.h>
@@ -27,7 +29,6 @@ JMSampler::JMSampler():
   // init amplitude array
   init_amp(this);
 
-  throw std::runtime_error("failed to open jack client");
   // init jack
   jack_status_t status; 
   if ((client = jack_client_open("ghetto_sampler", JackNullOption, &status)) == NULL)
@@ -38,12 +39,20 @@ JMSampler::JMSampler():
   output_port1 = jack_port_register(client, "out1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
   output_port2 = jack_port_register(client, "out2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 
-  if (jack_activate(client))
+  if (jack_activate(client)) {
+    jack_port_unregister(client, input_port);
+    jack_port_unregister(client, output_port1);
+    jack_port_unregister(client, output_port2);
+    jack_client_close(client);
     throw std::runtime_error("cannot activate jack client");
+  }
 }
 
 JMSampler::~JMSampler() {
   jack_deactivate(client);
+  jack_port_unregister(client, input_port);
+  jack_port_unregister(client, output_port1);
+  jack_port_unregister(client, output_port2);
   jack_client_close(client);
 
   // clean up any lingering messages
@@ -51,6 +60,22 @@ JMSampler::~JMSampler() {
   while (msg_q_in.remove(msg)) {
     jm_destroy_msg(msg);
   }
+}
+
+void JMSampler::add_zone(int key, jm_key_zone* zone) {
+  zone_map[key] = zone;
+}
+
+void JMSampler::remove_zone(int key) {
+  zone_map.erase(key);
+}
+
+void JMSampler::send_msg(jm_msg* msg) {
+  msg_q_in.add(msg);
+}
+
+bool JMSampler::receive_msg(jm_msg*& msg) {
+  return msg_q_out.remove(msg);
 }
 
 int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
@@ -92,10 +117,12 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
                 pel->ph.state = Playhead::RELEASED;
             }
           }
-          int i;
-          for (i = 0; i < NUM_ZONES; i++) {
-            if (jm_zone_contains(&jms->jm_zones[i], event.buffer[1])) {
-              Playhead ph(jms->jm_zones[i], event.buffer[1], event.buffer[2]);
+          //int i;
+          //for (i = 0; i < NUM_ZONES; i++) {
+          std::tr1::unordered_map<int, jm_key_zone*>::iterator it;
+          for (it = jms->zone_map.begin(); it != jms->zone_map.end(); ++it) {
+            if (jm_zone_contains(it->second, event.buffer[1])) {
+              Playhead ph(*it->second, event.buffer[1], event.buffer[2]);
 
               if (jms->playheads.size() >= WAV_OFF_Q_SIZE)
                 jms->playheads.remove_last();
