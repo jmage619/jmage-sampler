@@ -24,11 +24,8 @@ jmsampler.o : src/jmage/jmsampler.cxx src/jmage/jmsampler.h src/jmage/sampler.h 
 sampler.o : src/jmage/sampler.cxx src/jmage/sampler.h src/jmage/collections.h
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -fPIC -Isrc -c -o $@ $<
 
-control.o : src/jmage/control.cxx src/jmage/control.h src/jmage/components.h src/jmage/sampler.h
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -fPIC -Isrc -c -o $@ $<
-
 components.o : src/jmage/components.cxx src/jmage/components.h src/jmage/collections.h
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -fPIC -Isrc -c -o $@ $<
 
 clean:
-	rm -f test_sampler test_sampler.o libjm_sampler.so sampler.o control.o components.o
+	rm -f test_sampler test_sampler.o libjm_sampler.so sampler.o components.o
