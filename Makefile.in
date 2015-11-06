@@ -28,4 +28,4 @@ components.o : src/jmage/components.cxx src/jmage/components.h src/jmage/collect
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -fPIC -Isrc -c -o $@ $<
 
 clean:
-	rm -f test_sampler test_sampler.o libjm_sampler.so sampler.o components.o
+	rm -f test_sampler test_sampler.o libjm_sampler.so jmsampler.o sampler.o components.o
