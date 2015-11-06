@@ -53,12 +53,8 @@ void jm_remove_zone(JMSampler* jms, int key) {
   jms->remove_zone(key);
 }
 
-jm_msg* jm_new_msg() {
-  return new jm_msg;
-}
-
-void jm_destroy_msg(jm_msg* msg) {
-  delete msg;
+jm_msg* jm_new_msg(JMSampler* jms) {
+  return jms->new_msg();
 }
 
 void jm_send_msg(JMSampler* jms, jm_msg* msg) {

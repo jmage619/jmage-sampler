@@ -25,6 +25,7 @@ class JMSampler {
 
     // for message passing
     JMQueue<jm_msg*> msg_q_in;
+    JMQueue<jm_msg*> msg_pool;
     JMQueue<jm_msg*> msg_q_out;
 
     // volume control; should amp really be a member?
@@ -39,12 +40,15 @@ class JMSampler {
     PlayheadList playheads;
 
     static void init_amp(JMSampler* jms);
+    static void init_msg_pool(JMSampler* jms);
+    static void destroy_msg_pool(JMSampler* jms);
 
   public:
     JMSampler();
     ~JMSampler();
     void add_zone(int key, jm_key_zone* zone);
     void remove_zone(int key);
+    jm_msg* new_msg();
     void send_msg(jm_msg* msg);
     bool receive_msg(jm_msg*& msg);
     static int process_callback(jack_nframes_t nframes, void *arg);

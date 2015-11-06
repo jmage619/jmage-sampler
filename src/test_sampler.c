@@ -105,7 +105,7 @@ int main() {
   int c;
   int level = VOL_STEPS - 8;
 
-  jm_msg* msg = jm_new_msg();
+  jm_msg* msg = jm_new_msg(jms);
   msg->type = MT_VOLUME;
   msg->data.i = level;
   jm_send_msg(jms, msg);
@@ -130,7 +130,7 @@ int main() {
       case '[':
         if (level > 0) {
           level--;
-          msg = jm_new_msg();
+          msg = jm_new_msg(jms);
           msg->type = MT_VOLUME;
           msg->data.i = level;
           jm_send_msg(jms, msg);
@@ -140,7 +140,7 @@ int main() {
       case ']':
         if (level < VOL_STEPS - 1) {
           level++;
-          msg = jm_new_msg();
+          msg = jm_new_msg(jms);
           msg->type = MT_VOLUME;
           msg->data.i = level;
           jm_send_msg(jms, msg);
