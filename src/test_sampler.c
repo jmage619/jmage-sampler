@@ -25,8 +25,7 @@ int main() {
   //jm_num_zones = NUM_ZONES;
   //jm_zones = (jm_key_zone*) malloc(sizeof(jm_key_zone) * jm_num_zones);
   //int i;
-  jm_key_zone* zone1 = (jm_key_zone*) malloc(sizeof(jm_key_zone));
-  jm_init_key_zone(zone1);
+  jm_key_zone* zone1 = jm_new_key_zone();
 
   //wav = fopen("shawn.wav", "rb");
   //wav = fopen("Glass.wav", "rb");
@@ -48,8 +47,12 @@ int main() {
   zone1->start = 0;
   zone1->left = 44100;
   zone1->right = 3 * 44100 + 5 * 44100 / 8;
-  zone1->wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
-  zone1->wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
+  sample_t* wave[2];
+  wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
+  wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
+
+  zone1->wave[0] = wave[0];
+  zone1->wave[1] = wave[1];
   zone1->wave_length = sf_info.frames;
   zone1->amp = 1.0;
   zone1->pitch_corr = 0.0;
@@ -120,12 +123,11 @@ int main() {
       case 'x':
         jm_remove_zone(jms, 0);
         jm_destroy_sampler(jms);
+        free(wave[0]);
+        free(wave[1]);
         //int i;
         //for (i = 0; i < NUM_ZONES; i ++) {
-          free(zone1->wave[0]);
-          free(zone1->wave[1]);
         //}
-        free(zone1);
         return 0;
       case '[':
         if (level > 0) {

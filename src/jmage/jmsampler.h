@@ -48,6 +48,7 @@ class JMSampler {
     ~JMSampler();
     void add_zone(int key, jm_key_zone* zone);
     void remove_zone(int key);
+    jm_key_zone* get_zone(int key);
     jm_msg* new_msg();
     void send_msg(jm_msg* msg);
     bool receive_msg(jm_msg*& msg);

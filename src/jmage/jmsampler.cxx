@@ -91,6 +91,10 @@ void JMSampler::remove_zone(int key) {
   zone_map.erase(key);
 }
 
+jm_key_zone* JMSampler::get_zone(int key) {
+  return zone_map[key];
+}
+
 jm_msg* JMSampler::new_msg() {
   jm_msg* msg = NULL;
   msg_pool.remove(msg);
