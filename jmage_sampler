@@ -33,7 +33,7 @@ VOL_STEPS  = 17
 
 OUT_LEN = 4.5
 
-class jack_client_t(Structure):
+class JMSampler(Structure):
   pass
 
 class jm_key_zone(Structure):
@@ -69,23 +69,24 @@ def getch():
   return key
 
 lib = ctypes.cdll.LoadLibrary('libjm_sampler.so')
-lib.jm_init_sampler.restype = POINTER(jack_client_t)
-lib.jm_destroy_sampler.argtypes = [POINTER(jack_client_t)]
-lib.jm_init_key_zone.argtypes = [POINTER(jm_key_zone)]
+lib.jm_new_key_zone.restype = POINTER(jm_key_zone)
+lib.jm_new_sampler.restype = POINTER(JMSampler)
+lib.jm_destroy_sampler.argtypes = [POINTER(JMSampler)]
+lib.jm_add_zone.argtypes = [POINTER(JMSampler), c_int, POINTER(jm_key_zone)]
+lib.jm_remove_zone.argtypes = [POINTER(JMSampler), c_int]
+lib.jm_new_msg.argtypes = [POINTER(JMSampler)]
 lib.jm_new_msg.restype = POINTER(jm_msg)
-lib.jm_destroy_msg.argtypes = [POINTER(jm_msg)]
-lib.jm_send_msg.argtypes = [POINTER(jm_msg)]
-lib.jm_receive_msg.argtypes = [POINTER(POINTER(jm_msg))]
+lib.jm_send_msg.argtypes = [POINTER(JMSampler), POINTER(jm_msg)]
+lib.jm_receive_msg.argtypes = [POINTER(JMSampler), POINTER(POINTER(jm_msg))]
+lib.jm_receive_msg.restype = c_int
 
-JM_ZONES = POINTER(jm_key_zone).in_dll(lib, 'jm_zones')
-JM_NUM_ZONES = c_int.in_dll(lib, 'jm_num_zones')
-CLIENT = None
+SAMPLER = None
   
 class MyFrame(wx.Frame):
   def __init__(self, *args, **kwargs):
     super(MyFrame, self).__init__(*args, **kwargs)
 
-    self.SetTitle("JMage Sampler")
+    self.SetTitle("Ghetto Sampler")
 
     # create menu bar and File menu with exit item
     menubar = wx.MenuBar()
@@ -137,10 +138,10 @@ class MyFrame(wx.Frame):
 
   def OnVolScroll(self, e):
     level = e.GetEventObject().GetValue()
-    msg = lib.jm_new_msg()
+    msg = lib.jm_new_msg(SAMPLER)
     msg.contents.type = MT_VOLUME
     msg.contents.data.i = level
-    lib.jm_send_msg(msg)
+    lib.jm_send_msg(SAMPLER, msg)
 
     self.output.SetValue(str(level))
 
@@ -149,62 +150,67 @@ class MyFrame(wx.Frame):
     try:
       level = int(val)
       if level >= 0 and level < VOL_STEPS:
-        msg = lib.jm_new_msg()
+        msg = lib.jm_new_msg(SAMPLER)
         msg.contents.type = MT_VOLUME
         msg.contents.data.i = level
-        lib.jm_send_msg(msg)
+        lib.jm_send_msg(SAMPLER, msg)
         self.slider.SetValue(level)
     except ValueError:
       pass
 
 if __name__ == '__main__':
   #global CLIENT
-  JM_NUM_ZONES.value = 1
-  JM_ZONES.contents = jm_key_zone()
-  lib.jm_init_key_zone(JM_ZONES)
+  zone = lib.jm_new_key_zone()
   wav_file = wave.open('afx.wav')
 
   wave_length = wav_file.getnframes()
 
-  JM_ZONES[0].wave[0] = ((c_float * wave_length))()
-  JM_ZONES[0].wave[1] = ((c_float * wave_length))()
+  wave = []
+  wave.append(((c_float * wave_length))())
+  wave.append(((c_float * wave_length))())
 
   for i in range(wave_length):
     frame = struct.unpack('<hh', wav_file.readframes(1))
-    JM_ZONES[0].wave[0][i] = frame[0] / float(INT16_MAX)
-    JM_ZONES[0].wave[1][i] = frame[1] / float(INT16_MAX)
+    wave[0][i] = frame[0] / float(INT16_MAX)
+    wave[1][i] = frame[1] / float(INT16_MAX)
 
   wav_file.close()
 
-  JM_ZONES[0].origin = 48
-  JM_ZONES[0].lower_bound = INT_MIN
-  JM_ZONES[0].upper_bound = INT_MAX
-  JM_ZONES[0].rel_time = RELEASE_TIME
-  JM_ZONES[0].start = 0
-  JM_ZONES[0].left = 44100
-  JM_ZONES[0].right = 3 * 44100 + 5 * 44100 / 8
-  JM_ZONES[0].wave_length = wave_length
-  JM_ZONES[0].amp = 1.0
-  JM_ZONES[0].pitch_corr = 0.0
-  JM_ZONES[0].loop_on = 1
-  JM_ZONES[0].crossfade = 22050
+  zone.contents.wave[0] = wave[0]
+  zone.contents.wave[1] = wave[1]
+
+  zone.contents.origin = 48
+  zone.contents.lower_bound = INT_MIN
+  zone.contents.upper_bound = INT_MAX
+  zone.contents.rel_time = RELEASE_TIME
+  zone.contents.start = 0
+  zone.contents.left = 44100
+  zone.contents.right = 3 * 44100 + 5 * 44100 / 8
+  zone.contents.wave_length = wave_length
+  zone.contents.amp = 1.0
+  zone.contents.pitch_corr = 0.0
+  zone.contents.loop_on = 1
+  zone.contents.crossfade = 22050
 
   #print JM_ZONES.contents.wave[0][0]
 
-  CLIENT = lib.jm_init_sampler()
+  SAMPLER = lib.jm_new_sampler()
+
+  lib.jm_add_zone(SAMPLER, 0, zone)
 
   #level = VOL_STEPS - 16 
   level = VOL_STEPS - 1
 
-  msg = lib.jm_new_msg()
+  msg = lib.jm_new_msg(SAMPLER)
   msg.contents.type = MT_VOLUME
   
   msg.contents.data.i = level
-  lib.jm_send_msg(msg)
+  lib.jm_send_msg(SAMPLER, msg)
 
   app = wx.App()
 
   MyFrame(None)
 
   app.MainLoop()
-  lib.jm_destroy_sampler(CLIENT)
+  lib.jm_remove_zone(SAMPLER, 0)
+  lib.jm_destroy_sampler(SAMPLER)
