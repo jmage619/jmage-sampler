@@ -3,6 +3,7 @@
 
 #include <tr1/unordered_map>
 
+#include <pthread.h>
 #include <jack/types.h>
 
 #include "jmage/sampler.h"
@@ -33,6 +34,7 @@ class JMSampler {
 
     jm_key_zone jm_zones[NUM_ZONES];
     std::tr1::unordered_map<int, jm_key_zone> zone_map;
+    pthread_mutex_t zone_map_lock;
 
     // state
     bool sustain_on;

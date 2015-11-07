@@ -1,13 +1,14 @@
 #include <cstring>
 #include <cmath>
 #include <cstdio>
+#include <stdexcept> 
 
 #include <tr1/unordered_map>
 
+#include <pthread.h>
 #include <jack/types.h>
 #include <jack/jack.h>
 #include <jack/midiport.h>
-#include <stdexcept> 
 
 #include "jmage/jmsampler.h"
 #include "jmage/sampler.h"
@@ -29,9 +30,13 @@ JMSampler::JMSampler():
   // init amplitude array
   init_amp(this);
 
+  // init zone map lock
+  pthread_mutex_init(&zone_map_lock, NULL);
+
   // init jack
   jack_status_t status; 
   if ((client = jack_client_open("ghetto_sampler", JackNullOption, &status)) == NULL) {
+    pthread_mutex_destroy(&zone_map_lock);
     throw std::runtime_error("failed to open jack client");
   }
 
@@ -45,6 +50,7 @@ JMSampler::JMSampler():
     jack_port_unregister(client, output_port1);
     jack_port_unregister(client, output_port2);
     jack_client_close(client);
+    pthread_mutex_destroy(&zone_map_lock);
     throw std::runtime_error("cannot activate jack client");
   }
 }
@@ -55,14 +61,19 @@ JMSampler::~JMSampler() {
   jack_port_unregister(client, output_port1);
   jack_port_unregister(client, output_port2);
   jack_client_close(client);
+  pthread_mutex_destroy(&zone_map_lock);
 }
 
 void JMSampler::add_zone(int key, const jm_key_zone& zone) {
+  pthread_mutex_lock(&zone_map_lock);
   zone_map[key] = zone;
+  pthread_mutex_unlock(&zone_map_lock);
 }
 
 void JMSampler::remove_zone(int key) {
+  pthread_mutex_lock(&zone_map_lock);
   zone_map.erase(key);
+  pthread_mutex_unlock(&zone_map_lock);
 }
 
 void JMSampler::send_msg(const jm_msg& msg) {
@@ -113,6 +124,11 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
           //int i;
           //for (i = 0; i < NUM_ZONES; i++) {
           std::tr1::unordered_map<int, jm_key_zone>::iterator it;
+          // yes, using mutex here violates the laws of real time ..BUT..
+          // we don't expect a musician to tweak zones during an actual take!
+          // this allows for demoing zone changes in thread safe way in *almost* real time
+          // we can safely assume this mutex will be unlocked in a real take
+          pthread_mutex_lock(&jms->zone_map_lock);
           for (it = jms->zone_map.begin(); it != jms->zone_map.end(); ++it) {
             if (jm_zone_contains(&it->second, event.buffer[1])) {
               Playhead ph(it->second, event.buffer[1], event.buffer[2]);
@@ -124,6 +140,7 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
               printf("event: note on;  note: %i; vel: %i; amp: %f\n", event.buffer[1], event.buffer[2], ph.amp);
             }
           }
+          pthread_mutex_unlock(&jms->zone_map_lock);
         }
         else if ((event.buffer[0] & 0xf0) == 0x80) {
           printf("event: note off; note: %i\n", event.buffer[1]);
