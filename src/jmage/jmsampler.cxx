@@ -83,16 +83,12 @@ JMSampler::~JMSampler() {
   }
 }
 
-void JMSampler::add_zone(int key, jm_key_zone* zone) {
+void JMSampler::add_zone(int key, jm_key_zone& zone) {
   zone_map[key] = zone;
 }
 
 void JMSampler::remove_zone(int key) {
   zone_map.erase(key);
-}
-
-jm_key_zone* JMSampler::get_zone(int key) {
-  return zone_map[key];
 }
 
 jm_msg* JMSampler::new_msg() {
@@ -149,10 +145,10 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
           }
           //int i;
           //for (i = 0; i < NUM_ZONES; i++) {
-          std::tr1::unordered_map<int, jm_key_zone*>::iterator it;
+          std::tr1::unordered_map<int, jm_key_zone>::iterator it;
           for (it = jms->zone_map.begin(); it != jms->zone_map.end(); ++it) {
-            if (jm_zone_contains(it->second, event.buffer[1])) {
-              Playhead ph(*it->second, event.buffer[1], event.buffer[2]);
+            if (jm_zone_contains(&it->second, event.buffer[1])) {
+              Playhead ph(it->second, event.buffer[1], event.buffer[2]);
 
               if (jms->playheads.size() >= WAV_OFF_Q_SIZE)
                 jms->playheads.remove_last();

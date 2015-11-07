@@ -41,7 +41,7 @@ typedef struct JMSampler JMSampler;
 #ifdef __cplusplus
 extern "C" {
 #endif
-  jm_key_zone* jm_new_key_zone();
+  void jm_init_key_zone(jm_key_zone* zone);
   int jm_zone_contains(jm_key_zone* zone, int pitch);
 
   JMSampler* jm_new_sampler();

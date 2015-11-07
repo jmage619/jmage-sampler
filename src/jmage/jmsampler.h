@@ -33,7 +33,7 @@ class JMSampler {
     int level;
 
     jm_key_zone jm_zones[NUM_ZONES];
-    std::tr1::unordered_map<int, jm_key_zone*> zone_map;
+    std::tr1::unordered_map<int, jm_key_zone> zone_map;
 
     // state
     bool sustain_on;
@@ -46,9 +46,8 @@ class JMSampler {
   public:
     JMSampler();
     ~JMSampler();
-    void add_zone(int key, jm_key_zone* zone);
+    void add_zone(int key, jm_key_zone& zone);
     void remove_zone(int key);
-    jm_key_zone* get_zone(int key);
     jm_msg* new_msg();
     void send_msg(jm_msg* msg);
     bool receive_msg(jm_msg*& msg);

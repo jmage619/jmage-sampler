@@ -69,7 +69,7 @@ def getch():
   return key
 
 lib = ctypes.cdll.LoadLibrary('libjm_sampler.so')
-lib.jm_new_key_zone.restype = POINTER(jm_key_zone)
+lib.jm_init_key_zone.argtypes = [POINTER(jm_key_zone)]
 lib.jm_new_sampler.restype = POINTER(JMSampler)
 lib.jm_destroy_sampler.argtypes = [POINTER(JMSampler)]
 lib.jm_add_zone.argtypes = [POINTER(JMSampler), c_int, POINTER(jm_key_zone)]
@@ -160,7 +160,8 @@ class MyFrame(wx.Frame):
 
 if __name__ == '__main__':
   #global CLIENT
-  zone = lib.jm_new_key_zone()
+  zone = jm_key_zone()
+  lib.jm_init_key_zone(byref(zone))
   wav_file = wave.open('afx.wav')
 
   wave_length = wav_file.getnframes()
@@ -176,27 +177,27 @@ if __name__ == '__main__':
 
   wav_file.close()
 
-  zone.contents.wave[0] = wave[0]
-  zone.contents.wave[1] = wave[1]
+  zone.wave[0] = wave[0]
+  zone.wave[1] = wave[1]
 
-  zone.contents.origin = 48
-  zone.contents.lower_bound = INT_MIN
-  zone.contents.upper_bound = INT_MAX
-  zone.contents.rel_time = RELEASE_TIME
-  zone.contents.start = 0
-  zone.contents.left = 44100
-  zone.contents.right = 3 * 44100 + 5 * 44100 / 8
-  zone.contents.wave_length = wave_length
-  zone.contents.amp = 1.0
-  zone.contents.pitch_corr = 0.0
-  zone.contents.loop_on = 1
-  zone.contents.crossfade = 22050
+  zone.origin = 48
+  zone.lower_bound = INT_MIN
+  zone.upper_bound = INT_MAX
+  zone.rel_time = RELEASE_TIME
+  zone.start = 0
+  zone.left = 44100
+  zone.right = 3 * 44100 + 5 * 44100 / 8
+  zone.wave_length = wave_length
+  zone.amp = 1.0
+  zone.pitch_corr = 0.0
+  zone.loop_on = 1
+  zone.crossfade = 22050
 
   #print JM_ZONES.contents.wave[0][0]
 
   SAMPLER = lib.jm_new_sampler()
 
-  lib.jm_add_zone(SAMPLER, 0, zone)
+  lib.jm_add_zone(SAMPLER, 0, byref(zone))
 
   #level = VOL_STEPS - 16 
   level = VOL_STEPS - 1

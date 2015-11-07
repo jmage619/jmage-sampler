@@ -10,8 +10,7 @@
 #include "jmage/jmsampler.h"
 
 // why aren't we initializing zone->right
-jm_key_zone* jm_new_key_zone() {
-  jm_key_zone* zone = new jm_key_zone;
+void jm_init_key_zone(jm_key_zone* zone) {
   zone->start = 0;
   zone->left = 0;
   zone->lower_bound = INT_MIN;
@@ -22,7 +21,6 @@ jm_key_zone* jm_new_key_zone() {
   zone->pitch_corr = 0.0;
   zone->loop_on = 0;
   zone->crossfade = 0;
-  return zone;
 }
 
 int jm_zone_contains(jm_key_zone* zone, int pitch) {
@@ -45,13 +43,11 @@ void jm_destroy_sampler(JMSampler* jms) {
 }
 
 void jm_add_zone(JMSampler* jms, int key, jm_key_zone* zone) {
-  jms->add_zone(key, zone);
+  jms->add_zone(key, *zone);
 }
 
 void jm_remove_zone(JMSampler* jms, int key) {
-  jm_key_zone* zone = jms->get_zone(key);
   jms->remove_zone(key);
-  delete zone;
 }
 
 jm_msg* jm_new_msg(JMSampler* jms) {

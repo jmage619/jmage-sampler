@@ -25,17 +25,18 @@ int main() {
   //jm_num_zones = NUM_ZONES;
   //jm_zones = (jm_key_zone*) malloc(sizeof(jm_key_zone) * jm_num_zones);
   //int i;
-  jm_key_zone* zone1 = jm_new_key_zone();
+  jm_key_zone zone1;
+  jm_init_key_zone(&zone1);
 
   //wav = fopen("shawn.wav", "rb");
   //wav = fopen("Glass.wav", "rb");
   //wav = fopen("Leaving_rh_remix.wav", "rb");
 
   /**** load wav 1 ***/
-  zone1->origin = 48;
-  zone1->lower_bound = INT_MIN;
-  zone1->upper_bound = INT_MAX;
-  zone1->rel_time = RELEASE_TIME;
+  zone1.origin = 48;
+  zone1.lower_bound = INT_MIN;
+  zone1.upper_bound = INT_MAX;
+  zone1.rel_time = RELEASE_TIME;
 
   SF_INFO sf_info;
   sf_info.format = 0;
@@ -44,28 +45,28 @@ int main() {
   SNDFILE* wav = sf_open("afx.wav", SFM_READ, &sf_info);
 
   printf("wave length: %" PRIi64 "\n", sf_info.frames);
-  zone1->start = 0;
-  zone1->left = 44100;
-  zone1->right = 3 * 44100 + 5 * 44100 / 8;
+  zone1.start = 0;
+  zone1.left = 44100;
+  zone1.right = 3 * 44100 + 5 * 44100 / 8;
   sample_t* wave[2];
   wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
   wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
 
-  zone1->wave[0] = wave[0];
-  zone1->wave[1] = wave[1];
-  zone1->wave_length = sf_info.frames;
-  zone1->amp = 1.0;
-  zone1->pitch_corr = 0.0;
-  zone1->loop_on = 1;
-  zone1->crossfade = 22050;
+  zone1.wave[0] = wave[0];
+  zone1.wave[1] = wave[1];
+  zone1.wave_length = sf_info.frames;
+  zone1.amp = 1.0;
+  zone1.pitch_corr = 0.0;
+  zone1.loop_on = 1;
+  zone1.crossfade = 22050;
 
   // assuming 2 channel
   double frame[2];
   sf_count_t f;
   for (f = 0; f < sf_info.frames; f++) {
     sf_readf_double(wav, frame, 1);
-    zone1->wave[0][f] = frame[0];
-    zone1->wave[1][f] = frame[1];
+    zone1.wave[0][f] = frame[0];
+    zone1.wave[1][f] = frame[1];
   }
 
   sf_close(wav);
@@ -113,7 +114,7 @@ int main() {
   msg->data.i = level;
   jm_send_msg(jms, msg);
 
-  jm_add_zone(jms, 0, zone1);
+  jm_add_zone(jms, 0, &zone1);
 
   while (1) {
     c = getch();
