@@ -42,15 +42,15 @@ typedef struct JMSampler JMSampler;
 extern "C" {
 #endif
   void jm_init_key_zone(jm_key_zone* zone);
-  int jm_zone_contains(jm_key_zone* zone, int pitch);
+  int jm_zone_contains(jm_key_zone const * zone, int pitch);
 
   JMSampler* jm_new_sampler();
   void jm_destroy_sampler(JMSampler* jms);
 
-  void jm_add_zone(JMSampler* jms, int key, jm_key_zone* zone);
+  void jm_add_zone(JMSampler* jms, int key, jm_key_zone const * zone);
   void jm_remove_zone(JMSampler* jms, int key);
 
-  void jm_send_msg(JMSampler* jms, jm_msg* msg);
+  void jm_send_msg(JMSampler* jms, jm_msg const * msg);
   int jm_receive_msg(JMSampler* jms, jm_msg* msg);
 #ifdef __cplusplus
 }

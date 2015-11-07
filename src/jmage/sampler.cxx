@@ -5,7 +5,6 @@
 #include <jack/jack.h>
 #include <jack/types.h>
 
-#include <stdexcept> 
 #include "jmage/sampler.h"
 #include "jmage/jmsampler.h"
 
@@ -23,7 +22,7 @@ void jm_init_key_zone(jm_key_zone* zone) {
   zone->crossfade = 0;
 }
 
-int jm_zone_contains(jm_key_zone* zone, int pitch) {
+int jm_zone_contains(jm_key_zone const * zone, int pitch) {
   if (pitch >= zone->lower_bound && pitch <= zone->upper_bound)
     return 1;
   return 0;
@@ -42,7 +41,7 @@ void jm_destroy_sampler(JMSampler* jms) {
   delete jms;
 }
 
-void jm_add_zone(JMSampler* jms, int key, jm_key_zone* zone) {
+void jm_add_zone(JMSampler* jms, int key, jm_key_zone const * zone) {
   jms->add_zone(key, *zone);
 }
 
@@ -50,7 +49,7 @@ void jm_remove_zone(JMSampler* jms, int key) {
   jms->remove_zone(key);
 }
 
-void jm_send_msg(JMSampler* jms, jm_msg* msg) {
+void jm_send_msg(JMSampler* jms, jm_msg const * msg) {
   jms->send_msg(*msg);
 }
 

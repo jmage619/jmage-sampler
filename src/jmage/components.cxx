@@ -1,5 +1,5 @@
-#include <limits.h>
-#include <math.h>
+#include <climits>
+#include <cmath>
 
 #include <jack/types.h>
 
@@ -18,7 +18,7 @@ Playhead::Playhead():
   first_pos(0),
   pos_size(1) {}
 
-Playhead::Playhead(jm_key_zone& zone, int pitch, int velocity):
+Playhead::Playhead(const jm_key_zone& zone, int pitch, int velocity):
     state(PLAYING),
     loop_on(zone.loop_on),
     pitch(pitch),
@@ -115,7 +115,7 @@ PlayheadList::~PlayheadList() {
   delete [] arr;
 }
 
-void PlayheadList::add(Playhead& ph) {
+void PlayheadList::add(const Playhead& ph) {
   ph_list_el* pel;
   unused.remove(pel);
   pel->ph = ph;

@@ -34,7 +34,7 @@ class Playhead {
     jack_nframes_t crossfade;
 
     Playhead();
-    Playhead(jm_key_zone& zone, int pitch, int velocity);
+    Playhead(const jm_key_zone& zone, int pitch, int velocity);
     void inc();
     double get_amp();
     void get_values(double values[]);
@@ -59,7 +59,7 @@ class PlayheadList {
     ~PlayheadList();
     ph_list_el* get_head_ptr() {return head;}
     size_t size() {return m_size;}
-    void add(Playhead& ph);
+    void add(const Playhead& ph);
     void remove(ph_list_el* pel);
     void remove_last();
 };

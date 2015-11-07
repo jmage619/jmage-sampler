@@ -43,9 +43,9 @@ class JMSampler {
   public:
     JMSampler();
     ~JMSampler();
-    void add_zone(int key, jm_key_zone& zone);
+    void add_zone(int key, const jm_key_zone& zone);
     void remove_zone(int key);
-    void send_msg(jm_msg& msg);
+    void send_msg(const jm_msg& msg);
     bool receive_msg(jm_msg& msg);
     static int process_callback(jack_nframes_t nframes, void *arg);
 };

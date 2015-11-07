@@ -57,7 +57,7 @@ JMSampler::~JMSampler() {
   jack_client_close(client);
 }
 
-void JMSampler::add_zone(int key, jm_key_zone& zone) {
+void JMSampler::add_zone(int key, const jm_key_zone& zone) {
   zone_map[key] = zone;
 }
 
@@ -65,7 +65,7 @@ void JMSampler::remove_zone(int key) {
   zone_map.erase(key);
 }
 
-void JMSampler::send_msg(jm_msg& msg) {
+void JMSampler::send_msg(const jm_msg& msg) {
   msg_q_in.add(msg);
 }
 
