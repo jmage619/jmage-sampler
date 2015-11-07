@@ -74,10 +74,8 @@ lib.jm_new_sampler.restype = POINTER(JMSampler)
 lib.jm_destroy_sampler.argtypes = [POINTER(JMSampler)]
 lib.jm_add_zone.argtypes = [POINTER(JMSampler), c_int, POINTER(jm_key_zone)]
 lib.jm_remove_zone.argtypes = [POINTER(JMSampler), c_int]
-lib.jm_new_msg.argtypes = [POINTER(JMSampler)]
-lib.jm_new_msg.restype = POINTER(jm_msg)
 lib.jm_send_msg.argtypes = [POINTER(JMSampler), POINTER(jm_msg)]
-lib.jm_receive_msg.argtypes = [POINTER(JMSampler), POINTER(POINTER(jm_msg))]
+lib.jm_receive_msg.argtypes = [POINTER(JMSampler), POINTER(jm_msg)]
 lib.jm_receive_msg.restype = c_int
 
 SAMPLER = None
@@ -138,10 +136,10 @@ class MyFrame(wx.Frame):
 
   def OnVolScroll(self, e):
     level = e.GetEventObject().GetValue()
-    msg = lib.jm_new_msg(SAMPLER)
-    msg.contents.type = MT_VOLUME
-    msg.contents.data.i = level
-    lib.jm_send_msg(SAMPLER, msg)
+    msg = jm_msg()
+    msg.type = MT_VOLUME
+    msg.data.i = level
+    lib.jm_send_msg(SAMPLER, byref(msg))
 
     self.output.SetValue(str(level))
 
@@ -150,10 +148,10 @@ class MyFrame(wx.Frame):
     try:
       level = int(val)
       if level >= 0 and level < VOL_STEPS:
-        msg = lib.jm_new_msg(SAMPLER)
-        msg.contents.type = MT_VOLUME
-        msg.contents.data.i = level
-        lib.jm_send_msg(SAMPLER, msg)
+        msg = jm_msg()
+        msg.type = MT_VOLUME
+        msg.data.i = level
+        lib.jm_send_msg(SAMPLER, byref(msg))
         self.slider.SetValue(level)
     except ValueError:
       pass
@@ -202,11 +200,11 @@ if __name__ == '__main__':
   #level = VOL_STEPS - 16 
   level = VOL_STEPS - 1
 
-  msg = lib.jm_new_msg(SAMPLER)
-  msg.contents.type = MT_VOLUME
+  msg = jm_msg()
+  msg.type = MT_VOLUME
   
-  msg.contents.data.i = level
-  lib.jm_send_msg(SAMPLER, msg)
+  msg.data.i = level
+  lib.jm_send_msg(SAMPLER, byref(msg))
 
   app = wx.App()
 

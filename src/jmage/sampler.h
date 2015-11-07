@@ -50,10 +50,8 @@ extern "C" {
   void jm_add_zone(JMSampler* jms, int key, jm_key_zone* zone);
   void jm_remove_zone(JMSampler* jms, int key);
 
-  jm_msg* jm_new_msg(JMSampler* jms);
-
   void jm_send_msg(JMSampler* jms, jm_msg* msg);
-  int jm_receive_msg(JMSampler* jms, jm_msg** msg);
+  int jm_receive_msg(JMSampler* jms, jm_msg* msg);
 #ifdef __cplusplus
 }
 #endif

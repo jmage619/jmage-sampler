@@ -20,22 +20,8 @@ void JMSampler::init_amp(JMSampler* jms) {
   jms->amp[0] = 0.0;
 }
 
-void JMSampler::init_msg_pool(JMSampler* jms) {
-  for (int i = 0; i < MSG_Q_SIZE; ++i) {
-    jm_msg* msg = new jm_msg;
-    jms->msg_pool.add(msg);
-  }
-}
-
-void JMSampler::destroy_msg_pool(JMSampler* jms) {
-  jm_msg* msg;
-  while (jms->msg_pool.remove(msg))
-    delete msg;
-}
-
 JMSampler::JMSampler():
     msg_q_in(MSG_Q_SIZE),
-    msg_pool(MSG_Q_SIZE),
     msg_q_out(MSG_Q_SIZE),
     level(VOL_STEPS - 1),
     sustain_on(false),
@@ -43,13 +29,9 @@ JMSampler::JMSampler():
   // init amplitude array
   init_amp(this);
 
-  // init message pool
-  init_msg_pool(this);
-
   // init jack
   jack_status_t status; 
   if ((client = jack_client_open("ghetto_sampler", JackNullOption, &status)) == NULL) {
-    destroy_msg_pool(this);
     throw std::runtime_error("failed to open jack client");
   }
 
@@ -63,7 +45,6 @@ JMSampler::JMSampler():
     jack_port_unregister(client, output_port1);
     jack_port_unregister(client, output_port2);
     jack_client_close(client);
-    destroy_msg_pool(this);
     throw std::runtime_error("cannot activate jack client");
   }
 }
@@ -74,13 +55,6 @@ JMSampler::~JMSampler() {
   jack_port_unregister(client, output_port1);
   jack_port_unregister(client, output_port2);
   jack_client_close(client);
-
-  // clean up any lingering messages
-  destroy_msg_pool(this);
-  jm_msg* msg;
-  while (msg_q_in.remove(msg)) {
-    delete msg;
-  }
 }
 
 void JMSampler::add_zone(int key, jm_key_zone& zone) {
@@ -91,17 +65,11 @@ void JMSampler::remove_zone(int key) {
   zone_map.erase(key);
 }
 
-jm_msg* JMSampler::new_msg() {
-  jm_msg* msg = NULL;
-  msg_pool.remove(msg);
-  return msg;
-}
-
-void JMSampler::send_msg(jm_msg* msg) {
+void JMSampler::send_msg(jm_msg& msg) {
   msg_q_in.add(msg);
 }
 
-bool JMSampler::receive_msg(jm_msg*& msg) {
+bool JMSampler::receive_msg(jm_msg& msg) {
   return msg_q_out.remove(msg);
 }
 
@@ -114,12 +82,11 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
   memset(buffer2, 0, sizeof(jack_default_audio_sample_t) * nframes);
 
   // handle any UI messages
-  jm_msg* msg;
+  jm_msg msg;
   while (jms->msg_q_in.remove(msg)) {
-    if (msg->type == MT_VOLUME) {
-      jms->level = msg->data.i;
+    if (msg.type == MT_VOLUME) {
+      jms->level = msg.data.i;
     }
-    jms->msg_pool.add(msg);
   }
 
   // capture midi event

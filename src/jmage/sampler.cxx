@@ -50,14 +50,10 @@ void jm_remove_zone(JMSampler* jms, int key) {
   jms->remove_zone(key);
 }
 
-jm_msg* jm_new_msg(JMSampler* jms) {
-  return jms->new_msg();
-}
-
 void jm_send_msg(JMSampler* jms, jm_msg* msg) {
-  jms->send_msg(msg);
+  jms->send_msg(*msg);
 }
 
-int jm_receive_msg(JMSampler* jms, jm_msg** msg) {
+int jm_receive_msg(JMSampler* jms, jm_msg* msg) {
   return jms->receive_msg(*msg);
 }

@@ -109,10 +109,10 @@ int main() {
   int c;
   int level = VOL_STEPS - 8;
 
-  jm_msg* msg = jm_new_msg(jms);
-  msg->type = MT_VOLUME;
-  msg->data.i = level;
-  jm_send_msg(jms, msg);
+  jm_msg msg;
+  msg.type = MT_VOLUME;
+  msg.data.i = level;
+  jm_send_msg(jms, &msg);
 
   jm_add_zone(jms, 0, &zone1);
 
@@ -133,20 +133,18 @@ int main() {
       case '[':
         if (level > 0) {
           level--;
-          msg = jm_new_msg(jms);
-          msg->type = MT_VOLUME;
-          msg->data.i = level;
-          jm_send_msg(jms, msg);
+          msg.type = MT_VOLUME;
+          msg.data.i = level;
+          jm_send_msg(jms, &msg);
         }
         printf("level: %i\n", level);
         continue;
       case ']':
         if (level < VOL_STEPS - 1) {
           level++;
-          msg = jm_new_msg(jms);
-          msg->type = MT_VOLUME;
-          msg->data.i = level;
-          jm_send_msg(jms, msg);
+          msg.type = MT_VOLUME;
+          msg.data.i = level;
+          jm_send_msg(jms, &msg);
         }
         printf("level: %i\n", level);
         continue;
