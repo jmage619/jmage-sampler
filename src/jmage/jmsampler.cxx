@@ -64,7 +64,7 @@ JMSampler::~JMSampler() {
   pthread_mutex_destroy(&zone_map_lock);
 }
 
-void JMSampler::add_zone(int key, const jm_key_zone& zone) {
+void JMSampler::update_zone(int key, const jm_key_zone& zone) {
   pthread_mutex_lock(&zone_map_lock);
   zone_map[key] = zone;
   pthread_mutex_unlock(&zone_map_lock);

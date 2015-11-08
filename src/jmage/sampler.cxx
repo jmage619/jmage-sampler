@@ -41,8 +41,8 @@ void jm_destroy_sampler(JMSampler* jms) {
   delete jms;
 }
 
-void jm_add_zone(JMSampler* jms, int key, jm_key_zone const * zone) {
-  jms->add_zone(key, *zone);
+void jm_update_zone(JMSampler* jms, int key, jm_key_zone const * zone) {
+  jms->update_zone(key, *zone);
 }
 
 void jm_remove_zone(JMSampler* jms, int key) {

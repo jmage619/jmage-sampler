@@ -72,7 +72,7 @@ lib = ctypes.cdll.LoadLibrary('libjm_sampler.so')
 lib.jm_init_key_zone.argtypes = [POINTER(jm_key_zone)]
 lib.jm_new_sampler.restype = POINTER(JMSampler)
 lib.jm_destroy_sampler.argtypes = [POINTER(JMSampler)]
-lib.jm_add_zone.argtypes = [POINTER(JMSampler), c_int, POINTER(jm_key_zone)]
+lib.jm_update_zone.argtypes = [POINTER(JMSampler), c_int, POINTER(jm_key_zone)]
 lib.jm_remove_zone.argtypes = [POINTER(JMSampler), c_int]
 lib.jm_send_msg.argtypes = [POINTER(JMSampler), POINTER(jm_msg)]
 lib.jm_receive_msg.argtypes = [POINTER(JMSampler), POINTER(jm_msg)]
@@ -195,7 +195,7 @@ if __name__ == '__main__':
 
   SAMPLER = lib.jm_new_sampler()
 
-  lib.jm_add_zone(SAMPLER, 0, byref(zone))
+  lib.jm_update_zone(SAMPLER, 0, byref(zone))
 
   #level = VOL_STEPS - 16 
   level = VOL_STEPS - 1
