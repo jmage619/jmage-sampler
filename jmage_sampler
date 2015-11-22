@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
+import os
 import sys
 import tty
 import termios
 import wave
 import struct
 import wx
+import jmage.ui
 
 import ctypes
 from time import sleep
@@ -25,11 +27,11 @@ from ctypes import c_void_p
 from ctypes import c_size_t
 
 INT16_MAX = 2**16 / 2 - 1
-INT_MAX = 2**32 / 2 - 1
-INT_MIN  = - INT_MAX - 1
-RELEASE_TIME  = 44100 / 1000.
+SAMPLE_RATE = 44100
 MT_VOLUME = 0
 VOL_STEPS  = 17
+NOTE_MIN = 0
+NOTE_MAX = 127
 
 OUT_LEN = 4.5
 
@@ -79,6 +81,9 @@ lib.jm_receive_msg.argtypes = [POINTER(JMSampler), POINTER(jm_msg)]
 lib.jm_receive_msg.restype = c_int
 
 SAMPLER = None
+# this caches loaded wav files
+WAVES = {}
+ZONES = []
   
 class MyFrame(wx.Frame):
   def __init__(self, *args, **kwargs):
@@ -94,40 +99,54 @@ class MyFrame(wx.Frame):
     menubar.Append(file_menu, '&File')
     self.SetMenuBar(menubar)
 
-    panel = wx.Panel(self)
+    sp = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE)
+    self.panel1 = wx.Panel(sp)
 
     # create Volume label
     vbox = wx.BoxSizer(wx.VERTICAL)
-    st1 = wx.StaticText(panel, label='Volume:')
+    st1 = wx.StaticText(self.panel1, label='Volume:')
     vbox.Add(st1, flag=wx.LEFT | wx.RIGHT | wx.TOP, border=10)
 
     # horizontal sizer to contain volume control
     hbox1 = wx.BoxSizer(wx.HORIZONTAL)
 
     # set font and extract char width to use in Volume output box
-    font = wx.Font(10, wx.TELETYPE, wx.NORMAL, wx.NORMAL)
-    dc = wx.ClientDC(panel)
-    dc.SetFont(font)
-    char_width = dc.GetTextExtent("X")[0]
-    width = int(char_width * OUT_LEN + 0.5)
+    self.font = wx.Font(10, wx.TELETYPE, wx.NORMAL, wx.NORMAL)
+    dc = wx.ClientDC(self.panel1)
+    dc.SetFont(self.font)
+    self.char_width = dc.GetTextExtent("X")[0]
+    width = int(self.char_width * OUT_LEN + 0.5)
 
     # create Volume output box
-    self.output = wx.TextCtrl(panel, size=(width, -1),
+    self.output = wx.TextCtrl(self.panel1, size=(width, -1),
       style=wx.TE_RIGHT | wx.TE_PROCESS_ENTER)
     self.output.SetValue(str(VOL_STEPS - 1))
-    self.output.SetFont(font)
+    self.output.SetFont(self.font)
     self.Bind(wx.EVT_TEXT_ENTER, self.OnVolUpdate, self.output)
     hbox1.Add(self.output, flag=wx.RIGHT, border=10)
 
     # create Volume slider
-    self.slider = wx.Slider(panel, -1, VOL_STEPS - 1, 0, VOL_STEPS - 1, size=(200, -1),
+    self.slider = wx.Slider(self.panel1, -1, VOL_STEPS - 1, 0, VOL_STEPS - 1, size=(200, -1),
       style=wx.SL_HORIZONTAL)
     self.Bind(wx.EVT_SCROLL, self.OnVolScroll, self.slider)
     hbox1.Add(self.slider, flag=wx.ALIGN_CENTER)
-
+    
     vbox.Add(hbox1, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border=10)
 
-    panel.SetSizer(vbox)
+    # create zone grid
+    self.zone_panel = jmage.ui.StretchColGrid(14, self.panel1, style=wx.TAB_TRAVERSAL)
+    vbox.Add(self.zone_panel, flag=wx.LEFT | wx.RIGHT | wx.TOP | wx.EXPAND, border=10, proportion=1)
+    self.AddZoneHeader()
+
+    self.panel1.SetSizer(vbox)
+
+    self.panel2 = wx.Panel(sp)
+    # to create zones
+    self.add_zone_button = wx.Button(self.panel2, -1, "+")
+
+    self.Bind(wx.EVT_BUTTON, self.OnZoneAdd, self.add_zone_button)
+
+    sp.SplitHorizontally(self.panel1, self.panel2, sashPosition=250)
 
     self.Show()
 
@@ -156,48 +175,238 @@ class MyFrame(wx.Frame):
     except ValueError:
       pass
 
-if __name__ == '__main__':
-  #global CLIENT
-  zone = jm_key_zone()
-  lib.jm_init_key_zone(byref(zone))
-  wav_file = wave.open('afx.wav')
+  def AddZoneHeader(self):
+    # zone removal button
+    st = wx.StaticText(self.zone_panel, label="Remove")
+    self.zone_panel.Add(st)
 
+    st = wx.StaticText(self.zone_panel, label="Name")
+    st.SetSize((7 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Amp")
+    st.SetSize((5 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Origin")
+    st.SetSize((8 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Lower")
+    st.SetSize((8 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Upper")
+    st.SetSize((8 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Pitch")
+    st.SetSize((5 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Start")
+    st.SetSize((5 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Left")
+    st.SetSize((5 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Right")
+    st.SetSize((5 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Loop")
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="CF")
+    st.SetSize((4 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Rel")
+    st.SetSize((5 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Path")
+    st.SetSize((64 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+  def AddZone(self, zone, path):
+    # zone removal button
+    remove_zone_button = wx.Button(self.zone_panel, -1, "-")
+    self.zone_panel.Add(remove_zone_button)
+    #self.Bind(wx.EVT_BUTTON, self.OnZoneRemove, remove_zone_button)
+
+    tc = wx.TextCtrl(self.zone_panel)
+    tc.SetValue("Zone %i" % len(ZONES))
+    self.zone_panel.Add(tc)
+
+    tc = jmage.ui.DragBox(0.01, 0.0, 1.0, self.zone_panel,
+      fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
+    tc.ChangeValue(zone.amp)
+    tc.SetFont(self.font)
+    self.zone_panel.Add(tc)
+
+    cb = jmage.ui.NoteChoice(self.zone_panel)
+    cb.Select(zone.origin)
+    cb.SetFont(self.font)
+    self.zone_panel.Add(cb)
+    self.Bind(wx.EVT_CHOICE, self.OnControlEvent, cb)
+
+    cb = jmage.ui.NoteChoice(self.zone_panel)
+    cb.Select(zone.lower_bound)
+    cb.SetFont(self.font)
+    self.zone_panel.Add(cb)
+    self.Bind(wx.EVT_CHOICE, self.OnControlEvent, cb)
+
+    cb = jmage.ui.NoteChoice(self.zone_panel)
+    cb.Select(zone.upper_bound)
+    cb.SetFont(self.font)
+    self.zone_panel.Add(cb)
+    self.Bind(wx.EVT_CHOICE, self.OnControlEvent, cb)
+
+    tc = jmage.ui.DragBox(0.01, -0.5, 0.5, self.zone_panel,
+      fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
+    tc.ChangeValue(zone.pitch_corr)
+    tc.SetFont(self.font)
+    self.zone_panel.Add(tc)
+
+    wav_end = float(zone.right) / SAMPLE_RATE
+    tc = jmage.ui.DragBox(0.01, 0.0, wav_end, self.zone_panel,
+      fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
+    tc.ChangeValue(zone.start / SAMPLE_RATE)
+    tc.SetFont(self.font)
+    self.zone_panel.Add(tc)
+
+    tc = jmage.ui.DragBox(0.01, 0.0, wav_end, self.zone_panel,
+      fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
+    tc.ChangeValue(zone.left / SAMPLE_RATE)
+    tc.SetFont(self.font)
+    self.zone_panel.Add(tc)
+
+    tc = jmage.ui.DragBox(0.01, 0.0, wav_end, self.zone_panel,
+      fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
+    tc.ChangeValue(wav_end)
+    tc.SetFont(self.font)
+    self.zone_panel.Add(tc)
+
+    cb = wx.CheckBox(self.zone_panel)
+    self.zone_panel.Add(cb)
+    self.Bind(wx.EVT_CHECKBOX, self.OnControlEvent, cb)
+
+    tc = jmage.ui.DragBox(1, 0, 1000, self.zone_panel,
+      callback=ControlCallback, style=wx.TE_RIGHT)
+    tc.ChangeValue(int(float(zone.crossfade) / SAMPLE_RATE * 1000))
+    tc.SetFont(self.font)
+    self.zone_panel.Add(tc)
+
+    tc = jmage.ui.DragBox(0.01, 0.0, wav_end, self.zone_panel,
+      fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
+    tc.ChangeValue(zone.rel_time / SAMPLE_RATE)
+    tc.SetFont(self.font)
+    self.zone_panel.Add(tc)
+
+    st = wx.StaticText(self.zone_panel, label=path)
+    self.zone_panel.Add(st)
+
+  def OnZoneAdd(self, e):
+    dlg = wx.FileDialog(self, "Open a FUCKING WAV already!!", os.getcwd(), style=wx.OPEN)
+    if dlg.ShowModal() == wx.ID_OK:
+      path = dlg.GetPath()
+
+      if path in WAVES:
+        wav = WAVES[path]
+      else:
+        wav = load_wave(path)
+        WAVES[path] = wav
+
+      zone = jm_key_zone()
+      lib.jm_init_key_zone(byref(zone))
+
+      zone.wave[0] = wav[0]
+      zone.wave[1] = wav[1]
+      zone.origin = 36
+      zone.lower_bound = NOTE_MIN
+      zone.upper_bound = NOTE_MAX
+      zone.rel_time = 0
+      zone.start = 0
+      zone.left = 0
+      zone.right = len(wav[0]) - 1
+      zone.wave_length = len(wav[0])
+      zone.amp = 1.0
+      zone.pitch_corr = 0.0
+      zone.loop_on = 0
+      zone.crossfade = 0
+
+      ZONES.append(zone)
+      lib.jm_update_zone(SAMPLER, len(ZONES) - 1, byref(zone))
+      self.AddZone(zone, path)
+
+    dlg.Destroy()
+
+  # this is broken until we change sampler zone list to be array-like
+  def OnZoneRemove(self, e):
+    win = e.GetEventObject()
+    grid = win.GetParent()
+    index = grid.GetIndex(win)
+
+    # first index of grid is header
+    zone_index = index[0] - 1
+    lib.jm_remove_zone(SAMPLER, zone_index)
+    grid.RemoveRow(index[0])
+
+  def OnControlEvent(self, e):
+    ControlCallback(e.GetEventObject())
+
+def load_wave(path):
+  wav_file = wave.open(path)
   wave_length = wav_file.getnframes()
-
-  wave = []
-  wave.append(((c_float * wave_length))())
-  wave.append(((c_float * wave_length))())
-
+  wav = []
+  wav.append(((c_float * wave_length))())
+  wav.append(((c_float * wave_length))())
+  
   for i in range(wave_length):
     frame = struct.unpack('<hh', wav_file.readframes(1))
-    wave[0][i] = frame[0] / float(INT16_MAX)
-    wave[1][i] = frame[1] / float(INT16_MAX)
+    wav[0][i] = frame[0] / float(INT16_MAX)
+    wav[1][i] = frame[1] / float(INT16_MAX)
 
   wav_file.close()
+  return wav
 
-  zone.wave[0] = wave[0]
-  zone.wave[1] = wave[1]
+def ControlCallback(win):
+  #print "callback called"
+  grid = win.GetParent()
+  index = grid.GetIndex(win)
+  # first index of grid is header
+  zone_index = index[0] - 1
+  if index[1] == 2:
+    ZONES[zone_index].amp = win.GetValue()
+  elif index[1] == 3:
+    ZONES[zone_index].origin = win.GetSelection()
+  elif index[1] == 4:
+    ZONES[zone_index].lower_bound = win.GetSelection()
+  elif index[1] == 5:
+    ZONES[zone_index].upper_bound = win.GetSelection()
+  elif index[1] == 6:
+    ZONES[zone_index].pitch_corr = win.GetValue()
+  elif index[1] == 7:
+    ZONES[zone_index].start = int(SAMPLE_RATE * win.GetValue())
+  elif index[1] == 8:
+    ZONES[zone_index].left = int(SAMPLE_RATE * win.GetValue())
+  elif index[1] == 9:
+    ZONES[zone_index].right = int(SAMPLE_RATE * win.GetValue())
+  elif index[1] == 10:
+    ZONES[zone_index].loop_on = int(win.GetValue())
+  elif index[1] == 11:
+    ZONES[zone_index].crossfade = int(SAMPLE_RATE * win.GetValue() / 1000.)
+  elif index[1] == 12:
+    ZONES[zone_index].rel_time = SAMPLE_RATE * win.GetValue()
 
-  zone.origin = 48
-  zone.lower_bound = INT_MIN
-  zone.upper_bound = INT_MAX
-  zone.rel_time = RELEASE_TIME
-  zone.start = 0
-  zone.left = 44100
-  zone.right = 3 * 44100 + 5 * 44100 / 8
-  zone.wave_length = wave_length
-  zone.amp = 1.0
-  zone.pitch_corr = 0.0
-  zone.loop_on = 1
-  zone.crossfade = 22050
-
-  #print JM_ZONES.contents.wave[0][0]
-
+  lib.jm_update_zone(SAMPLER, zone_index, byref(ZONES[zone_index]))
+  
+if __name__ == '__main__':
   SAMPLER = lib.jm_new_sampler()
 
-  lib.jm_update_zone(SAMPLER, 0, byref(zone))
-
-  #level = VOL_STEPS - 16 
   level = VOL_STEPS - 1
 
   msg = jm_msg()
@@ -208,8 +417,9 @@ if __name__ == '__main__':
 
   app = wx.App()
 
-  MyFrame(None)
+  frame = MyFrame(None, size=(490,400))
 
   app.MainLoop()
-  lib.jm_remove_zone(SAMPLER, 0)
+  for i in range(len(ZONES)):
+    lib.jm_remove_zone(SAMPLER, i)
   lib.jm_destroy_sampler(SAMPLER)
