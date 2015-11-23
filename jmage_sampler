@@ -346,7 +346,6 @@ class MyFrame(wx.Frame):
 
     dlg.Destroy()
 
-  # this is broken until we change sampler zone list to be array-like
   def OnZoneRemove(self, e):
     win = e.GetEventObject()
     grid = win.GetParent()
