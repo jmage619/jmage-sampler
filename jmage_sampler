@@ -92,6 +92,8 @@ class MyFrame(wx.Frame):
   def __init__(self, *args, **kwargs):
     super(MyFrame, self).__init__(*args, **kwargs)
 
+    # always increment on zone creation
+    self.zone_name_index = 1
     self.SetTitle("Ghetto Sampler")
 
     # create menu bar and File menu with exit item
@@ -241,8 +243,9 @@ class MyFrame(wx.Frame):
     self.Bind(wx.EVT_BUTTON, self.OnZoneRemove, remove_zone_button)
 
     tc = wx.TextCtrl(self.zone_panel)
-    tc.SetValue("Zone %i" % lib.jm_num_zones(SAMPLER))
+    tc.SetValue("Zone %i" % self.zone_name_index)
     self.zone_panel.Add(tc)
+    self.zone_name_index += 1
 
     tc = jmage.ui.DragBox(0.01, 0.0, 1.0, self.zone_panel,
       fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
@@ -424,6 +427,4 @@ if __name__ == '__main__':
   frame = MyFrame(None, size=(490,400))
 
   app.MainLoop()
-  for i in range(lib.jm_num_zones(SAMPLER)):
-    lib.jm_remove_zone(SAMPLER, i)
   lib.jm_destroy_sampler(SAMPLER)
