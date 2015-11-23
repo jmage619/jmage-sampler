@@ -41,12 +41,24 @@ void jm_destroy_sampler(JMSampler* jms) {
   delete jms;
 }
 
-void jm_update_zone(JMSampler* jms, int key, jm_key_zone const * zone) {
-  jms->update_zone(key, *zone);
+void jm_add_zone(JMSampler* jms, jm_key_zone const * zone) {
+  jms->add_zone(*zone);
 }
 
-void jm_remove_zone(JMSampler* jms, int key) {
-  jms->remove_zone(key);
+void jm_get_zone(JMSampler* jms, int index, jm_key_zone* zone) {
+  *zone = jms->get_zone(index);
+}
+
+void jm_update_zone(JMSampler* jms, int index, jm_key_zone const * zone) {
+  jms->update_zone(index, *zone);
+}
+
+void jm_remove_zone(JMSampler* jms, int index) {
+  jms->remove_zone(index);
+}
+
+size_t jm_num_zones(JMSampler* jms){
+  return jms->num_zones();
 }
 
 void jm_send_msg(JMSampler* jms, jm_msg const * msg) {

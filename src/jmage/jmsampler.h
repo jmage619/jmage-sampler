@@ -1,7 +1,7 @@
 #ifndef JM_JMSAMPLER_H
 #define JM_JMSAMPLER_H
 
-#include <tr1/unordered_map>
+#include <vector>
 
 #include <pthread.h>
 #include <jack/types.h>
@@ -12,7 +12,6 @@
 
 #define VOL_STEPS 17
 // hardcode 1 zone until we come up with dynamic zone creation
-#define NUM_ZONES 1
 #define WAV_OFF_Q_SIZE 10
 #define MSG_Q_SIZE 32
 
@@ -32,9 +31,8 @@ class JMSampler {
     double amp[VOL_STEPS];
     int level;
 
-    jm_key_zone jm_zones[NUM_ZONES];
-    std::tr1::unordered_map<int, jm_key_zone> zone_map;
-    pthread_mutex_t zone_map_lock;
+    std::vector<jm_key_zone> zones;
+    pthread_mutex_t zone_lock;
 
     // state
     bool sustain_on;
@@ -45,8 +43,11 @@ class JMSampler {
   public:
     JMSampler();
     ~JMSampler();
-    void update_zone(int key, const jm_key_zone& zone);
-    void remove_zone(int key);
+    void add_zone(const jm_key_zone& zone);
+    const jm_key_zone& get_zone(int index);
+    void update_zone(int index, const jm_key_zone& zone);
+    void remove_zone(int index);
+    size_t num_zones();
     void send_msg(const jm_msg& msg);
     bool receive_msg(jm_msg& msg);
     static int process_callback(jack_nframes_t nframes, void *arg);

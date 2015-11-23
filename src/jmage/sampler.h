@@ -47,8 +47,11 @@ extern "C" {
   JMSampler* jm_new_sampler();
   void jm_destroy_sampler(JMSampler* jms);
 
-  void jm_update_zone(JMSampler* jms, int key, jm_key_zone const * zone);
-  void jm_remove_zone(JMSampler* jms, int key);
+  void jm_add_zone(JMSampler* jms, jm_key_zone const * zone);
+  void jm_get_zone(JMSampler* jms, int index, jm_key_zone* zone);
+  void jm_update_zone(JMSampler* jms, int index, jm_key_zone const * zone);
+  void jm_remove_zone(JMSampler* jms, int index);
+  size_t jm_num_zones(JMSampler* jms);
 
   void jm_send_msg(JMSampler* jms, jm_msg const * msg);
   int jm_receive_msg(JMSampler* jms, jm_msg* msg);
