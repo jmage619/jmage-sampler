@@ -114,7 +114,7 @@ int main() {
   msg.data.i = level;
   jm_send_msg(jms, &msg);
 
-  jm_update_zone(jms, 0, &zone1);
+  jm_add_zone(jms, &zone1);
 
   while (1) {
     c = getch();
