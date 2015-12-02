@@ -7,7 +7,8 @@
 #include "jmage/sampler.h"
 
 #define NUM_ZONES 1
-#define RELEASE_TIME  (44100. / 1000.)
+#define RELEASE_TIME  (44100 / 1000)
+//#define RELEASE_TIME  (44100)
 
 // crazy shit to imitate getch in linux / os x
 char getch() {
@@ -36,11 +37,12 @@ int main() {
   zone1.origin = 48;
   zone1.lower_bound = INT_MIN;
   zone1.upper_bound = INT_MAX;
-  zone1.rel_time = RELEASE_TIME;
+  zone1.release = RELEASE_TIME;
 
   SF_INFO sf_info;
   sf_info.format = 0;
   
+  printf("opening wav\n");
   //SNDFILE* wav = sf_open("rhodes_note.wav", SFM_READ, &sf_info);
   SNDFILE* wav = sf_open("afx.wav", SFM_READ, &sf_info);
 
@@ -114,6 +116,7 @@ int main() {
   msg.data.i = level;
   jm_send_msg(jms, &msg);
 
+  printf("adding zone\n");
   jm_add_zone(jms, &zone1);
 
   while (1) {

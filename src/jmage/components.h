@@ -19,7 +19,7 @@ class Playhead {
     int pitch;
     double amp;
     double speed;
-    double rel_time;
+    jack_nframes_t release;
     jack_nframes_t rel_timer;
     bool crossfading;
     jack_nframes_t cf_timer;

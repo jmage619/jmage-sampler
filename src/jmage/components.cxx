@@ -22,7 +22,7 @@ Playhead::Playhead(const jm_key_zone& zone, int pitch, int velocity):
     state(PLAYING),
     loop_on(zone.loop_on),
     pitch(pitch),
-    rel_time(zone.rel_time),
+    release(zone.release),
     rel_timer(0),
     crossfading(false),
     cf_timer(0),
@@ -45,7 +45,7 @@ void Playhead::inc() {
   if (state == RELEASED)
     rel_timer++;
 
-  if (state == RELEASED && rel_timer >= rel_time) {
+  if (state == RELEASED && rel_timer >= release) {
     state = FINISHED;
     return;
   }
@@ -77,7 +77,7 @@ void Playhead::inc() {
 }
 
 double Playhead::get_amp() {
-  return state == RELEASED ? amp * (-(rel_timer / rel_time) + 1.0) : amp;
+  return state == RELEASED ? amp * ((-1.0 * rel_timer) / release + 1.0) : amp;
 }
 
 void Playhead::get_values(double values[]) {

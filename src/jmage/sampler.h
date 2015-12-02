@@ -17,7 +17,7 @@ typedef struct {
   int upper_bound;
   int origin;
   double amp;
-  double rel_time;
+  jack_nframes_t release;
   double pitch_corr;
   int loop_on;
   jack_nframes_t crossfade;
