@@ -9,18 +9,26 @@
 class Playhead {
   public:
     enum State {
-      PLAYING,
-      RELEASED,
-      NOTE_OFF,
+      ATTACK,
+      HOLD,
+      DECAY,
+      SUSTAIN,
+      RELEASE,
       FINISHED
     };
     State state;
+    bool note_off;
     bool loop_on;
     int pitch;
     double amp;
     double speed;
+    jack_nframes_t attack;
+    jack_nframes_t hold;
+    jack_nframes_t decay;
+    double sustain;
     jack_nframes_t release;
-    jack_nframes_t rel_timer;
+    jack_nframes_t amp_timer;
+    double rel_amp;
     bool crossfading;
     jack_nframes_t cf_timer;
     sample_t* wave[2];
@@ -38,6 +46,7 @@ class Playhead {
     void inc();
     double get_amp();
     void get_values(double values[]);
+    void set_release();
 };
 
 struct ph_list_el {

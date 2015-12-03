@@ -138,7 +138,7 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
           if (jms->sustain_on) {
             for (pel = jms->playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
               if (pel->ph.pitch == event.buffer[1])
-                pel->ph.state = Playhead::RELEASED;
+                pel->ph.set_release();
             }
           }
           //int i;
@@ -167,10 +167,10 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
           for (pel = jms->playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
             if (pel->ph.pitch == event.buffer[1]) {
               if (jms->sustain_on) {
-                pel->ph.state = Playhead::NOTE_OFF;
+                pel->ph.note_off = true;
               }
               else
-                pel->ph.state = Playhead::RELEASED;
+                pel->ph.set_release();
             }
           }
         }
@@ -181,8 +181,8 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
           }
           else {
             for (pel = jms->playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
-              if (pel->ph.state == Playhead::NOTE_OFF)
-                pel->ph.state = Playhead::RELEASED;
+              if (pel->ph.note_off == true)
+                pel->ph.state = Playhead::RELEASE;
             }
 
             jms->sustain_on = false;

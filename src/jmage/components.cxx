@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <climits>
 #include <cmath>
 
@@ -11,19 +12,27 @@
 #define VELOCITY_BOOST 1.2
 
 Playhead::Playhead():
-  state(PLAYING),
-  rel_timer(0),
+  state(ATTACK),
+  note_off(false),
+  amp_timer(0),
+  rel_amp(1.0),
   crossfading(false),
   cf_timer(0),
   first_pos(0),
   pos_size(1) {}
 
 Playhead::Playhead(const jm_key_zone& zone, int pitch, int velocity):
-    state(PLAYING),
+    state(ATTACK),
+    note_off(false),
     loop_on(zone.loop_on),
     pitch(pitch),
+    attack(zone.attack),
+    hold(zone.hold),
+    decay(zone.decay),
+    sustain(zone.sustain),
     release(zone.release),
-    rel_timer(0),
+    amp_timer(0),
+    rel_amp(zone.sustain),
     crossfading(false),
     cf_timer(0),
     wave_length(zone.wave_length),
@@ -42,10 +51,38 @@ Playhead::Playhead(const jm_key_zone& zone, int pitch, int velocity):
 }
 
 void Playhead::inc() {
-  if (state == RELEASED)
-    rel_timer++;
+  switch (state) {
+    case ATTACK:
+    case HOLD:
+    case DECAY:
+    case RELEASE:
+      ++amp_timer;
+    default:
+      break;
+  }
 
-  if (state == RELEASED && rel_timer >= release) {
+  if (state == ATTACK && amp_timer >= attack) {
+    //printf("ATTACK -> HOLD amp: %f\n", get_amp());
+    state = HOLD;
+    amp_timer = 0;
+  }
+  else if (state == HOLD && amp_timer >= hold) {
+    //printf("HOLD -> DECAY amp: %f\n", get_amp());
+    state = DECAY;
+    amp_timer = 0;
+  }
+  else if (state == DECAY && amp_timer >= decay) {
+    //printf("DECAY -> SUSTAIN amp: %f\n", get_amp());
+    if (sustain == 0.0) {
+      //printf("sus 0 FINISHED\n");
+      state = FINISHED;
+      return;
+    }
+    state = SUSTAIN;
+    amp_timer = 0;
+  }
+  else if (state == RELEASE && amp_timer >= release) {
+    //printf("rel FINISHED\n");
     state = FINISHED;
     return;
   }
@@ -77,7 +114,28 @@ void Playhead::inc() {
 }
 
 double Playhead::get_amp() {
-  return state == RELEASED ? amp * ((-1.0 * rel_timer) / release + 1.0) : amp;
+  switch (state) {
+    case ATTACK:
+      // envelope from 0.0 to 1.0
+      if (attack != 0)
+        return amp * (float) amp_timer / attack;
+    case DECAY:
+      // envelope from 1.0 to sustain
+      if (decay != 0)
+        return amp * (-(1.0 - sustain) * amp_timer / decay + 1.0);
+    case SUSTAIN:
+      return amp * sustain;
+    case RELEASE:
+      // from rel_amp to 0.0
+      //return amp * (- rel_amp * amp_timer / release + rel_amp);
+      if (release != 0)
+        return - rel_amp * amp_timer / release + rel_amp;
+      else
+        return rel_amp;
+    default:
+      break;
+  }
+  return amp;
 }
 
 void Playhead::get_values(double values[]) {
@@ -99,6 +157,12 @@ void Playhead::get_values(double values[]) {
     values[0] = get_amp() * wave[0][(jack_nframes_t) positions[first_pos]];
     values[1] = get_amp() * wave[1][(jack_nframes_t) positions[first_pos]];
   }
+}
+
+void Playhead::set_release() {
+  rel_amp = get_amp();
+  amp_timer = 0;
+  state = RELEASE;
 }
 
 PlayheadList::PlayheadList(size_t length): 

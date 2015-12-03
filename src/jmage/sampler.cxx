@@ -16,6 +16,10 @@ void jm_init_key_zone(jm_key_zone* zone) {
   zone->upper_bound = INT_MAX;
   zone->origin = 48;
   zone->amp = 1.0;
+  zone->attack = 0;
+  zone->hold = 0;
+  zone->decay = 0;
+  zone->sustain = 1.0;
   zone->release = 0;
   zone->pitch_corr = 0.0;
   zone->loop_on = 0;

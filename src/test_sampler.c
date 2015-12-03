@@ -37,6 +37,10 @@ int main() {
   zone1.origin = 48;
   zone1.lower_bound = INT_MIN;
   zone1.upper_bound = INT_MAX;
+  zone1.attack = 44100;
+  zone1.hold = 44100;
+  zone1.decay = 44100 / 2;
+  zone1.sustain = 0.8;
   zone1.release = RELEASE_TIME;
 
   SF_INFO sf_info;
