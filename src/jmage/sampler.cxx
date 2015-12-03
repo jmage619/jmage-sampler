@@ -12,9 +12,9 @@
 void jm_init_key_zone(jm_key_zone* zone) {
   zone->start = 0;
   zone->left = 0;
-  zone->lower_bound = INT_MIN;
-  zone->upper_bound = INT_MAX;
-  zone->origin = 48;
+  zone->lower_bound = NOTE_MIN;
+  zone->upper_bound = NOTE_MAX;
+  zone->origin = ORIGIN_DEFAULT;
   zone->amp = 1.0;
   zone->attack = 0;
   zone->hold = 0;

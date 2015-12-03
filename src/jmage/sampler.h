@@ -4,6 +4,9 @@
 #include <jack/types.h>
 
 #define VOL_STEPS 17
+#define NOTE_MIN 0
+#define NOTE_MAX 127
+#define ORIGIN_DEFAULT 36
 
 typedef jack_default_audio_sample_t sample_t;
 

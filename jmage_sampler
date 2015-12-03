@@ -331,18 +331,8 @@ class MyFrame(wx.Frame):
 
       zone.wave[0] = wav[0]
       zone.wave[1] = wav[1]
-      zone.origin = 36
-      zone.lower_bound = NOTE_MIN
-      zone.upper_bound = NOTE_MAX
-      zone.release = 0
-      zone.start = 0
-      zone.left = 0
       zone.right = len(wav[0]) - 1
       zone.wave_length = len(wav[0])
-      zone.amp = 1.0
-      zone.pitch_corr = 0.0
-      zone.loop_on = 0
-      zone.crossfade = 0
 
       lib.jm_add_zone(SAMPLER, byref(zone))
       self.AddZone(zone, path)
