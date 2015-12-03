@@ -48,7 +48,7 @@ class jm_key_zone(Structure):
     ('upper_bound', c_int),
     ('origin', c_int),
     ('amp', c_double),
-    ('rel_time', c_double),
+    ('release', c_uint32),
     ('pitch_corr', c_double),
     ('loop_on', c_int),
     ('crossfade', c_uint32)
@@ -280,13 +280,13 @@ class MyFrame(wx.Frame):
     wav_end = float(zone.right) / SAMPLE_RATE
     tc = jmage.ui.DragBox(0.01, 0.0, wav_end, self.zone_panel,
       fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(zone.start / SAMPLE_RATE)
+    tc.ChangeValue(float(zone.start) / SAMPLE_RATE)
     tc.SetFont(self.font)
     self.zone_panel.Add(tc)
 
     tc = jmage.ui.DragBox(0.01, 0.0, wav_end, self.zone_panel,
       fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(zone.left / SAMPLE_RATE)
+    tc.ChangeValue(float(zone.left) / SAMPLE_RATE)
     tc.SetFont(self.font)
     self.zone_panel.Add(tc)
 
@@ -308,7 +308,7 @@ class MyFrame(wx.Frame):
 
     tc = jmage.ui.DragBox(0.01, 0.0, wav_end, self.zone_panel,
       fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(zone.rel_time / SAMPLE_RATE)
+    tc.ChangeValue(float(zone.release) / SAMPLE_RATE)
     tc.SetFont(self.font)
     self.zone_panel.Add(tc)
 
@@ -334,7 +334,7 @@ class MyFrame(wx.Frame):
       zone.origin = 36
       zone.lower_bound = NOTE_MIN
       zone.upper_bound = NOTE_MAX
-      zone.rel_time = 0
+      zone.release = 0
       zone.start = 0
       zone.left = 0
       zone.right = len(wav[0]) - 1
@@ -407,7 +407,7 @@ def ControlCallback(win):
   elif index[1] == 11:
     zone.crossfade = int(SAMPLE_RATE * win.GetValue() / 1000.)
   elif index[1] == 12:
-    zone.rel_time = SAMPLE_RATE * win.GetValue()
+    zone.release = int(SAMPLE_RATE * win.GetValue())
 
   lib.jm_update_zone(SAMPLER, zone_index, byref(zone))
   
