@@ -4,7 +4,7 @@ import wx
 class NoteChoice(wx.Choice):
   def __init__(self, *args, **kwargs):
     notes = []
-    for i in range(-2,9):
+    for i in range(-1,8):
       notes.append("%iC" % i)
       notes.append("%iC#" % i)
       notes.append("%iD" % i)
@@ -13,7 +13,7 @@ class NoteChoice(wx.Choice):
       notes.append("%iF" % i)
       notes.append("%iF#" % i)
       notes.append("%iG" % i)
-      if i == 8:
+      if i == 7:
         break
       notes.append("%iG#" % i)
       notes.append("%iA" % i)
