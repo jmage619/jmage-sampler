@@ -48,6 +48,10 @@ class jm_key_zone(Structure):
     ('upper_bound', c_int),
     ('origin', c_int),
     ('amp', c_double),
+    ('attack', c_uint32),
+    ('hold', c_uint32),
+    ('decay', c_uint32),
+    ('sustain', c_double),
     ('release', c_uint32),
     ('pitch_corr', c_double),
     ('loop_on', c_int),
@@ -139,7 +143,7 @@ class MyFrame(wx.Frame):
     vbox.Add(hbox1, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border=10)
 
     # create zone grid
-    self.zone_panel = jmage.ui.StretchColGrid(14, self.panel1, style=wx.TAB_TRAVERSAL)
+    self.zone_panel = jmage.ui.StretchColGrid(18, self.panel1, style=wx.TAB_TRAVERSAL)
     vbox.Add(self.zone_panel, flag=wx.LEFT | wx.RIGHT | wx.TOP | wx.EXPAND, border=10, proportion=1)
     self.AddZoneHeader()
 
@@ -228,8 +232,24 @@ class MyFrame(wx.Frame):
     st.SetSize((4 * self.char_width, -1))
     self.zone_panel.Add(st)
 
-    st = wx.StaticText(self.zone_panel, label="Rel")
+    st = wx.StaticText(self.zone_panel, label="Attack")
+    #st.SetSize((5 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Hold")
     st.SetSize((5 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Decay")
+    #st.SetSize((5 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Sustain")
+    #st.SetSize((5 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Release")
+    #st.SetSize((5 * self.char_width, -1))
     self.zone_panel.Add(st)
 
     st = wx.StaticText(self.zone_panel, label="Path")
@@ -303,6 +323,30 @@ class MyFrame(wx.Frame):
     tc = jmage.ui.DragBox(1, 0, 1000, self.zone_panel,
       callback=ControlCallback, style=wx.TE_RIGHT)
     tc.ChangeValue(int(float(zone.crossfade) / SAMPLE_RATE * 1000))
+    tc.SetFont(self.font)
+    self.zone_panel.Add(tc)
+
+    tc = jmage.ui.DragBox(0.01, 0.0, wav_end, self.zone_panel,
+      fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
+    tc.ChangeValue(float(zone.attack) / SAMPLE_RATE)
+    tc.SetFont(self.font)
+    self.zone_panel.Add(tc)
+
+    tc = jmage.ui.DragBox(0.01, 0.0, wav_end, self.zone_panel,
+      fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
+    tc.ChangeValue(float(zone.hold) / SAMPLE_RATE)
+    tc.SetFont(self.font)
+    self.zone_panel.Add(tc)
+
+    tc = jmage.ui.DragBox(0.01, 0.0, wav_end, self.zone_panel,
+      fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
+    tc.ChangeValue(float(zone.decay) / SAMPLE_RATE)
+    tc.SetFont(self.font)
+    self.zone_panel.Add(tc)
+
+    tc = jmage.ui.DragBox(0.01, 0.0, 1.0, self.zone_panel,
+      fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
+    tc.ChangeValue(zone.sustain)
     tc.SetFont(self.font)
     self.zone_panel.Add(tc)
 
@@ -397,6 +441,14 @@ def ControlCallback(win):
   elif index[1] == 11:
     zone.crossfade = int(SAMPLE_RATE * win.GetValue() / 1000.)
   elif index[1] == 12:
+    zone.attack = int(SAMPLE_RATE * win.GetValue())
+  elif index[1] == 13:
+    zone.hold = int(SAMPLE_RATE * win.GetValue())
+  elif index[1] == 14:
+    zone.decay = int(SAMPLE_RATE * win.GetValue())
+  if index[1] == 15:
+    zone.sustain = win.GetValue()
+  elif index[1] == 16:
     zone.release = int(SAMPLE_RATE * win.GetValue())
 
   lib.jm_update_zone(SAMPLER, zone_index, byref(zone))
