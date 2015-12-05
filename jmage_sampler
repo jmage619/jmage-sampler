@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import os.path
 import sys
 import tty
 import termios
@@ -8,6 +9,7 @@ import wave
 import struct
 import wx
 import jmage.ui
+import jmage.util
 
 import ctypes
 from time import sleep
@@ -138,8 +140,13 @@ class MyFrame(wx.Frame):
     self.slider = wx.Slider(self.panel1, -1, VOL_STEPS - 1, 0, VOL_STEPS - 1, size=(200, -1),
       style=wx.SL_HORIZONTAL)
     self.Bind(wx.EVT_SCROLL, self.OnVolScroll, self.slider)
-    hbox1.Add(self.slider, flag=wx.ALIGN_CENTER)
+    hbox1.Add(self.slider, flag=wx.ALIGN_CENTER | wx.RIGHT, border=10)
     
+    # to load patches
+    self.load_button = wx.Button(self.panel1, -1, "load")
+    self.Bind(wx.EVT_BUTTON, self.OnLoad, self.load_button)
+    hbox1.Add(self.load_button, flag=wx.ALIGN_CENTER)
+
     vbox.Add(hbox1, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border=10)
 
     # create zone grid
@@ -183,6 +190,29 @@ class MyFrame(wx.Frame):
         self.slider.SetValue(level)
     except ValueError:
       pass
+
+  def OnLoad(self, e):
+    dlg = wx.FileDialog(self, "Open a FUCKING patch already!!", os.getcwd(), style=wx.OPEN)
+    if dlg.ShowModal() == wx.ID_OK:
+      path = dlg.GetPath()
+      sfz = jmage.util.parse_sfz(path)
+      #print sfz.regions
+      sfz_dir = os.path.dirname(path)
+      for region in sfz.regions:
+        wav_path = os.path.join(sfz_dir, region['sample'])
+        zone = new_zone_from_file(wav_path)
+        # these should really be already validated and converted inside parse
+        zone.lower_bound = int(region['lokey'])
+        zone.upper_bound = int(region['hikey'])
+        zone.origin = int(region['pitch_keycenter'])
+        zone.decay = int(SAMPLE_RATE * float(region['ampeg_decay']))
+        zone.sustain = float(region['ampeg_sustain']) / 100.
+        zone.release = int(SAMPLE_RATE * float(region['ampeg_release']))
+        lib.jm_add_zone(SAMPLER, byref(zone))
+        self.AddZone(zone, wav_path)
+      sfz.close()
+
+    dlg.Destroy()
 
   def AddZoneHeader(self):
     # zone removal button
@@ -364,20 +394,7 @@ class MyFrame(wx.Frame):
     if dlg.ShowModal() == wx.ID_OK:
       path = dlg.GetPath()
 
-      if path in WAVES:
-        wav = WAVES[path]
-      else:
-        wav = load_wave(path)
-        WAVES[path] = wav
-
-      zone = jm_key_zone()
-      lib.jm_init_key_zone(byref(zone))
-
-      zone.wave[0] = wav[0]
-      zone.wave[1] = wav[1]
-      zone.right = len(wav[0]) - 1
-      zone.wave_length = len(wav[0])
-
+      zone = new_zone_from_file(path)
       lib.jm_add_zone(SAMPLER, byref(zone))
       self.AddZone(zone, path)
 
@@ -400,16 +417,45 @@ def load_wave(path):
   wav_file = wave.open(path)
   wave_length = wav_file.getnframes()
   wav = []
-  wav.append(((c_float * wave_length))())
-  wav.append(((c_float * wave_length))())
+  if wav_file.getnchannels() == 1:
+    wav.append(((c_float * wave_length))())
+
+    for i in range(wave_length):
+      frame = struct.unpack('<h', wav_file.readframes(1))
+      wav[0][i] = frame[0] / float(INT16_MAX)
+  else:
+    wav.append(((c_float * wave_length))())
+    wav.append(((c_float * wave_length))())
   
-  for i in range(wave_length):
-    frame = struct.unpack('<hh', wav_file.readframes(1))
-    wav[0][i] = frame[0] / float(INT16_MAX)
-    wav[1][i] = frame[1] / float(INT16_MAX)
+    for i in range(wave_length):
+      frame = struct.unpack('<hh', wav_file.readframes(1))
+      wav[0][i] = frame[0] / float(INT16_MAX)
+      wav[1][i] = frame[1] / float(INT16_MAX)
 
   wav_file.close()
   return wav
+
+def new_zone_from_file(path):
+  if path in WAVES:
+    wav = WAVES[path]
+  else:
+    wav = load_wave(path)
+    WAVES[path] = wav
+
+  zone = jm_key_zone()
+  lib.jm_init_key_zone(byref(zone))
+
+  zone.wave[0] = wav[0]
+  if len(wav) > 1:
+    zone.wave[1] = wav[1]
+  # just point L and R to same if mono
+  else:
+    zone.wave[1] = wav[0]
+
+  zone.right = len(wav[0]) - 1
+  zone.wave_length = len(wav[0])
+
+  return zone
 
 def ControlCallback(win):
   #print "callback called"
