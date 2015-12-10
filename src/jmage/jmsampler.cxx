@@ -13,6 +13,7 @@
 #include "jmage/jmsampler.h"
 #include "jmage/sampler.h"
 #include "jmage/components.h"
+#include "jmage/collections.h"
 
 void JMSampler::init_amp(JMSampler* jms) {
   for (int i = 0; i < VOL_STEPS; i++) {
@@ -26,7 +27,9 @@ JMSampler::JMSampler():
     msg_q_out(MSG_Q_SIZE),
     level(VOL_STEPS - 1),
     sustain_on(false),
-    playheads(WAV_OFF_Q_SIZE) {
+    playheads(MAX_PLAYHEADS),
+    // 2 channel x 2 for crossfading
+    pitch_buf_pool(MAX_PLAYHEADS * 4) {
   // init amplitude array
   init_amp(this);
 
@@ -45,6 +48,14 @@ JMSampler::JMSampler():
   output_port1 = jack_port_register(client, "out1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
   output_port2 = jack_port_register(client, "out2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 
+  jack_buf_size = jack_get_buffer_size(client);
+  size_t pb_len = MAX_PLAYHEADS * 4 * jack_buf_size;
+  // make room for all playheads, 2 channel x 2 for crossfading
+  pitch_buf_arr = new sample_t[pb_len];
+
+  for (size_t i = 0; i < pb_len; i += jack_buf_size)
+    pitch_buf_pool.push(pitch_buf_arr + i);
+
   if (jack_activate(client)) {
     jack_port_unregister(client, input_port);
     jack_port_unregister(client, output_port1);
@@ -62,6 +73,7 @@ JMSampler::~JMSampler() {
   jack_port_unregister(client, output_port2);
   jack_client_close(client);
   pthread_mutex_destroy(&zone_lock);
+  delete [] pitch_buf_arr;
 }
 
 void JMSampler::add_zone(const jm_key_zone& zone) {
@@ -153,7 +165,7 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
             if (jm_zone_contains(&*it, event.buffer[1])) {
               Playhead ph(*it, event.buffer[1], event.buffer[2]);
 
-              if (jms->playheads.size() >= WAV_OFF_Q_SIZE)
+              if (jms->playheads.size() >= MAX_PLAYHEADS)
                 jms->playheads.remove_last();
 
               jms->playheads.add(ph);

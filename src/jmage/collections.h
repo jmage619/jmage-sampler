@@ -4,6 +4,46 @@
 #include <typeinfo>
 #include <iostream>
 
+template<class T> class JMStack {
+  private:
+    ssize_t head;
+    T* arr;
+
+  public:
+    JMStack(size_t length);
+    ~JMStack();
+    void push(const T& item);
+    bool pop();
+    bool pop(T& item);
+};
+
+template<class T> JMStack<T>::JMStack(size_t length):
+    head(-1) {
+  arr = new T[length];
+}
+
+template<class T> JMStack<T>::~JMStack() {
+  delete [] arr;
+}
+
+template<class T> void JMStack<T>::push(const T& item) {
+  arr[++head] = item;
+}
+
+template<class T> bool JMStack<T>::pop() {
+  if (head < 0)
+    return false;
+  --head;
+  return true;
+}
+
+template<class T> bool JMStack<T>::pop(T& item) {
+  if (head < 0)
+    return false;
+  item = arr[head--];
+  return true;
+}
+
 template<class T> class JMQueue {
   private:
     volatile size_t head;

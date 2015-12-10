@@ -171,7 +171,7 @@ PlayheadList::PlayheadList(size_t length):
 
   for (size_t i = 0; i < length; i++) {
     ph_list_el* pel = arr + i;
-    unused.add(pel);
+    unused.push(pel);
   }
 }
 
@@ -181,7 +181,7 @@ PlayheadList::~PlayheadList() {
 
 void PlayheadList::add(const Playhead& ph) {
   ph_list_el* pel;
-  unused.remove(pel);
+  unused.pop(pel);
   pel->ph = ph;
 
   pel->next = head;
@@ -196,7 +196,7 @@ void PlayheadList::add(const Playhead& ph) {
 }
 
 void PlayheadList::remove(ph_list_el* pel) {
-  unused.add(pel);
+  unused.push(pel);
 
   if (pel == head)
     head = head->next;

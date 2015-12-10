@@ -62,7 +62,7 @@ class PlayheadList {
     ph_list_el* arr;
     size_t length;
     size_t m_size;
-    JMQueue<ph_list_el*> unused;
+    JMStack<ph_list_el*> unused;
   public:
     PlayheadList(size_t length);
     ~PlayheadList();

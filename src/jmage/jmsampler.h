@@ -12,7 +12,7 @@
 
 #define VOL_STEPS 17
 // hardcode 1 zone until we come up with dynamic zone creation
-#define WAV_OFF_Q_SIZE 10
+#define MAX_PLAYHEADS 10
 #define MSG_Q_SIZE 32
 
 class JMSampler {
@@ -37,6 +37,10 @@ class JMSampler {
     // state
     bool sustain_on;
     PlayheadList playheads;
+
+    jack_nframes_t jack_buf_size;
+    sample_t* pitch_buf_arr;
+    JMStack<sample_t*> pitch_buf_pool;
 
     static void init_amp(JMSampler* jms);
 
