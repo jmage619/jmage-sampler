@@ -29,7 +29,7 @@ JMSampler::JMSampler():
     sustain_on(false),
     playheads(MAX_PLAYHEADS),
     // 2 channel x 2 for crossfading
-    pitch_buf_pool(MAX_PLAYHEADS * 4) {
+    pitch_buf_pool(MAX_PLAYHEADS * NUM_PITCH_BUFS) {
   // init amplitude array
   init_amp(this);
 
@@ -49,8 +49,8 @@ JMSampler::JMSampler():
   output_port2 = jack_port_register(client, "out2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 
   jack_buf_size = jack_get_buffer_size(client);
-  size_t pb_len = MAX_PLAYHEADS * 4 * jack_buf_size;
   // make room for all playheads, 2 channel x 2 for crossfading
+  size_t pb_len = MAX_PLAYHEADS * NUM_PITCH_BUFS * jack_buf_size;
   pitch_buf_arr = new sample_t[pb_len];
 
   for (size_t i = 0; i < pb_len; i += jack_buf_size)
@@ -165,9 +165,12 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
             if (jm_zone_contains(&*it, event.buffer[1])) {
               Playhead ph(*it, event.buffer[1], event.buffer[2]);
 
-              if (jms->playheads.size() >= MAX_PLAYHEADS)
+              if (jms->playheads.size() >= MAX_PLAYHEADS) {
+                jms->playheads.get_tail_ptr()->ph.release_pitch_bufs(jms->pitch_buf_pool);
                 jms->playheads.remove_last();
+              }
 
+              ph.set_pitch_bufs(jms->pitch_buf_pool);
               jms->playheads.add(ph);
               printf("event: note on;  note: %i; vel: %i; amp: %f\n", event.buffer[1], event.buffer[2], ph.amp);
             }
@@ -218,8 +221,10 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
       buffer2[n] += jms->amp[jms->level] * values[1];
 
       pel->ph.inc();
-      if (pel->ph.state == Playhead::FINISHED)
+      if (pel->ph.state == Playhead::FINISHED) {
+        pel->ph.release_pitch_bufs(jms->pitch_buf_pool);
         jms->playheads.remove(pel);
+      }
     }
   }
   return 0;

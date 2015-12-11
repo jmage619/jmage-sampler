@@ -165,6 +165,18 @@ void Playhead::set_release() {
   state = RELEASE;
 }
 
+void Playhead::set_pitch_bufs(JMStack<sample_t*>& pitch_buf_pool) {
+  for (int i = 0; i < NUM_PITCH_BUFS; i++) {
+    pitch_buf_pool.pop(pitch_bufs[i]);
+  }
+}
+
+void Playhead::release_pitch_bufs(JMStack<sample_t*>& pitch_buf_pool) {
+  for (int i = 0; i < NUM_PITCH_BUFS; i++) {
+    pitch_buf_pool.push(pitch_bufs[i]);
+  }
+}
+
 PlayheadList::PlayheadList(size_t length): 
   head(NULL), tail(NULL), length(length), m_size(0), unused(length) {
   arr = new ph_list_el[length];
