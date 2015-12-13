@@ -28,8 +28,7 @@ JMSampler::JMSampler():
     level(VOL_STEPS - 1),
     sustain_on(false),
     playheads(MAX_PLAYHEADS),
-    // 2 channel x 2 for crossfading
-    pitch_buf_pool(MAX_PLAYHEADS * NUM_PITCH_BUFS) {
+    playhead_pool(MAX_PLAYHEADS) {
   // init amplitude array
   init_amp(this);
 
@@ -49,12 +48,8 @@ JMSampler::JMSampler():
   output_port2 = jack_port_register(client, "out2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 
   jack_buf_size = jack_get_buffer_size(client);
-  // make room for all playheads, 2 channel x 2 for crossfading
-  size_t pb_len = MAX_PLAYHEADS * NUM_PITCH_BUFS * jack_buf_size;
-  pitch_buf_arr = new sample_t[pb_len];
-
-  for (size_t i = 0; i < pb_len; i += jack_buf_size)
-    pitch_buf_pool.push(pitch_buf_arr + i);
+  for (size_t i = 0; i < MAX_PLAYHEADS; i += 1)
+    playhead_pool.push(new Playhead(&playhead_pool, jack_buf_size));
 
   if (jack_activate(client)) {
     jack_port_unregister(client, input_port);
@@ -72,8 +67,19 @@ JMSampler::~JMSampler() {
   jack_port_unregister(client, output_port1);
   jack_port_unregister(client, output_port2);
   jack_client_close(client);
+
+  // clean up whatever is left in ph list
+  while (playheads.size() > 0) {
+    playheads.get_tail_ptr()->ph->release_resources();
+    playheads.remove_last();
+  }
+
+  // then de-allocate playheads
+  Playhead* ph;
+  while (playhead_pool.pop(ph)) {
+    delete ph;
+  }
   pthread_mutex_destroy(&zone_lock);
-  delete [] pitch_buf_arr;
 }
 
 void JMSampler::add_zone(const jm_key_zone& zone) {
@@ -116,7 +122,7 @@ bool JMSampler::receive_msg(jm_msg& msg) {
   return msg_q_out.remove(msg);
 }
 
-int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
+int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
   JMSampler* jms = (JMSampler*) arg;
   sample_t* buffer1 = (sample_t*) jack_port_get_buffer(jms->output_port1, nframes);
   sample_t* buffer2 = (sample_t*) jack_port_get_buffer(jms->output_port2, nframes);
@@ -149,12 +155,10 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
         if ((event.buffer[0] & 0xf0) == 0x90) {
           if (jms->sustain_on) {
             for (pel = jms->playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
-              if (pel->ph.pitch == event.buffer[1])
-                pel->ph.set_release();
+              if (pel->ph->pitch == event.buffer[1])
+                pel->ph->set_release();
             }
           }
-          //int i;
-          //for (i = 0; i < NUM_ZONES; i++) {
           std::vector<jm_key_zone>::iterator it;
           // yes, using mutex here violates the laws of real time ..BUT..
           // we don't expect a musician to tweak zones during an actual take!
@@ -163,16 +167,17 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
           pthread_mutex_lock(&jms->zone_lock);
           for (it = jms->zones.begin(); it != jms->zones.end(); ++it) {
             if (jm_zone_contains(&*it, event.buffer[1])) {
-              Playhead ph(*it, event.buffer[1], event.buffer[2]);
+              Playhead* ph;
+              jms->playhead_pool.pop(ph);
+              ph->init(*it, event.buffer[1], event.buffer[2]);
 
               if (jms->playheads.size() >= MAX_PLAYHEADS) {
-                jms->playheads.get_tail_ptr()->ph.release_pitch_bufs(jms->pitch_buf_pool);
+                jms->playheads.get_tail_ptr()->ph->release_resources();
                 jms->playheads.remove_last();
               }
 
-              ph.set_pitch_bufs(jms->pitch_buf_pool);
               jms->playheads.add(ph);
-              printf("event: note on;  note: %i; vel: %i; amp: %f\n", event.buffer[1], event.buffer[2], ph.amp);
+              printf("event: note on;  note: %i; vel: %i; amp: %f\n", event.buffer[1], event.buffer[2], ph->amp);
             }
           }
           pthread_mutex_unlock(&jms->zone_lock);
@@ -180,12 +185,12 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
         else if ((event.buffer[0] & 0xf0) == 0x80) {
           printf("event: note off; note: %i\n", event.buffer[1]);
           for (pel = jms->playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
-            if (pel->ph.pitch == event.buffer[1]) {
+            if (pel->ph->pitch == event.buffer[1]) {
               if (jms->sustain_on) {
-                pel->ph.note_off = true;
+                pel->ph->note_off = true;
               }
               else
-                pel->ph.set_release();
+                pel->ph->set_release();
             }
           }
         }
@@ -196,8 +201,8 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
           }
           else {
             for (pel = jms->playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
-              if (pel->ph.note_off == true)
-                pel->ph.state = Playhead::RELEASE;
+              if (pel->ph->note_off == true)
+                pel->ph->set_release();
             }
 
             jms->sustain_on = false;
@@ -216,13 +221,13 @@ int JMSampler::process_callback(jack_nframes_t nframes, void *arg) {
 
     for (pel = jms->playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
       double values[2];
-      pel->ph.get_values(values);
+      pel->ph->get_values(values);
       buffer1[n] += jms->amp[jms->level] * values[0];
       buffer2[n] += jms->amp[jms->level] * values[1];
 
-      pel->ph.inc();
-      if (pel->ph.state == Playhead::FINISHED) {
-        pel->ph.release_pitch_bufs(jms->pitch_buf_pool);
+      pel->ph->inc();
+      if (pel->ph->state == Playhead::FINISHED) {
+        pel->ph->release_resources();
         jms->playheads.remove(pel);
       }
     }

@@ -39,8 +39,7 @@ class JMSampler {
     PlayheadList playheads;
 
     jack_nframes_t jack_buf_size;
-    sample_t* pitch_buf_arr;
-    JMStack<sample_t*> pitch_buf_pool;
+    JMStack<Playhead*> playhead_pool;
 
     static void init_amp(JMSampler* jms);
 

@@ -6,7 +6,7 @@
 #include "jmage/collections.h"
 #include "jmage/sampler.h"
 
-#define NUM_PITCH_BUFS 4
+#define NUM_PITCH_BUFS 2
 
 class Playhead {
   public:
@@ -18,11 +18,13 @@ class Playhead {
       RELEASE,
       FINISHED
     };
+    JMStack<Playhead*>* playhead_pool;
     State state;
     bool note_off;
     bool loop_on;
     int pitch;
     sample_t* pitch_bufs[NUM_PITCH_BUFS];
+    jack_nframes_t pitch_buf_size;
     double amp;
     double speed;
     jack_nframes_t attack;
@@ -44,18 +46,18 @@ class Playhead {
     int pos_size;
     jack_nframes_t crossfade;
 
-    Playhead();
-    Playhead(const jm_key_zone& zone, int pitch, int velocity);
+    Playhead(JMStack<Playhead*>* playhead_pool, jack_nframes_t pitch_buf_size);
+    ~Playhead();
+    void init(const jm_key_zone& zone, int pitch, int velocity);
     void inc();
     double get_amp();
     void get_values(double values[]);
     void set_release();
-    void set_pitch_bufs(JMStack<sample_t*>& pitch_buf_pool);
-    void release_pitch_bufs(JMStack<sample_t*>& pitch_buf_pool);
+    void release_resources();
 };
 
 struct ph_list_el {
-  Playhead ph;
+  Playhead* ph;
   ph_list_el* next;
   ph_list_el* prev;
 };
@@ -64,7 +66,6 @@ class PlayheadList {
   private:
     ph_list_el* head;
     ph_list_el* tail;
-    ph_list_el* arr;
     size_t length;
     size_t m_size;
     JMStack<ph_list_el*> unused;
@@ -74,7 +75,7 @@ class PlayheadList {
     ph_list_el* get_head_ptr() {return head;}
     ph_list_el* get_tail_ptr() {return tail;}
     size_t size() {return m_size;}
-    void add(const Playhead& ph);
+    void add(Playhead* ph);
     void remove(ph_list_el* pel);
     void remove_last();
 };

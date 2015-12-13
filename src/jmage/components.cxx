@@ -11,37 +11,46 @@
 // boost for controllers that don't reach 127 easily
 #define VELOCITY_BOOST 1.2
 
-Playhead::Playhead():
-  state(ATTACK),
-  note_off(false),
-  amp_timer(0),
-  rel_amp(1.0),
-  crossfading(false),
-  cf_timer(0),
-  first_pos(0),
-  pos_size(1) {}
-
-Playhead::Playhead(const jm_key_zone& zone, int pitch, int velocity):
+Playhead::Playhead(JMStack<Playhead*>* playhead_pool, jack_nframes_t pitch_buf_size):
+    playhead_pool(playhead_pool), 
     state(ATTACK),
     note_off(false),
-    loop_on(zone.loop_on),
-    pitch(pitch),
-    attack(zone.attack),
-    hold(zone.hold),
-    decay(zone.decay),
-    sustain(zone.sustain),
-    release(zone.release),
+    pitch_buf_size(pitch_buf_size),
     amp_timer(0),
-    rel_amp(zone.sustain),
     crossfading(false),
     cf_timer(0),
-    wave_length(zone.wave_length),
-    start(zone.start),
-    left(zone.left),
-    right(zone.right),
     first_pos(0),
-    pos_size(1),
-    crossfade(zone.crossfade) {
+    pos_size(1) {
+  pitch_bufs[0] = new sample_t[pitch_buf_size];
+  pitch_bufs[1] = new sample_t[pitch_buf_size];
+}
+
+Playhead::~Playhead() {
+  delete [] pitch_bufs[0];
+  delete [] pitch_bufs[1];
+}
+
+void Playhead::init(const jm_key_zone& zone, int pitch, int velocity) {
+    state = ATTACK;
+    note_off = false;
+    loop_on = zone.loop_on;
+    this->pitch = pitch;
+    attack = zone.attack;
+    hold = zone.hold;
+    decay = zone.decay;
+    sustain = zone.sustain;
+    release = zone.release;
+    amp_timer = 0;
+    rel_amp = zone.sustain;
+    crossfading = false;
+    cf_timer = 0;
+    wave_length = zone.wave_length;
+    start = zone.start;
+    left = zone.left;
+    right = zone.right;
+    first_pos = 0;
+    pos_size = 1;
+    crossfade = zone.crossfade;
   double calc_amp = zone.amp * VELOCITY_BOOST * velocity / MAX_VELOCITY;
   amp = calc_amp > 1.0 ? 1.0 : calc_amp;
   speed = pow(2, (pitch + zone.pitch_corr - zone.origin) / 12.);
@@ -165,33 +174,30 @@ void Playhead::set_release() {
   state = RELEASE;
 }
 
-void Playhead::set_pitch_bufs(JMStack<sample_t*>& pitch_buf_pool) {
-  for (int i = 0; i < NUM_PITCH_BUFS; i++) {
-    pitch_buf_pool.pop(pitch_bufs[i]);
-  }
-}
-
-void Playhead::release_pitch_bufs(JMStack<sample_t*>& pitch_buf_pool) {
-  for (int i = 0; i < NUM_PITCH_BUFS; i++) {
-    pitch_buf_pool.push(pitch_bufs[i]);
-  }
+void Playhead::release_resources() {
+  playhead_pool->push(this);
 }
 
 PlayheadList::PlayheadList(size_t length): 
   head(NULL), tail(NULL), length(length), m_size(0), unused(length) {
-  arr = new ph_list_el[length];
 
   for (size_t i = 0; i < length; i++) {
-    ph_list_el* pel = arr + i;
+    ph_list_el* pel = new ph_list_el;
     unused.push(pel);
   }
 }
 
 PlayheadList::~PlayheadList() {
-  delete [] arr;
+  while (m_size > 0)
+    remove_last();
+
+  ph_list_el* pel;
+  while (unused.pop(pel)) {
+    delete pel;
+  }
 }
 
-void PlayheadList::add(const Playhead& ph) {
+void PlayheadList::add(Playhead* ph) {
   ph_list_el* pel;
   unused.pop(pel);
   pel->ph = ph;
