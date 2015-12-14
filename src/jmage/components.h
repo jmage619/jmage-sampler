@@ -22,6 +22,7 @@ class Playhead {
     State state;
     bool note_off;
     bool loop_on;
+    void* resampler;
     int pitch;
     sample_t* pitch_bufs[NUM_PITCH_BUFS];
     jack_nframes_t pitch_buf_size;
@@ -41,14 +42,19 @@ class Playhead {
     jack_nframes_t start;
     jack_nframes_t left;
     jack_nframes_t right;
-    double positions[2];
-    int first_pos;
-    int pos_size;
+    //double positions[2];
+    jack_nframes_t in_offset;
+    jack_nframes_t out_offset;
+    bool last_iteration;
+    jack_nframes_t position;
+    //int first_pos;
+    //int pos_size;
     jack_nframes_t crossfade;
 
     Playhead(JMStack<Playhead*>* playhead_pool, jack_nframes_t pitch_buf_size);
     ~Playhead();
     void init(const jm_key_zone& zone, int pitch, int velocity);
+    void pre_process(jack_nframes_t nframes);
     void inc();
     double get_amp();
     void get_values(double values[]);

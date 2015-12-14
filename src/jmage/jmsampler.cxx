@@ -138,6 +138,11 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
     }
   }
 
+  // pitch existing playheads
+  ph_list_el* pel;
+  for (pel = jms->playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
+    pel->ph->pre_process(nframes);
+  }
   // capture midi event
   void* midi_buf = jack_port_get_buffer(jms->input_port, nframes);
 
@@ -147,9 +152,8 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
   if (event_count > 0)
     jack_midi_event_get(&event, midi_buf, cur_event);
 
-  ph_list_el* pel;
   jack_nframes_t n;
-  for (n = 0; n <= nframes; n++) {
+  for (n = 0; n < nframes; n++) {
     if (cur_event < event_count) {
       while (n == event.time) {
         if ((event.buffer[0] & 0xf0) == 0x90) {
@@ -170,6 +174,7 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
               Playhead* ph;
               jms->playhead_pool.pop(ph);
               ph->init(*it, event.buffer[1], event.buffer[2]);
+              ph->pre_process(nframes - n);
 
               if (jms->playheads.size() >= MAX_PLAYHEADS) {
                 jms->playheads.get_tail_ptr()->ph->release_resources();

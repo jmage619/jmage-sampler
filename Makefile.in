@@ -4,7 +4,7 @@ LDFLAGS = @LDFLAGS@
 #CXXFLAGS := -Wall -O3
 CXXFLAGS := @CXXFLAGS@
 #LIB = -ljack -framework CoreAudio
-LIB = -lm -ljack -lsndfile
+LIB = -lm -ljack -lsndfile -lresample
 CXX = g++
 
 all : test_sampler
