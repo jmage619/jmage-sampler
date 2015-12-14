@@ -3,7 +3,7 @@
 #include <cmath>
 #include <cstring>
 
-#include <libresample.h>
+#include <samplerate.h>
 #include <jack/types.h>
 
 #include "jmage/components.h"
@@ -29,9 +29,12 @@ Playhead::Playhead(JMStack<Playhead*>* playhead_pool, jack_nframes_t pitch_buf_s
   //resampler = resample_open(0, pow(2., -10.), pow(2., 10.));
   pitch_bufs[0] = new sample_t[pitch_buf_size];
   pitch_bufs[1] = new sample_t[pitch_buf_size];
+  int error;
+  resampler = src_new(SRC_SINC_FASTEST, 1, &error);
 }
 
 Playhead::~Playhead() {
+  src_delete(resampler);
   delete [] pitch_bufs[0];
   delete [] pitch_bufs[1];
   //resample_close(resampler);
@@ -66,9 +69,6 @@ void Playhead::init(const jm_key_zone& zone, int pitch, int velocity) {
   //positions[0] = zone.start;
   in_offset = zone.start;
   last_iteration = false;
-  // workaround inability to be reused per playhead
-  // unfortunately this allocates mem
-  resampler = resample_open(0, pow(2., -10.), pow(2., 10.));
 }
 
 void Playhead::pre_process(jack_nframes_t nframes) {
@@ -77,15 +77,21 @@ void Playhead::pre_process(jack_nframes_t nframes) {
   //memset(pitch_bufs[1], 0, sizeof(sample_t) * pitch_buf_size);
 
   out_offset = 0;
-  int in_consumed;
-  int num_resampled;
+
+  SRC_DATA data;
+  data.src_ratio = 1 / speed;
+  data.end_of_input = 0;
 
   while (1) {
-    num_resampled = resample_process(resampler, 1 / speed, wave[0] + in_offset, wave_length - in_offset, 0, &in_consumed, pitch_bufs[0] + out_offset, nframes - out_offset);
+    data.data_in = wave[0] + in_offset;
+    data.input_frames = wave_length - in_offset;
+    data.data_out = pitch_bufs[0] + out_offset;
+    data.output_frames = nframes - out_offset;
+    src_process(resampler, &data);
     // for now just duping L channel to make mono
-    memcpy(pitch_bufs[1] + out_offset, pitch_bufs[0] + out_offset, num_resampled * sizeof(sample_t));
-    out_offset += num_resampled;
-    in_offset += in_consumed;
+    memcpy(pitch_bufs[1] + out_offset, pitch_bufs[0] + out_offset, data.output_frames_gen * sizeof(sample_t));
+    out_offset += data.output_frames_gen;
+    in_offset += data.input_frames_used;
     if (in_offset >= right) {
       last_iteration = true;
       break;
@@ -220,9 +226,7 @@ void Playhead::set_release() {
 }
 
 void Playhead::release_resources() {
-  // workaround inability to be reused per playhead
-  // unfortunately this deallocates mem
-  resample_close(resampler);
+  src_reset(resampler);
   playhead_pool->push(this);
 }
 

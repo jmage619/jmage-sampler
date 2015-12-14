@@ -1,6 +1,7 @@
 #ifndef JM_COMPONENTS_H
 #define JM_COMPONENTS_H
 
+#include <samplerate.h>
 #include <jack/types.h>
 
 #include "jmage/collections.h"
@@ -22,7 +23,7 @@ class Playhead {
     State state;
     bool note_off;
     bool loop_on;
-    void* resampler;
+    SRC_STATE* resampler;
     int pitch;
     sample_t* pitch_bufs[NUM_PITCH_BUFS];
     jack_nframes_t pitch_buf_size;
