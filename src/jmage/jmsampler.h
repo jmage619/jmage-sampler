@@ -36,7 +36,7 @@ class JMSampler {
 
     // state
     bool sustain_on;
-    PlayheadList playheads;
+    SoundGenList sound_gens;
 
     jack_nframes_t jack_buf_size;
     JMStack<Playhead*> playhead_pool;

@@ -15,11 +15,11 @@ class SoundGenerator {
     int pitch;
     virtual ~SoundGenerator(){}
     virtual void pre_process(jack_nframes_t nframes){}
-    virtual void set_release() = 0;
     virtual void inc() = 0;
     virtual void get_values(double values[]) = 0;
-    virtual void release_resources() = 0;
+    virtual void set_release() = 0;
     virtual bool is_finished() = 0;
+    virtual void release_resources() = 0;
 };
 
 class Playhead: public SoundGenerator {
@@ -76,27 +76,27 @@ class Playhead: public SoundGenerator {
     void release_resources();
 };
 
-struct ph_list_el {
-  Playhead* ph;
-  ph_list_el* next;
-  ph_list_el* prev;
+struct sg_list_el {
+  SoundGenerator* sg;
+  sg_list_el* next;
+  sg_list_el* prev;
 };
 
-class PlayheadList {
+class SoundGenList {
   private:
-    ph_list_el* head;
-    ph_list_el* tail;
+    sg_list_el* head;
+    sg_list_el* tail;
     size_t length;
     size_t m_size;
-    JMStack<ph_list_el*> unused;
+    JMStack<sg_list_el*> unused;
   public:
-    PlayheadList(size_t length);
-    ~PlayheadList();
-    ph_list_el* get_head_ptr() {return head;}
-    ph_list_el* get_tail_ptr() {return tail;}
+    SoundGenList(size_t length);
+    ~SoundGenList();
+    sg_list_el* get_head_ptr() {return head;}
+    sg_list_el* get_tail_ptr() {return tail;}
     size_t size() {return m_size;}
-    void add(Playhead* ph);
-    void remove(ph_list_el* pel);
+    void add(SoundGenerator* sg);
+    void remove(sg_list_el* sg_el);
     void remove_last();
 };
 

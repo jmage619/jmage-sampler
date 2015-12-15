@@ -27,7 +27,7 @@ JMSampler::JMSampler():
     msg_q_out(MSG_Q_SIZE),
     level(VOL_STEPS - 1),
     sustain_on(false),
-    playheads(MAX_PLAYHEADS),
+    sound_gens(MAX_PLAYHEADS),
     playhead_pool(MAX_PLAYHEADS) {
   // init amplitude array
   init_amp(this);
@@ -68,16 +68,16 @@ JMSampler::~JMSampler() {
   jack_port_unregister(client, output_port2);
   jack_client_close(client);
 
-  // clean up whatever is left in ph list
-  while (playheads.size() > 0) {
-    playheads.get_tail_ptr()->ph->release_resources();
-    playheads.remove_last();
+  // clean up whatever is left in sg list
+  while (sound_gens.size() > 0) {
+    sound_gens.get_tail_ptr()->sg->release_resources();
+    sound_gens.remove_last();
   }
 
   // then de-allocate playheads
-  Playhead* ph;
-  while (playhead_pool.pop(ph)) {
-    delete ph;
+  Playhead* sg;
+  while (playhead_pool.pop(sg)) {
+    delete sg;
   }
   pthread_mutex_destroy(&zone_lock);
 }
@@ -139,9 +139,9 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
   }
 
   // pitch existing playheads
-  ph_list_el* pel;
-  for (pel = jms->playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
-    pel->ph->pre_process(nframes);
+  sg_list_el* sg_el;
+  for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+    sg_el->sg->pre_process(nframes);
   }
   // capture midi event
   void* midi_buf = jack_port_get_buffer(jms->input_port, nframes);
@@ -158,9 +158,9 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
       while (n == event.time) {
         if ((event.buffer[0] & 0xf0) == 0x90) {
           if (jms->sustain_on) {
-            for (pel = jms->playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
-              if (pel->ph->pitch == event.buffer[1])
-                pel->ph->set_release();
+            for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+              if (sg_el->sg->pitch == event.buffer[1])
+                sg_el->sg->set_release();
             }
           }
           std::vector<jm_key_zone>::iterator it;
@@ -171,31 +171,31 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
           pthread_mutex_lock(&jms->zone_lock);
           for (it = jms->zones.begin(); it != jms->zones.end(); ++it) {
             if (jm_zone_contains(&*it, event.buffer[1])) {
-              Playhead* ph;
-              jms->playhead_pool.pop(ph);
-              ph->init(*it, event.buffer[1], event.buffer[2]);
-              ph->pre_process(nframes - n);
+              Playhead* sg;
+              jms->playhead_pool.pop(sg);
+              sg->init(*it, event.buffer[1], event.buffer[2]);
+              sg->pre_process(nframes - n);
 
-              if (jms->playheads.size() >= MAX_PLAYHEADS) {
-                jms->playheads.get_tail_ptr()->ph->release_resources();
-                jms->playheads.remove_last();
+              if (jms->sound_gens.size() >= MAX_PLAYHEADS) {
+                jms->sound_gens.get_tail_ptr()->sg->release_resources();
+                jms->sound_gens.remove_last();
               }
 
-              jms->playheads.add(ph);
-              printf("event: note on;  note: %i; vel: %i; amp: %f\n", event.buffer[1], event.buffer[2], ph->get_amp());
+              jms->sound_gens.add(sg);
+              printf("event: note on;  note: %i; vel: %i; amp: %f\n", event.buffer[1], event.buffer[2], sg->get_amp());
             }
           }
           pthread_mutex_unlock(&jms->zone_lock);
         }
         else if ((event.buffer[0] & 0xf0) == 0x80) {
           printf("event: note off; note: %i\n", event.buffer[1]);
-          for (pel = jms->playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
-            if (pel->ph->pitch == event.buffer[1]) {
+          for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+            if (sg_el->sg->pitch == event.buffer[1]) {
               if (jms->sustain_on) {
-                pel->ph->note_off = true;
+                sg_el->sg->note_off = true;
               }
               else
-                pel->ph->set_release();
+                sg_el->sg->set_release();
             }
           }
         }
@@ -205,9 +205,9 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
             printf("sustain on\n");
           }
           else {
-            for (pel = jms->playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
-              if (pel->ph->note_off == true)
-                pel->ph->set_release();
+            for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+              if (sg_el->sg->note_off == true)
+                sg_el->sg->set_release();
             }
 
             jms->sustain_on = false;
@@ -224,16 +224,16 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
       }
     }
 
-    for (pel = jms->playheads.get_head_ptr(); pel != NULL; pel = pel->next) {
+    for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
       double values[2];
-      pel->ph->get_values(values);
+      sg_el->sg->get_values(values);
       buffer1[n] += jms->amp[jms->level] * values[0];
       buffer2[n] += jms->amp[jms->level] * values[1];
 
-      pel->ph->inc();
-      if (pel->ph->is_finished()) {
-        pel->ph->release_resources();
-        jms->playheads.remove(pel);
+      sg_el->sg->inc();
+      if (sg_el->sg->is_finished()) {
+        sg_el->sg->release_resources();
+        jms->sound_gens.remove(sg_el);
       }
     }
   }

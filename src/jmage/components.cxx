@@ -229,58 +229,58 @@ void Playhead::release_resources() {
   playhead_pool->push(this);
 }
 
-PlayheadList::PlayheadList(size_t length): 
+SoundGenList::SoundGenList(size_t length): 
   head(NULL), tail(NULL), length(length), m_size(0), unused(length) {
 
   for (size_t i = 0; i < length; i++) {
-    ph_list_el* pel = new ph_list_el;
-    unused.push(pel);
+    sg_list_el* sg_el = new sg_list_el;
+    unused.push(sg_el);
   }
 }
 
-PlayheadList::~PlayheadList() {
+SoundGenList::~SoundGenList() {
   while (m_size > 0)
     remove_last();
 
-  ph_list_el* pel;
-  while (unused.pop(pel)) {
-    delete pel;
+  sg_list_el* sg_el;
+  while (unused.pop(sg_el)) {
+    delete sg_el;
   }
 }
 
-void PlayheadList::add(Playhead* ph) {
-  ph_list_el* pel;
-  unused.pop(pel);
-  pel->ph = ph;
+void SoundGenList::add(SoundGenerator* sg) {
+  sg_list_el* sg_el;
+  unused.pop(sg_el);
+  sg_el->sg = sg;
 
-  pel->next = head;
-  pel->prev = NULL;
-  if (pel->next == NULL)
-    tail = pel;
+  sg_el->next = head;
+  sg_el->prev = NULL;
+  if (sg_el->next == NULL)
+    tail = sg_el;
   else
-    pel->next->prev = pel;
+    sg_el->next->prev = sg_el;
 
-  head = pel;
+  head = sg_el;
   m_size++;
 }
 
-void PlayheadList::remove(ph_list_el* pel) {
-  unused.push(pel);
+void SoundGenList::remove(sg_list_el* sg_el) {
+  unused.push(sg_el);
 
-  if (pel == head)
+  if (sg_el == head)
     head = head->next;
   else
-    pel->prev->next = pel->next;
+    sg_el->prev->next = sg_el->next;
 
-  if (pel == tail)
+  if (sg_el == tail)
     tail = tail->prev;
   else
-    pel->next->prev = pel->prev;
+    sg_el->next->prev = sg_el->prev;
 
   m_size--;
 }
 
-void PlayheadList::remove_last() {
+void SoundGenList::remove_last() {
   remove(tail);
 }
 
