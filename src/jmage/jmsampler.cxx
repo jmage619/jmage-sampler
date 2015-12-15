@@ -182,7 +182,7 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
               }
 
               jms->playheads.add(ph);
-              printf("event: note on;  note: %i; vel: %i; amp: %f\n", event.buffer[1], event.buffer[2], ph->amp);
+              printf("event: note on;  note: %i; vel: %i; amp: %f\n", event.buffer[1], event.buffer[2], ph->get_amp());
             }
           }
           pthread_mutex_unlock(&jms->zone_lock);
@@ -231,7 +231,7 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
       buffer2[n] += jms->amp[jms->level] * values[1];
 
       pel->ph->inc();
-      if (pel->ph->state == Playhead::FINISHED) {
+      if (pel->ph->is_finished()) {
         pel->ph->release_resources();
         jms->playheads.remove(pel);
       }

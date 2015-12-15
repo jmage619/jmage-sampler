@@ -9,8 +9,21 @@
 
 #define NUM_PITCH_BUFS 2
 
-class Playhead {
+class SoundGenerator {
   public:
+    bool note_off;
+    int pitch;
+    virtual ~SoundGenerator(){}
+    virtual void pre_process(jack_nframes_t nframes){}
+    virtual void set_release() = 0;
+    virtual void inc() = 0;
+    virtual void get_values(double values[]) = 0;
+    virtual void release_resources() = 0;
+    virtual bool is_finished() = 0;
+};
+
+class Playhead: public SoundGenerator {
+  private:
     enum State {
       ATTACK,
       HOLD,
@@ -21,10 +34,8 @@ class Playhead {
     };
     JMStack<Playhead*>* playhead_pool;
     State state;
-    bool note_off;
     bool loop_on;
     SRC_STATE* resampler;
-    int pitch;
     sample_t* pitch_bufs[NUM_PITCH_BUFS];
     jack_nframes_t pitch_buf_size;
     double amp;
@@ -52,6 +63,7 @@ class Playhead {
     //int pos_size;
     jack_nframes_t crossfade;
 
+  public:
     Playhead(JMStack<Playhead*>* playhead_pool, jack_nframes_t pitch_buf_size);
     ~Playhead();
     void init(const jm_key_zone& zone, int pitch, int velocity);
@@ -60,6 +72,7 @@ class Playhead {
     double get_amp();
     void get_values(double values[]);
     void set_release();
+    bool is_finished(){return state == FINISHED;}
     void release_resources();
 };
 

@@ -16,7 +16,6 @@
 Playhead::Playhead(JMStack<Playhead*>* playhead_pool, jack_nframes_t pitch_buf_size):
     playhead_pool(playhead_pool), 
     state(ATTACK),
-    note_off(false),
     pitch_buf_size(pitch_buf_size),
     amp_timer(0),
     crossfading(false),
