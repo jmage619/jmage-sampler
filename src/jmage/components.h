@@ -14,6 +14,7 @@ class SoundGenerator {
     bool note_off;
     int pitch;
     virtual ~SoundGenerator(){}
+    void init(int pitch){note_off = false; this->pitch = pitch;}
     virtual void pre_process(jack_nframes_t nframes){}
     virtual void inc() = 0;
     virtual void get_values(double values[]) = 0;
@@ -25,28 +26,15 @@ class SoundGenerator {
 class Playhead: public SoundGenerator {
   private:
     enum State {
-      ATTACK,
-      HOLD,
-      DECAY,
-      SUSTAIN,
-      RELEASE,
+      PLAYING,
       FINISHED
-    };
+    } state;
     JMStack<Playhead*>* playhead_pool;
-    State state;
     bool loop_on;
     SRC_STATE* resampler;
     sample_t* pitch_bufs[NUM_PITCH_BUFS];
     jack_nframes_t pitch_buf_size;
-    double amp;
     double speed;
-    jack_nframes_t attack;
-    jack_nframes_t hold;
-    jack_nframes_t decay;
-    double sustain;
-    jack_nframes_t release;
-    jack_nframes_t amp_timer;
-    double rel_amp;
     bool crossfading;
     jack_nframes_t cf_timer;
     sample_t* wave[2];
@@ -66,10 +54,42 @@ class Playhead: public SoundGenerator {
   public:
     Playhead(JMStack<Playhead*>* playhead_pool, jack_nframes_t pitch_buf_size);
     ~Playhead();
-    void init(const jm_key_zone& zone, int pitch, int velocity);
+    void init(const jm_key_zone& zone, int pitch);
     void pre_process(jack_nframes_t nframes);
     void inc();
+    void get_values(double values[]);
+    void set_release() {state = FINISHED;}
+    bool is_finished(){return state == FINISHED;}
+    void release_resources();
+};
+
+class AmpEnvGenerator: public SoundGenerator {
+  private:
+    enum State {
+      ATTACK,
+      HOLD,
+      DECAY,
+      SUSTAIN,
+      RELEASE,
+      FINISHED
+    } state;
+    JMStack<AmpEnvGenerator*>* amp_gen_pool;
+    SoundGenerator* sg;
+    double amp;
+    jack_nframes_t attack;
+    jack_nframes_t hold;
+    jack_nframes_t decay;
+    double sustain;
+    jack_nframes_t release;
+    jack_nframes_t timer;
+    double rel_amp;
+
     double get_amp();
+  public:
+    AmpEnvGenerator(JMStack<AmpEnvGenerator*>* amp_gen_pool): amp_gen_pool(amp_gen_pool) {}
+    void init(SoundGenerator* sg, const jm_key_zone& zone, int pitch, int velocity);
+    void pre_process(jack_nframes_t nframes);
+    void inc();
     void get_values(double values[]);
     void set_release();
     bool is_finished(){return state == FINISHED;}

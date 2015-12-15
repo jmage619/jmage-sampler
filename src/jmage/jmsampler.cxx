@@ -28,7 +28,8 @@ JMSampler::JMSampler():
     level(VOL_STEPS - 1),
     sustain_on(false),
     sound_gens(MAX_PLAYHEADS),
-    playhead_pool(MAX_PLAYHEADS) {
+    playhead_pool(MAX_PLAYHEADS),
+    amp_gen_pool(MAX_PLAYHEADS) {
   // init amplitude array
   init_amp(this);
 
@@ -48,8 +49,10 @@ JMSampler::JMSampler():
   output_port2 = jack_port_register(client, "out2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 
   jack_buf_size = jack_get_buffer_size(client);
-  for (size_t i = 0; i < MAX_PLAYHEADS; i += 1)
+  for (size_t i = 0; i < MAX_PLAYHEADS; i += 1) {
     playhead_pool.push(new Playhead(&playhead_pool, jack_buf_size));
+    amp_gen_pool.push(new AmpEnvGenerator(&amp_gen_pool));
+  }
 
   if (jack_activate(client)) {
     jack_port_unregister(client, input_port);
@@ -74,10 +77,14 @@ JMSampler::~JMSampler() {
     sound_gens.remove_last();
   }
 
-  // then de-allocate playheads
-  Playhead* sg;
-  while (playhead_pool.pop(sg)) {
-    delete sg;
+  // then de-allocate sound generators
+  Playhead* ph;
+  while (playhead_pool.pop(ph)) {
+    delete ph;
+  }
+  AmpEnvGenerator* ag;
+  while (amp_gen_pool.pop(ag)) {
+    delete ag;
   }
   pthread_mutex_destroy(&zone_lock);
 }
@@ -171,18 +178,24 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
           pthread_mutex_lock(&jms->zone_lock);
           for (it = jms->zones.begin(); it != jms->zones.end(); ++it) {
             if (jm_zone_contains(&*it, event.buffer[1])) {
-              Playhead* sg;
-              jms->playhead_pool.pop(sg);
-              sg->init(*it, event.buffer[1], event.buffer[2]);
-              sg->pre_process(nframes - n);
+              Playhead* ph;
+              jms->playhead_pool.pop(ph);
+              //ph->init(*it, event.buffer[1], event.buffer[2]);
+              AmpEnvGenerator* ag;
+              jms->amp_gen_pool.pop(ag);
+              ph->init(*it, event.buffer[1]);
+              ag->init(ph, *it, event.buffer[1], event.buffer[2]);
+              //ph->pre_process(nframes - n);
+              ag->pre_process(nframes - n);
 
               if (jms->sound_gens.size() >= MAX_PLAYHEADS) {
                 jms->sound_gens.get_tail_ptr()->sg->release_resources();
                 jms->sound_gens.remove_last();
               }
 
-              jms->sound_gens.add(sg);
-              printf("event: note on;  note: %i; vel: %i; amp: %f\n", event.buffer[1], event.buffer[2], sg->get_amp());
+              //jms->sound_gens.add(ph);
+              jms->sound_gens.add(ag);
+              printf("event: note on;  note: %i; vel: %i\n", event.buffer[1], event.buffer[2]);
             }
           }
           pthread_mutex_unlock(&jms->zone_lock);
