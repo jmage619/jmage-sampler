@@ -60,7 +60,7 @@ class Playhead: public SoundGenerator {
     void get_values(double values[]);
     void set_release() {state = FINISHED;}
     bool is_finished(){return state == FINISHED;}
-    void release_resources();
+    void release_resources() {playhead_pool->push(this);}
 };
 
 class AmpEnvGenerator: public SoundGenerator {
@@ -88,12 +88,12 @@ class AmpEnvGenerator: public SoundGenerator {
   public:
     AmpEnvGenerator(JMStack<AmpEnvGenerator*>* amp_gen_pool): amp_gen_pool(amp_gen_pool) {}
     void init(SoundGenerator* sg, const jm_key_zone& zone, int pitch, int velocity);
-    void pre_process(jack_nframes_t nframes);
+    void pre_process(jack_nframes_t nframes) {sg->pre_process(nframes);}
     void inc();
     void get_values(double values[]);
     void set_release();
     bool is_finished(){return state == FINISHED;}
-    void release_resources();
+    void release_resources() {sg->release_resources(); amp_gen_pool->push(this);}
 };
 
 struct sg_list_el {

@@ -134,10 +134,6 @@ void Playhead::get_values(double values[]) {
   values[1] = pitch_bufs[1][position];
 }
 
-void Playhead::release_resources() {
-  playhead_pool->push(this);
-}
-
 void AmpEnvGenerator::init(SoundGenerator* sg, const jm_key_zone& zone, int pitch, int velocity) {
   SoundGenerator::init(pitch);
   this->sg = sg;
@@ -151,10 +147,6 @@ void AmpEnvGenerator::init(SoundGenerator* sg, const jm_key_zone& zone, int pitc
   rel_amp = zone.sustain;
   double calc_amp = zone.amp * VELOCITY_BOOST * velocity / MAX_VELOCITY;
   amp = calc_amp > 1.0 ? 1.0 : calc_amp;
-}
-
-void AmpEnvGenerator::pre_process(jack_nframes_t nframes) {
-  sg->pre_process(nframes);
 }
 
 void AmpEnvGenerator::inc() {
@@ -232,11 +224,6 @@ void AmpEnvGenerator::set_release() {
   rel_amp = get_amp();
   timer = 0;
   state = RELEASE;
-}
-
-void AmpEnvGenerator::release_resources() {
-  sg->release_resources();
-  amp_gen_pool->push(this);
 }
 
 SoundGenList::SoundGenList(size_t length): 
