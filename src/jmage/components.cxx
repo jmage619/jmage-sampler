@@ -276,8 +276,3 @@ void SoundGenList::remove(sg_list_el* sg_el) {
 
   m_size--;
 }
-
-void SoundGenList::remove_last() {
-  remove(tail);
-}
-

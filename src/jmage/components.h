@@ -117,7 +117,7 @@ class SoundGenList {
     size_t size() {return m_size;}
     void add(SoundGenerator* sg);
     void remove(sg_list_el* sg_el);
-    void remove_last();
+    void remove_last() {remove(tail);}
 };
 
 #endif
