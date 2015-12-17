@@ -54,6 +54,7 @@ class Playhead: public SoundGenerator {
   public:
     Playhead(JMStack<Playhead*>* playhead_pool, jack_nframes_t pitch_buf_size);
     ~Playhead();
+    void init(const jm_key_zone& zone, int pitch, jack_nframes_t start, jack_nframes_t right);
     void init(const jm_key_zone& zone, int pitch);
     void pre_process(jack_nframes_t nframes);
     void inc();
@@ -94,6 +95,35 @@ class AmpEnvGenerator: public SoundGenerator {
     void set_release();
     bool is_finished(){return state == FINISHED;}
     void release_resources() {sg->release_resources(); amp_gen_pool->push(this);}
+};
+
+class Looper: public SoundGenerator {
+  private:
+    enum State {
+      PLAYING,
+      FINISHED
+    } state;
+    JMStack<Looper*>* looper_pool;
+    jm_key_zone zone;
+    bool crossfading;
+    jack_nframes_t cf_timer;
+    double speed;
+    Playhead* playheads[2];
+    int num_playheads;
+    int first_ph;
+    double left;
+    double right;
+    jack_nframes_t position;
+    double crossfade;
+  public:
+    Looper(JMStack<Looper*>* looper_pool): looper_pool(looper_pool) {}
+    void init(Playhead* ph1, Playhead* ph2, const jm_key_zone& zone, int pitch);
+    void pre_process(jack_nframes_t nframes);
+    void inc();
+    void get_values(double values[]);
+    void set_release() {state = FINISHED;}
+    bool is_finished(){return state == FINISHED;}
+    void release_resources();
 };
 
 struct sg_list_el {

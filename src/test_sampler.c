@@ -8,7 +8,7 @@
 
 #define NUM_ZONES 1
 #define RELEASE_TIME  (44100 / 1000)
-//#define RELEASE_TIME  (44100)
+//#define RELEASE_TIME  (2 * 44100)
 
 // crazy shit to imitate getch in linux / os x
 char getch() {
@@ -37,11 +37,11 @@ int main() {
   zone1.origin = 48;
   zone1.lower_bound = INT_MIN;
   zone1.upper_bound = INT_MAX;
-  zone1.attack = 44100;
-  zone1.hold = 44100;
-  zone1.decay = 44100 / 2;
-  zone1.sustain = 0.8;
-  zone1.release = RELEASE_TIME;
+  //zone1.attack = 44100;
+  //zone1.hold = 44100;
+  //zone1.decay = 44100 / 2;
+  //zone1.sustain = 0.8;
+  //zone1.release = RELEASE_TIME;
 
   SF_INFO sf_info;
   sf_info.format = 0;
@@ -52,8 +52,8 @@ int main() {
 
   printf("wave length: %" PRIi64 "\n", sf_info.frames);
   zone1.start = 0;
-  zone1.left = 44100;
-  zone1.right = 3 * 44100 + 5 * 44100 / 8;
+  zone1.left = 3 * 44100;
+  zone1.right = 6 * 44100;
   sample_t* wave[2];
   wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
   wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
@@ -64,7 +64,9 @@ int main() {
   zone1.amp = 1.0;
   zone1.pitch_corr = 0.0;
   zone1.loop_on = 1;
-  zone1.crossfade = 22050;
+  //zone1.loop_on = 0;
+  zone1.crossfade = 44100;
+  //zone1.crossfade = 0;
 
   // assuming 2 channel
   double frame[2];

@@ -33,16 +33,16 @@ Playhead::~Playhead() {
   delete [] pitch_bufs[1];
 }
 
-void Playhead::init(const jm_key_zone& zone, int pitch) {
+void Playhead::init(const jm_key_zone& zone, int pitch, jack_nframes_t start, jack_nframes_t right) {
   SoundGenerator::init(pitch);
   state = PLAYING;
   loop_on = zone.loop_on;
   crossfading = false;
   cf_timer = 0;
   wave_length = zone.wave_length;
-  start = zone.start;
+  this->start = start;
   left = zone.left;
-  right = zone.right;
+  this->right = right;
   //first_pos = 0;
   //pos_size = 1;
   crossfade = zone.crossfade;
@@ -50,9 +50,13 @@ void Playhead::init(const jm_key_zone& zone, int pitch) {
   wave[0] = zone.wave[0];
   wave[1] = zone.wave[1];
   //positions[0] = zone.start;
-  in_offset = zone.start;
+  in_offset = start;
   last_iteration = false;
   src_reset(resampler);
+}
+
+void Playhead::init(const jm_key_zone& zone, int pitch) {
+  init(zone, pitch, zone.start, zone.right);
 }
 
 void Playhead::pre_process(jack_nframes_t nframes) {
@@ -224,6 +228,116 @@ void AmpEnvGenerator::set_release() {
   rel_amp = get_amp();
   timer = 0;
   state = RELEASE;
+}
+
+void Looper::init(Playhead* ph1, Playhead* ph2, const jm_key_zone& zone, int pitch) {
+  SoundGenerator::init(pitch);
+  state = PLAYING;
+  this->zone = zone;
+  crossfading = false;
+  cf_timer = 0;
+  speed = pow(2, (pitch + zone.pitch_corr - zone.origin) / 12.);
+  playheads[0] = ph1;
+  playheads[1] = ph2;
+  num_playheads = 1;
+  first_ph = 0;
+  left = zone.left / speed;
+  right = zone.right / speed;
+  position = (jack_nframes_t) (zone.start / speed);
+  printf("start pos: %u\n", position);
+  crossfade = zone.crossfade / speed;
+  playheads[first_ph]->init(zone, pitch, zone.start, zone.wave_length);
+}
+
+void Looper::pre_process(jack_nframes_t nframes) {
+  for (int i = 0; i < num_playheads; ++i)
+    playheads[(first_ph + i) % 2]->pre_process(nframes);
+}
+
+void Looper::inc() {
+  for (int i = 0; i < num_playheads; ++i)
+    playheads[(first_ph + i) % 2]->inc();
+
+  //position = position >= right ? (jack_nframes_t) left: position + 1;
+  if (position >= right) {
+    printf("right pos: %u\n", position);
+    position = (jack_nframes_t) left;
+    printf("left pos: %u\n", position);
+  }
+  else {
+    ++position;
+  }
+
+  if (!crossfading) {
+    if (position >= right - crossfade / 2.0) {
+      printf("cf on pos: %u\n", position);
+      playheads[(first_ph + 1) % 2]->init(zone, pitch, (jack_nframes_t) (zone.left - zone.crossfade / 2.0), zone.wave_length);
+      ++num_playheads;
+      crossfading = true;
+    }
+  }
+  else {
+    ++cf_timer;
+    if (position < right - crossfade / 2.0 && position >= left + crossfade / 2.0) {
+      printf("cf off pos: %u\n", position);
+        first_ph = (first_ph + 1) % 2;
+        --num_playheads;
+        crossfading = false;
+        cf_timer = 0;
+    }
+  }
+  //printf("num_playheads:  %i\n" , num_playheads);
+}
+
+void Looper::get_values(double values[]) {
+  if (crossfading) {
+    double fade_out;
+    double fade_in;
+    if (crossfade <= 0.0) {
+      fade_out = 1.0;
+      fade_in = 1.0;
+    }
+    else {
+      //printf("cf: %f; time: %d\n", crossfade, cf_timer);
+      fade_out = -1.0 * cf_timer / crossfade + 1.0;
+      fade_in = 1.0 * cf_timer / crossfade;
+    }
+    //printf("crossfading: %f\n", fade_out);
+    double ph_values[2];
+    playheads[first_ph]->get_values(ph_values);
+    values[0] = fade_out * ph_values[0];
+    values[1] = fade_out * ph_values[1];
+    playheads[(first_ph + 1) % 2]->get_values(ph_values);
+    values[0] += fade_in * ph_values[0];
+    values[1] += fade_in * ph_values[1];
+  }
+  else
+      playheads[first_ph]->get_values(values);
+  /*if (crossfading) {
+    values[0] = 0;
+    values[1] = 0;
+    double fade_out = -1.0 * cf_timer / (crossfade / speed) + 1.0;
+    double fade_in = 1.0 * cf_timer / (crossfade / speed);
+    if (positions[first_pos] < wave_length) {
+      values[0] += get_amp() * fade_out * wave[0][(jack_nframes_t) positions[first_pos]];
+      values[1] += get_amp() * fade_out * wave[1][(jack_nframes_t) positions[first_pos]];
+    }
+    if (positions[(first_pos + 1) % 2] >= 0) {
+      values[0] += get_amp() * fade_in * wave[0][(jack_nframes_t) positions[(first_pos + 1) % 2]];
+      values[1] += get_amp() * fade_in * wave[1][(jack_nframes_t) positions[(first_pos + 1) % 2]];
+    }
+  }
+  else {
+    values[0] = get_amp() * wave[0][(jack_nframes_t) positions[first_pos]];
+    values[1] = get_amp() * wave[1][(jack_nframes_t) positions[first_pos]];
+  }
+  */
+}
+
+void Looper::release_resources() {
+  playheads[0]->release_resources();
+  playheads[1]->release_resources();
+  looper_pool->push(this);
 }
 
 SoundGenList::SoundGenList(size_t length): 

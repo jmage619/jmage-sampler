@@ -11,8 +11,8 @@
 #include "jmage/components.h"
 
 #define VOL_STEPS 17
-// hardcode 1 zone until we come up with dynamic zone creation
-#define MAX_PLAYHEADS 10
+//#define MAX_PLAYHEADS 10
+#define POLYPHONY 10
 #define MSG_Q_SIZE 32
 
 class JMSampler {
@@ -41,6 +41,7 @@ class JMSampler {
     jack_nframes_t jack_buf_size;
     JMStack<Playhead*> playhead_pool;
     JMStack<AmpEnvGenerator*> amp_gen_pool;
+    JMStack<Looper*> looper_pool;
 
     static void init_amp(JMSampler* jms);
 
