@@ -62,6 +62,7 @@ class Playhead: public SoundGenerator {
     void set_release() {state = FINISHED;}
     bool is_finished(){return state == FINISHED;}
     void release_resources() {playhead_pool->push(this);}
+    jack_nframes_t get_pitch_buf_size() {return pitch_buf_size;}
 };
 
 class AmpEnvGenerator: public SoundGenerator {

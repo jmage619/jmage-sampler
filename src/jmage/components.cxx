@@ -244,7 +244,7 @@ void Looper::init(Playhead* ph1, Playhead* ph2, const jm_key_zone& zone, int pit
   left = zone.left / speed;
   right = zone.right / speed;
   position = (jack_nframes_t) (zone.start / speed);
-  printf("start pos: %u\n", position);
+  //printf("start pos: %u\n", position);
   crossfade = zone.crossfade / speed;
   playheads[first_ph]->init(zone, pitch, zone.start, zone.wave_length);
 }
@@ -258,33 +258,70 @@ void Looper::inc() {
   for (int i = 0; i < num_playheads; ++i)
     playheads[(first_ph + i) % 2]->inc();
 
+  ++position;
   //position = position >= right ? (jack_nframes_t) left: position + 1;
-  if (position >= right) {
-    printf("right pos: %u\n", position);
+  /*if (position >= right) {
+    //printf("right pos: %u\n", position);
     position = (jack_nframes_t) left;
-    printf("left pos: %u\n", position);
+    //printf("left pos: %u\n", position);
   }
-  else {
-    ++position;
-  }
-
+  */
   if (!crossfading) {
+    if (position >= right - crossfade / 2.0 - 10)
+      printf("scaled pos: %u\n", (jack_nframes_t) (speed * (position - right + left))); 
     if (position >= right - crossfade / 2.0) {
-      printf("cf on pos: %u\n", position);
-      playheads[(first_ph + 1) % 2]->init(zone, pitch, (jack_nframes_t) (zone.left - zone.crossfade / 2.0), zone.wave_length);
+      //printf("cf on pos: %u\n", position);
+      printf("real left: %f; calc left: %u\n", zone.left - zone.crossfade / 2.0, (jack_nframes_t) (speed * (position - right + left))); 
+      double fade_out;
+      double fade_in;
+      if (crossfade <= 0.0) {
+        fade_out = 1.0;
+        fade_in = 1.0;
+      }
+      else {
+        fade_out = -1.0 * cf_timer / crossfade + 1.0;
+        fade_out = fade_out < 0.0 ? 0.0: fade_out;
+        fade_in = 1.0 * cf_timer / crossfade;
+        fade_in = fade_in > 1.0 ? 1.0: fade_in;
+      }
+      printf("cf out first: %f;cf in first: %f\n",fade_out,fade_in);
+      int next_ph = (first_ph + 1) % 2;
+      playheads[next_ph]->init(zone, pitch, (jack_nframes_t) (speed * (position - right + left)), zone.wave_length);
+      playheads[next_ph]->pre_process(playheads[next_ph]->get_pitch_buf_size());
       ++num_playheads;
       crossfading = true;
     }
   }
-  else {
-    ++cf_timer;
-    if (position < right - crossfade / 2.0 && position >= left + crossfade / 2.0) {
-      printf("cf off pos: %u\n", position);
+  //else {
+  if (crossfading) {
+    if (position >= right + crossfade / 2.0 - 10)
+      printf("scaled pos: %u\n", (jack_nframes_t) (speed * position)); 
+    //if (position < right - crossfade / 2.0 && position >= left + crossfade / 2.0) {
+    if (position >= right + crossfade / 2.0) {
+        //printf("real right: %f; calc right: %u\n", zone.right + zone.crossfade / 2.0, (jack_nframes_t) (speed * (position + right - left))); 
+        printf("real right: %f; calc right: %u\n", zone.right + zone.crossfade / 2.0, (jack_nframes_t) (speed * position)); 
+        double fade_out;
+        double fade_in;
+        if (crossfade <= 0.0) {
+          fade_out = 1.0;
+          fade_in = 1.0;
+        }
+        else {
+          fade_out = -1.0 * cf_timer / crossfade + 1.0;
+          fade_out = fade_out < 0.0 ? 0.0: fade_out;
+          fade_in = 1.0 * cf_timer / crossfade;
+          fade_in = fade_in > 1.0 ? 1.0: fade_in;
+        }
+        printf("cf out last: %f;cf in last: %f\n",fade_out,fade_in);
+      //printf("cf off pos: %u\n", position);
         first_ph = (first_ph + 1) % 2;
         --num_playheads;
         crossfading = false;
         cf_timer = 0;
+        position = (jack_nframes_t) (left + crossfade / 2.0);
     }
+    else
+      ++cf_timer;
   }
   //printf("num_playheads:  %i\n" , num_playheads);
 }
@@ -300,7 +337,9 @@ void Looper::get_values(double values[]) {
     else {
       //printf("cf: %f; time: %d\n", crossfade, cf_timer);
       fade_out = -1.0 * cf_timer / crossfade + 1.0;
+      fade_out = fade_out < 0.0 ? 0.0: fade_out;
       fade_in = 1.0 * cf_timer / crossfade;
+      fade_in = fade_in > 1.0 ? 1.0: fade_in;
     }
     //printf("crossfading: %f\n", fade_out);
     double ph_values[2];
