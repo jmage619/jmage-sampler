@@ -60,6 +60,10 @@ void Playhead::init(const jm_key_zone& zone, int pitch) {
 }
 
 void Playhead::pre_process(jack_nframes_t nframes) {
+  // needed?
+  //memset(pitch_bufs[0], 0, sizeof(sample_t) * nframes);
+  //memset(pitch_bufs[1], 0, sizeof(sample_t) * nframes);
+
   out_offset = 0;
 
   SRC_DATA data;
@@ -259,32 +263,9 @@ void Looper::inc() {
     playheads[(first_ph + i) % 2]->inc();
 
   ++position;
-  //position = position >= right ? (jack_nframes_t) left: position + 1;
-  /*if (position >= right) {
-    //printf("right pos: %u\n", position);
-    position = (jack_nframes_t) left;
-    //printf("left pos: %u\n", position);
-  }
-  */
+
   if (!crossfading) {
-    if (position >= right - crossfade / 2.0 - 10)
-      printf("scaled pos: %u\n", (jack_nframes_t) (speed * (position - right + left))); 
     if (position >= right - crossfade / 2.0) {
-      //printf("cf on pos: %u\n", position);
-      printf("real left: %f; calc left: %u\n", zone.left - zone.crossfade / 2.0, (jack_nframes_t) (speed * (position - right + left))); 
-      double fade_out;
-      double fade_in;
-      if (crossfade <= 0.0) {
-        fade_out = 1.0;
-        fade_in = 1.0;
-      }
-      else {
-        fade_out = -1.0 * cf_timer / crossfade + 1.0;
-        fade_out = fade_out < 0.0 ? 0.0: fade_out;
-        fade_in = 1.0 * cf_timer / crossfade;
-        fade_in = fade_in > 1.0 ? 1.0: fade_in;
-      }
-      printf("cf out first: %f;cf in first: %f\n",fade_out,fade_in);
       int next_ph = (first_ph + 1) % 2;
       playheads[next_ph]->init(zone, pitch, (jack_nframes_t) (speed * (position - right + left)), zone.wave_length);
       playheads[next_ph]->pre_process(playheads[next_ph]->get_pitch_buf_size());
@@ -292,28 +273,9 @@ void Looper::inc() {
       crossfading = true;
     }
   }
-  //else {
+  // should not be else, in case in 1 step we go beyond entire crossfade
   if (crossfading) {
-    if (position >= right + crossfade / 2.0 - 10)
-      printf("scaled pos: %u\n", (jack_nframes_t) (speed * position)); 
-    //if (position < right - crossfade / 2.0 && position >= left + crossfade / 2.0) {
-    if (position >= right + crossfade / 2.0) {
-        //printf("real right: %f; calc right: %u\n", zone.right + zone.crossfade / 2.0, (jack_nframes_t) (speed * (position + right - left))); 
-        printf("real right: %f; calc right: %u\n", zone.right + zone.crossfade / 2.0, (jack_nframes_t) (speed * position)); 
-        double fade_out;
-        double fade_in;
-        if (crossfade <= 0.0) {
-          fade_out = 1.0;
-          fade_in = 1.0;
-        }
-        else {
-          fade_out = -1.0 * cf_timer / crossfade + 1.0;
-          fade_out = fade_out < 0.0 ? 0.0: fade_out;
-          fade_in = 1.0 * cf_timer / crossfade;
-          fade_in = fade_in > 1.0 ? 1.0: fade_in;
-        }
-        printf("cf out last: %f;cf in last: %f\n",fade_out,fade_in);
-      //printf("cf off pos: %u\n", position);
+    if (position >= right + crossfade / 2.0 + CF_DELAY) {
         first_ph = (first_ph + 1) % 2;
         --num_playheads;
         crossfading = false;
@@ -323,7 +285,6 @@ void Looper::inc() {
     else
       ++cf_timer;
   }
-  //printf("num_playheads:  %i\n" , num_playheads);
 }
 
 void Looper::get_values(double values[]) {
@@ -336,12 +297,19 @@ void Looper::get_values(double values[]) {
     }
     else {
       //printf("cf: %f; time: %d\n", crossfade, cf_timer);
-      fade_out = -1.0 * cf_timer / crossfade + 1.0;
-      fade_out = fade_out < 0.0 ? 0.0: fade_out;
-      fade_in = 1.0 * cf_timer / crossfade;
-      fade_in = fade_in > 1.0 ? 1.0: fade_in;
+      fade_out = -1.0 * (cf_timer - CF_DELAY) / crossfade + 1.0;
+      if (fade_out > 1.0)
+        fade_out = 1.0;
+      else if (fade_out < 0.0)
+        fade_out = 0.0;
+
+      fade_in = (cf_timer - CF_DELAY) / crossfade;
+      if (fade_in > 1.0)
+        fade_in = 1.0;
+      else if (fade_in < 0.0)
+        fade_in = 0.0;
+      //printf("cf_fimer: %d; cf: %f; fade in: %f; fade out: %f\n", cf_timer, crossfade, fade_in, fade_out);
     }
-    //printf("crossfading: %f\n", fade_out);
     double ph_values[2];
     playheads[first_ph]->get_values(ph_values);
     values[0] = fade_out * ph_values[0];
@@ -352,25 +320,6 @@ void Looper::get_values(double values[]) {
   }
   else
       playheads[first_ph]->get_values(values);
-  /*if (crossfading) {
-    values[0] = 0;
-    values[1] = 0;
-    double fade_out = -1.0 * cf_timer / (crossfade / speed) + 1.0;
-    double fade_in = 1.0 * cf_timer / (crossfade / speed);
-    if (positions[first_pos] < wave_length) {
-      values[0] += get_amp() * fade_out * wave[0][(jack_nframes_t) positions[first_pos]];
-      values[1] += get_amp() * fade_out * wave[1][(jack_nframes_t) positions[first_pos]];
-    }
-    if (positions[(first_pos + 1) % 2] >= 0) {
-      values[0] += get_amp() * fade_in * wave[0][(jack_nframes_t) positions[(first_pos + 1) % 2]];
-      values[1] += get_amp() * fade_in * wave[1][(jack_nframes_t) positions[(first_pos + 1) % 2]];
-    }
-  }
-  else {
-    values[0] = get_amp() * wave[0][(jack_nframes_t) positions[first_pos]];
-    values[1] = get_amp() * wave[1][(jack_nframes_t) positions[first_pos]];
-  }
-  */
 }
 
 void Looper::release_resources() {

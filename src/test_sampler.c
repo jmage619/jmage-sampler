@@ -52,8 +52,8 @@ int main() {
 
   printf("wave length: %" PRIi64 "\n", sf_info.frames);
   zone1.start = 0;
-  zone1.left = (int) (44100 / 2);
-  zone1.right = (int) (44100 / 2. + 44100 / 2.);
+  zone1.left = (int) (44100 * 1.10);
+  zone1.right = (int) (44100 * 2.88);
   sample_t* wave[2];
   wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
   wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
@@ -65,8 +65,8 @@ int main() {
   zone1.pitch_corr = 0.0;
   zone1.loop_on = 1;
   //zone1.loop_on = 0;
-  //zone1.crossfade = 44100;
-  zone1.crossfade = 0;
+  zone1.crossfade = (int) (44100 * 10 / 1000.);
+  //zone1.crossfade = 0;
 
   // assuming 2 channel
   double frame[2];

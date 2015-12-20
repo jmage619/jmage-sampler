@@ -8,6 +8,9 @@
 #include "jmage/sampler.h"
 
 #define NUM_PITCH_BUFS 2
+// delay crossfade by about 16 ms to minimize pops (assumed 44100)
+// purely determined by trial and error
+#define CF_DELAY 706.0
 
 class SoundGenerator {
   public:
