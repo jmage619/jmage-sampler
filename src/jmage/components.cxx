@@ -13,6 +13,112 @@
 // boost for controllers that don't reach 127 easily
 #define VELOCITY_BOOST 1.2
 
+void AudioStream::init(const jm_key_zone& zone) {
+  loop_on = zone.loop_on;
+  crossfading = false;
+  cf_timer = 0;
+  wave = zone.wave;
+  wave_length = zone.wave_length;
+  num_channels = zone.num_channels;  
+  cur_frame = zone.start;
+  start = zone.start;
+  left = zone.left;
+  right = zone.right;
+  crossfade = zone.crossfade;
+}
+
+int AudioStream::read(sample_t buf[], int nframes) {
+  if (loop_on) {
+    int out_offset = 0;
+    int to_copy;
+    int frames_left;
+
+    if (crossfading) {
+      //printf("goto jump to crossfade\n");
+      goto crossfading;
+    }
+
+    while (1) {
+      to_copy = (int) (right - crossfade / 2.0 - cur_frame);
+      
+      frames_left = nframes - out_offset / num_channels;
+      if (to_copy > frames_left)
+        to_copy = frames_left;
+
+      memcpy(buf + out_offset, wave + num_channels * cur_frame, num_channels * to_copy * sizeof(sample_t));
+      cur_frame += to_copy;
+      out_offset += to_copy * num_channels;
+      if (out_offset / num_channels >= nframes) {
+        // if also hit crossfade, update state before leaving
+        if (cur_frame >= right - crossfade / 2.0) {
+          crossfading = true;
+          cf_timer = 0;
+          //printf("cf on exit\n");
+        }
+        return nframes;
+      }
+
+      crossfading = true;
+      cf_timer = 0;
+      //printf("cf on\n");
+     
+crossfading: 
+
+      int fade_in_start = (int) (left - crossfade / 2.0);
+      while (cf_timer < crossfade) {
+        //printf("fade_in_pos1: %i\n", fade_in_pos);
+        if (num_channels == 1) {
+          buf[out_offset] = 0.0;
+          if (cur_frame < wave_length)
+            buf[out_offset] +=  (1.0 - cf_timer / (double) crossfade) * wave[cur_frame];
+          if (fade_in_start + cf_timer >= 0) {
+            buf[out_offset] +=  cf_timer / (double) crossfade * wave[fade_in_start + cf_timer];
+          }
+        }
+        else {
+          //printf("cf1: %f,%f\n",(1.0 - cf_timer / (double) crossfade),cf_timer / (double) crossfade);
+          buf[out_offset] = 0.0;
+          buf[out_offset + 1] = 0.0;
+          if (cur_frame < wave_length) {
+            buf[out_offset] +=  (1.0 - cf_timer / (double) crossfade) * wave[num_channels * cur_frame];
+            buf[out_offset + 1] +=  (1.0 - cf_timer / (double) crossfade) * wave[num_channels * cur_frame + 1];
+          }
+          if (fade_in_start + cf_timer >= 0) {
+            buf[out_offset] += cf_timer / (double) crossfade * wave[num_channels * fade_in_start + num_channels * cf_timer];
+            buf[out_offset + 1] += cf_timer / (double) crossfade * wave[num_channels * fade_in_start + num_channels * cf_timer + 1];
+          }
+        }
+        ++cur_frame;
+        out_offset += num_channels;
+        ++cf_timer;
+        if (out_offset / num_channels >= nframes) {
+          // if also hit crossfade end, update state before leaving
+          if (cf_timer >= crossfade) {
+            crossfading = false;
+            //printf("cf off exit\n");
+            cur_frame = (int) (left + crossfade / 2.0);
+          }
+          return nframes;
+        }
+      }
+      crossfading = false;
+      //printf("cf off\n");
+      cur_frame = (int) (left + crossfade / 2.0);
+    }
+  }
+  else {
+    int frames_left = right - cur_frame;
+    if (frames_left == 0)
+      return 0;
+
+    int to_copy = frames_left < nframes ? frames_left : nframes;
+    
+    memcpy(buf, wave + num_channels * cur_frame, num_channels * to_copy * sizeof(sample_t));
+    cur_frame += to_copy;
+    return to_copy;
+  }
+}
+
 Playhead::Playhead(JMStack<Playhead*>* playhead_pool, jack_nframes_t pitch_buf_size):
     playhead_pool(playhead_pool), 
     pitch_buf_size(pitch_buf_size),
@@ -47,8 +153,8 @@ void Playhead::init(const jm_key_zone& zone, int pitch, jack_nframes_t start, ja
   //pos_size = 1;
   crossfade = zone.crossfade;
   speed = pow(2, (pitch + zone.pitch_corr - zone.origin) / 12.);
-  wave[0] = zone.wave[0];
-  wave[1] = zone.wave[1];
+  wave[0] = zone.wave;
+  //wave[1] = zone.wave[1];
   //positions[0] = zone.start;
   in_offset = start;
   last_iteration = false;

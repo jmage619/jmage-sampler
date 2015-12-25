@@ -12,6 +12,30 @@
 // purely determined by trial and error
 #define CF_DELAY 706.0
 
+class AudioStream {
+  private:
+    bool loop_on;
+    bool crossfading;
+    int cf_timer;
+    // assume interleaved stereo
+    sample_t* wave;
+    // offsets are int because even 32-bit signed int indexes will cover 2 hours of
+    // stereo interleaved audio sampled at 192khz
+    // i double normal sampler usage would require more than minutes of audio
+    int wave_length; // length in frames
+    int num_channels;
+    // offsets in frames
+    int cur_frame;
+    int start;
+    int left;
+    int right;
+    int crossfade;
+
+  public:
+    void init(const jm_key_zone& zone);
+    int read(sample_t buf[], int nframes);
+};
+
 class SoundGenerator {
   public:
     bool note_off;

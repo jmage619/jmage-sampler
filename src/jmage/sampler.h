@@ -11,11 +11,13 @@
 typedef jack_default_audio_sample_t sample_t;
 
 typedef struct {
-  sample_t* wave[2];
-  jack_nframes_t wave_length;
-  jack_nframes_t start;
-  jack_nframes_t left;
-  jack_nframes_t right;
+  //sample_t* wave[2];
+  sample_t* wave;
+  int num_channels;
+  int wave_length;
+  int start;
+  int left;
+  int right;
   int lower_bound;
   int upper_bound;
   int origin;
@@ -27,7 +29,7 @@ typedef struct {
   jack_nframes_t release;
   double pitch_corr;
   int loop_on;
-  jack_nframes_t crossfade;
+  int crossfade;
 } jm_key_zone;
 
 typedef enum {MT_VOLUME} msg_type;

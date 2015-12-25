@@ -58,8 +58,8 @@ int main() {
   wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
   wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
 
-  zone1.wave[0] = wave[0];
-  zone1.wave[1] = wave[1];
+  zone1.wave = wave[0];
+  //zone1.wave[1] = wave[1];
   zone1.wave_length = sf_info.frames;
   zone1.amp = 1.0;
   zone1.pitch_corr = 0.0;
@@ -73,8 +73,8 @@ int main() {
   sf_count_t f;
   for (f = 0; f < sf_info.frames; f++) {
     sf_readf_double(wav, frame, 1);
-    zone1.wave[0][f] = frame[0];
-    zone1.wave[1][f] = frame[1];
+    zone1.wave[f] = frame[0];
+    //zone1.wave[1][f] = frame[1];
   }
 
   sf_close(wav);
