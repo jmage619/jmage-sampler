@@ -121,42 +121,46 @@ crossfading:
 
 Playhead::Playhead(JMStack<Playhead*>* playhead_pool, jack_nframes_t pitch_buf_size):
     playhead_pool(playhead_pool), 
-    pitch_buf_size(pitch_buf_size),
-    crossfading(false),
-    cf_timer(0)
+    pitch_buf_size(pitch_buf_size)
+    //crossfading(false),
+    //cf_timer(0)
     //first_pos(0),
     //pos_size(1)
     {
-  pitch_bufs[0] = new sample_t[pitch_buf_size];
-  pitch_bufs[1] = new sample_t[pitch_buf_size];
+  pitch_buf = new sample_t[pitch_buf_size];
+  //pitch_bufs[1] = new sample_t[pitch_buf_size];
   int error;
-  resampler = src_new(SRC_SINC_FASTEST, 1, &error);
+  // have to always make it stereo since they are allocated in advance
+  resampler = src_new(SRC_SINC_FASTEST, 2, &error);
 }
 
 Playhead::~Playhead() {
   src_delete(resampler);
-  delete [] pitch_bufs[0];
-  delete [] pitch_bufs[1];
+  delete [] pitch_buf;
 }
 
 void Playhead::init(const jm_key_zone& zone, int pitch, jack_nframes_t start, jack_nframes_t right) {
   SoundGenerator::init(pitch);
+  as.init(zone);
+  num_channels = zone.num_channels;
   state = PLAYING;
-  loop_on = zone.loop_on;
-  crossfading = false;
-  cf_timer = 0;
-  wave_length = zone.wave_length;
-  this->start = start;
-  left = zone.left;
-  this->right = right;
+  //loop_on = zone.loop_on;
+  //crossfading = false;
+  //cf_timer = 0;
+  //wave_length = zone.wave_length;
+  //this->start = start;
+  //left = zone.left;
+  //this->right = right;
   //first_pos = 0;
   //pos_size = 1;
-  crossfade = zone.crossfade;
+  //crossfade = zone.crossfade;
   speed = pow(2, (pitch + zone.pitch_corr - zone.origin) / 12.);
-  wave[0] = zone.wave;
+  //wave[0] = zone.wave;
   //wave[1] = zone.wave[1];
   //positions[0] = zone.start;
-  in_offset = start;
+  //in_offset = start;
+  in_offset = 0;
+  num_read = as.read(in_buf, PH_BUF_SIZE / num_channels);
   last_iteration = false;
   src_reset(resampler);
 }
@@ -166,9 +170,7 @@ void Playhead::init(const jm_key_zone& zone, int pitch) {
 }
 
 void Playhead::pre_process(jack_nframes_t nframes) {
-  // needed?
-  //memset(pitch_bufs[0], 0, sizeof(sample_t) * nframes);
-  //memset(pitch_bufs[1], 0, sizeof(sample_t) * nframes);
+  memset(pitch_buf, 0,  num_channels * nframes * sizeof(sample_t));
 
   out_offset = 0;
 
@@ -176,28 +178,30 @@ void Playhead::pre_process(jack_nframes_t nframes) {
   data.src_ratio = 1 / speed;
   data.end_of_input = 0;
 
-  while (1) {
-    data.data_in = wave[0] + in_offset;
-    data.input_frames = wave_length - in_offset;
-    data.data_out = pitch_bufs[0] + out_offset;
+  while (out_offset < nframes) {
+    data.data_in = in_buf + num_channels * in_offset;
+    data.input_frames = num_read - in_offset;
+    data.data_out = pitch_buf + num_channels * out_offset;
     data.output_frames = nframes - out_offset;
     src_process(resampler, &data);
-    // for now just duping L channel to make mono
-    memcpy(pitch_bufs[1] + out_offset, pitch_bufs[0] + out_offset, data.output_frames_gen * sizeof(sample_t));
+
     out_offset += data.output_frames_gen;
     in_offset += data.input_frames_used;
-    if (in_offset >= right) {
-      last_iteration = true;
-      break;
+
+    if (in_offset >= num_read) {
+      num_read = as.read(in_buf, PH_BUF_SIZE / num_channels);
+      if (num_read == 0) {
+        last_iteration = true;
+        break;
+      }
+      in_offset = 0;
     }
-    if (out_offset >= nframes)
-      break;
   }
-  position = 0;
+  cur_frame = 0;
 }
 
 void Playhead::inc() {
-  ++position;
+  ++cur_frame;
 
   /*if (loop_on) {
     if (!crossfading) {
@@ -220,7 +224,7 @@ void Playhead::inc() {
   else if ((jack_nframes_t) positions[first_pos] >= right)
   */
   //if ((jack_nframes_t) positions[first_pos] >= right)
-  if (last_iteration && position >= out_offset)
+  if (last_iteration && cur_frame >= out_offset)
     state = FINISHED;
 }
 
@@ -244,8 +248,8 @@ void Playhead::get_values(double values[]) {
     values[1] = get_amp() * wave[1][(jack_nframes_t) positions[first_pos]];
   }
   */
-  values[0] = pitch_bufs[0][position];
-  values[1] = pitch_bufs[1][position];
+  values[0] = pitch_buf[num_channels * cur_frame];
+  values[1] = pitch_buf[num_channels * cur_frame + 1];
 }
 
 void AmpEnvGenerator::init(SoundGenerator* sg, const jm_key_zone& zone, int pitch, int velocity) {

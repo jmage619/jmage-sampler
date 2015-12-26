@@ -55,7 +55,8 @@ JMSampler::JMSampler():
     looper_pool.push(new Looper(&looper_pool));
   }
   for (size_t i = 0; i < POLYPHONY * 2; ++i)
-    playhead_pool.push(new Playhead(&playhead_pool, jack_buf_size));
+   // buf size * 2 to make room for stereo
+    playhead_pool.push(new Playhead(&playhead_pool, jack_buf_size * 2));
 
   if (jack_activate(client)) {
     jack_port_unregister(client, input_port);
@@ -194,7 +195,7 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
 
               AmpEnvGenerator* ag;
               jms->amp_gen_pool.pop(ag);
-              if (it->loop_on) {
+              /*if (it->loop_on) {
                 Playhead* ph1;
                 printf("ph_alloc: %i\n",jms->playhead_pool.pop(ph1));
                 Playhead* ph2;
@@ -205,14 +206,17 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
                 ag->init(looper, *it, event.buffer[1], event.buffer[2]);
               }
               else {
+              */
                 Playhead* ph;
                 jms->playhead_pool.pop(ph);
                 ph->init(*it, event.buffer[1]);
                 //ph->init(*it, event.buffer[1], event.buffer[2]);
                 ag->init(ph, *it, event.buffer[1], event.buffer[2]);
-              }
+              //}
               //ph->pre_process(nframes - n);
+              printf("pre process start\n");
               ag->pre_process(nframes - n);
+              printf("pre process finish\n");
 
               //jms->sound_gens.add(ph);
               jms->sound_gens.add(ag);

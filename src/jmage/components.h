@@ -11,6 +11,8 @@
 // delay crossfade by about 16 ms to minimize pops (assumed 44100)
 // purely determined by trial and error
 #define CF_DELAY 706.0
+// arbitrarily sized to max 16 bit int just because 16 bit is awesome
+#define PH_BUF_SIZE 32768
 
 class AudioStream {
   private:
@@ -21,7 +23,7 @@ class AudioStream {
     sample_t* wave;
     // offsets are int because even 32-bit signed int indexes will cover 2 hours of
     // stereo interleaved audio sampled at 192khz
-    // i double normal sampler usage would require more than minutes of audio
+    // i doubt normal sampler usage would require more than minutes of audio
     int wave_length; // length in frames
     int num_channels;
     // offsets in frames
@@ -57,26 +59,31 @@ class Playhead: public SoundGenerator {
       FINISHED
     } state;
     JMStack<Playhead*>* playhead_pool;
-    bool loop_on;
+    //bool loop_on;
+    AudioStream as;
     SRC_STATE* resampler;
-    sample_t* pitch_bufs[NUM_PITCH_BUFS];
+    sample_t in_buf[PH_BUF_SIZE];
+    sample_t* pitch_buf;
     jack_nframes_t pitch_buf_size;
     double speed;
-    bool crossfading;
-    jack_nframes_t cf_timer;
-    sample_t* wave[2];
-    jack_nframes_t wave_length;
-    jack_nframes_t start;
-    jack_nframes_t left;
-    jack_nframes_t right;
+    //bool crossfading;
+    //jack_nframes_t cf_timer;
+    //sample_t* wave[2];
+    //jack_nframes_t wave_length;
+    int num_channels;
+    //jack_nframes_t start;
+    //jack_nframes_t left;
+    //jack_nframes_t right;
     //double positions[2];
-    jack_nframes_t in_offset;
+    int in_offset;
+    int num_read;
     jack_nframes_t out_offset;
     bool last_iteration;
-    jack_nframes_t position;
+    //jack_nframes_t position;
+    jack_nframes_t cur_frame;
     //int first_pos;
     //int pos_size;
-    jack_nframes_t crossfade;
+    //jack_nframes_t crossfade;
 
   public:
     Playhead(JMStack<Playhead*>* playhead_pool, jack_nframes_t pitch_buf_size);

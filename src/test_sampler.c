@@ -55,28 +55,31 @@ int main() {
   zone1.left = (int) (44100 * 1.10);
   zone1.right = (int) (44100 * 2.88);
   sample_t* wave[2];
-  wave[0] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
-  wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
+  //wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
 
-  zone1.wave = wave[0];
   //zone1.wave[1] = wave[1];
   zone1.wave_length = sf_info.frames;
+  zone1.num_channels = sf_info.channels;
   zone1.amp = 1.0;
   zone1.pitch_corr = 0.0;
-  zone1.loop_on = 1;
-  //zone1.loop_on = 0;
+  //zone1.loop_on = 1;
+  zone1.loop_on = 0;
   zone1.crossfade = (int) (44100 * 10 / 1000.);
   //zone1.crossfade = 0;
 
   // assuming 2 channel
-  double frame[2];
+  /*double frame[2];
   sf_count_t f;
   for (f = 0; f < sf_info.frames; f++) {
     sf_readf_double(wav, frame, 1);
     zone1.wave[f] = frame[0];
     //zone1.wave[1][f] = frame[1];
   }
+  */
 
+  wave[0] = (sample_t*) malloc(zone1.num_channels * zone1.wave_length * sizeof(sample_t));
+  zone1.wave = wave[0];
+  sf_read_float(wav, zone1.wave, zone1.num_channels * zone1.wave_length);
   sf_close(wav);
 
   /**** load wav 2 ***/
@@ -134,7 +137,7 @@ int main() {
         jm_remove_zone(jms, 0);
         jm_destroy_sampler(jms);
         free(wave[0]);
-        free(wave[1]);
+        //free(wave[1]);
         //int i;
         //for (i = 0; i < NUM_ZONES; i ++) {
         //}
