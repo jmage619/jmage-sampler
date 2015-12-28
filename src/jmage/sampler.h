@@ -22,11 +22,11 @@ typedef struct {
   int upper_bound;
   int origin;
   double amp;
-  jack_nframes_t attack;
-  jack_nframes_t hold;
-  jack_nframes_t decay;
+  int attack;
+  int hold;
+  int decay;
   double sustain;
-  jack_nframes_t release;
+  int release;
   double pitch_corr;
   int loop_on;
   int crossfade;

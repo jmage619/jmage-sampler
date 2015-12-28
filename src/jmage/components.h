@@ -95,12 +95,12 @@ class AmpEnvGenerator: public SoundGenerator {
     JMStack<AmpEnvGenerator*>* amp_gen_pool;
     SoundGenerator* sg;
     double amp;
-    jack_nframes_t attack;
-    jack_nframes_t hold;
-    jack_nframes_t decay;
+    int attack;
+    int hold;
+    int decay;
     double sustain;
-    jack_nframes_t release;
-    jack_nframes_t timer;
+    int release;
+    int timer;
     double rel_amp;
 
     double get_amp();
