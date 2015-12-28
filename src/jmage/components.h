@@ -7,7 +7,6 @@
 #include "jmage/collections.h"
 #include "jmage/sampler.h"
 
-#define NUM_PITCH_BUFS 2
 // delay crossfade by about 16 ms to minimize pops (assumed 44100)
 // purely determined by trial and error
 #define CF_DELAY 706.0
@@ -25,7 +24,7 @@ class AudioStream {
     // stereo interleaved audio sampled at 192khz
     // i doubt normal sampler usage would require more than minutes of audio
     int wave_length; // length in frames
-    int num_channels;
+    int num_channels; // only implemented to handle 1 or 2 channels
     // offsets in frames
     int cur_frame;
     int start;
@@ -59,36 +58,21 @@ class Playhead: public SoundGenerator {
       FINISHED
     } state;
     JMStack<Playhead*>* playhead_pool;
-    //bool loop_on;
     AudioStream as;
     SRC_STATE* resampler;
     sample_t in_buf[PH_BUF_SIZE];
     sample_t* pitch_buf;
-    jack_nframes_t pitch_buf_size;
     double speed;
-    //bool crossfading;
-    //jack_nframes_t cf_timer;
-    //sample_t* wave[2];
-    //jack_nframes_t wave_length;
-    int num_channels;
-    //jack_nframes_t start;
-    //jack_nframes_t left;
-    //jack_nframes_t right;
-    //double positions[2];
+    int num_channels; // only implemented to handle 1 or 2 channels
     int in_offset;
     int num_read;
     jack_nframes_t out_offset;
     bool last_iteration;
-    //jack_nframes_t position;
     jack_nframes_t cur_frame;
-    //int first_pos;
-    //int pos_size;
-    //jack_nframes_t crossfade;
 
   public:
     Playhead(JMStack<Playhead*>* playhead_pool, jack_nframes_t pitch_buf_size);
     ~Playhead();
-    void init(const jm_key_zone& zone, int pitch, jack_nframes_t start, jack_nframes_t right);
     void init(const jm_key_zone& zone, int pitch);
     void pre_process(jack_nframes_t nframes);
     void inc();
@@ -96,7 +80,6 @@ class Playhead: public SoundGenerator {
     void set_release() {state = FINISHED;}
     bool is_finished(){return state == FINISHED;}
     void release_resources() {playhead_pool->push(this);}
-    jack_nframes_t get_pitch_buf_size() {return pitch_buf_size;}
 };
 
 class AmpEnvGenerator: public SoundGenerator {
@@ -130,35 +113,6 @@ class AmpEnvGenerator: public SoundGenerator {
     void set_release();
     bool is_finished(){return state == FINISHED;}
     void release_resources() {sg->release_resources(); amp_gen_pool->push(this);}
-};
-
-class Looper: public SoundGenerator {
-  private:
-    enum State {
-      PLAYING,
-      FINISHED
-    } state;
-    JMStack<Looper*>* looper_pool;
-    jm_key_zone zone;
-    bool crossfading;
-    jack_nframes_t cf_timer;
-    double speed;
-    Playhead* playheads[2];
-    int num_playheads;
-    int first_ph;
-    double left;
-    double right;
-    jack_nframes_t position;
-    double crossfade;
-  public:
-    Looper(JMStack<Looper*>* looper_pool): looper_pool(looper_pool) {}
-    void init(Playhead* ph1, Playhead* ph2, const jm_key_zone& zone, int pitch);
-    void pre_process(jack_nframes_t nframes);
-    void inc();
-    void get_values(double values[]);
-    void set_release() {state = FINISHED;}
-    bool is_finished(){return state == FINISHED;}
-    void release_resources();
 };
 
 struct sg_list_el {

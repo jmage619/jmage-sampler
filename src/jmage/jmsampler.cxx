@@ -28,9 +28,8 @@ JMSampler::JMSampler():
     level(VOL_STEPS - 1),
     sustain_on(false),
     sound_gens(POLYPHONY),
-    playhead_pool(POLYPHONY * 2), // 2x to account for up to 10 loopers
-    amp_gen_pool(POLYPHONY),
-    looper_pool(POLYPHONY) {
+    playhead_pool(POLYPHONY),
+    amp_gen_pool(POLYPHONY) {
   // init amplitude array
   init_amp(this);
 
@@ -52,11 +51,8 @@ JMSampler::JMSampler():
   jack_buf_size = jack_get_buffer_size(client);
   for (size_t i = 0; i < POLYPHONY; ++i) {
     amp_gen_pool.push(new AmpEnvGenerator(&amp_gen_pool));
-    looper_pool.push(new Looper(&looper_pool));
+    playhead_pool.push(new Playhead(&playhead_pool, jack_buf_size));
   }
-  for (size_t i = 0; i < POLYPHONY * 2; ++i)
-   // buf size * 2 to make room for stereo
-    playhead_pool.push(new Playhead(&playhead_pool, jack_buf_size * 2));
 
   if (jack_activate(client)) {
     jack_port_unregister(client, input_port);
@@ -89,10 +85,6 @@ JMSampler::~JMSampler() {
   AmpEnvGenerator* ag;
   while (amp_gen_pool.pop(ag)) {
     delete ag;
-  }
-  Looper* lp;
-  while (looper_pool.pop(lp)) {
-    delete lp;
   }
   pthread_mutex_destroy(&zone_lock);
 }
@@ -195,30 +187,14 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
 
               AmpEnvGenerator* ag;
               jms->amp_gen_pool.pop(ag);
-              /*if (it->loop_on) {
-                Playhead* ph1;
-                printf("ph_alloc: %i\n",jms->playhead_pool.pop(ph1));
-                Playhead* ph2;
-                printf("ph_alloc: %i\n",jms->playhead_pool.pop(ph2));
-                Looper* looper;
-                jms->looper_pool.pop(looper);
-                looper->init(ph1, ph2, *it, event.buffer[1]);
-                ag->init(looper, *it, event.buffer[1], event.buffer[2]);
-              }
-              else {
-              */
-                Playhead* ph;
-                jms->playhead_pool.pop(ph);
-                ph->init(*it, event.buffer[1]);
-                //ph->init(*it, event.buffer[1], event.buffer[2]);
-                ag->init(ph, *it, event.buffer[1], event.buffer[2]);
-              //}
-              //ph->pre_process(nframes - n);
+              Playhead* ph;
+              jms->playhead_pool.pop(ph);
+              ph->init(*it, event.buffer[1]);
+              ag->init(ph, *it, event.buffer[1], event.buffer[2]);
               printf("pre process start\n");
               ag->pre_process(nframes - n);
               printf("pre process finish\n");
 
-              //jms->sound_gens.add(ph);
               jms->sound_gens.add(ag);
               printf("event: note on;  note: %i; vel: %i\n", event.buffer[1], event.buffer[2]);
             }

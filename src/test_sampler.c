@@ -48,12 +48,10 @@ int main() {
   
   printf("opening wav\n");
   //SNDFILE* wav = sf_open("rhodes_note.wav", SFM_READ, &sf_info);
-  SNDFILE* wav = sf_open("afx.wav", SFM_READ, &sf_info);
+  //SNDFILE* wav = sf_open("afx.wav", SFM_READ, &sf_info);
+  SNDFILE* wav = sf_open("4_F_a.wav", SFM_READ, &sf_info);
 
   printf("wave length: %" PRIi64 "\n", sf_info.frames);
-  zone1.start = 0;
-  zone1.left = (int) (44100 * 1.10);
-  zone1.right = (int) (44100 * 2.88);
   sample_t* wave[2];
   //wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
 
@@ -62,9 +60,14 @@ int main() {
   zone1.num_channels = sf_info.channels;
   zone1.amp = 1.0;
   zone1.pitch_corr = 0.0;
-  //zone1.loop_on = 1;
-  zone1.loop_on = 0;
-  zone1.crossfade = (int) (44100 * 10 / 1000.);
+  //zone1.right = sf_info.frames;
+  zone1.loop_on = 1;
+  zone1.start = 0;
+  //zone1.left = (int) (44100 * 1.10);
+  zone1.left = 0;
+  //zone1.right = (int) (44100 * 2.7);
+  zone1.right = sf_info.frames;
+  zone1.crossfade = (int) (44100 * 100 / 1000.);
   //zone1.crossfade = 0;
 
   // assuming 2 channel

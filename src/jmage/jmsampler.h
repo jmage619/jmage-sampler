@@ -41,7 +41,6 @@ class JMSampler {
     jack_nframes_t jack_buf_size;
     JMStack<Playhead*> playhead_pool;
     JMStack<AmpEnvGenerator*> amp_gen_pool;
-    JMStack<Looper*> looper_pool;
 
     static void init_amp(JMSampler* jms);
 
