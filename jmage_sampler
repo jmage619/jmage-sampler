@@ -41,23 +41,24 @@ class JMSampler(Structure):
   pass
 
 class jm_key_zone(Structure):
-  _fields_ = [('wave', (POINTER(c_float) * 2)),
-    ('wave_length', c_uint32),
-    ('start', c_uint32),
-    ('left', c_uint32),
-    ('right', c_uint32),
+  _fields_ = [('wave', POINTER(c_float)),
+    ('num_channels', c_int),
+    ('wave_length', c_int),
+    ('start', c_int),
+    ('left', c_int),
+    ('right', c_int),
     ('lower_bound', c_int),
     ('upper_bound', c_int),
     ('origin', c_int),
-    ('amp', c_double),
-    ('attack', c_uint32),
-    ('hold', c_uint32),
-    ('decay', c_uint32),
-    ('sustain', c_double),
-    ('release', c_uint32),
+    ('amp', c_float),
+    ('attack', c_int),
+    ('hold', c_int),
+    ('decay', c_int),
+    ('sustain', c_float),
+    ('release', c_int),
     ('pitch_corr', c_double),
     ('loop_on', c_int),
-    ('crossfade', c_uint32)
+    ('crossfade', c_int)
   ]
 
 
@@ -416,21 +417,17 @@ class MyFrame(wx.Frame):
 def load_wave(path):
   wav_file = wave.open(path)
   wave_length = wav_file.getnframes()
-  wav = []
-  if wav_file.getnchannels() == 1:
-    wav.append(((c_float * wave_length))())
-
+  num_channels = wav_file.getnchannels()
+  wav = {'num_channels': num_channels, 'arr': (c_float * (wave_length * num_channels))()}
+  if num_channels == 1:
     for i in range(wave_length):
       frame = struct.unpack('<h', wav_file.readframes(1))
-      wav[0][i] = frame[0] / float(INT16_MAX)
+      wav['arr'][i] = frame[0] / float(INT16_MAX)
   else:
-    wav.append(((c_float * wave_length))())
-    wav.append(((c_float * wave_length))())
-  
     for i in range(wave_length):
       frame = struct.unpack('<hh', wav_file.readframes(1))
-      wav[0][i] = frame[0] / float(INT16_MAX)
-      wav[1][i] = frame[1] / float(INT16_MAX)
+      wav['arr'][2 * i] = frame[0] / float(INT16_MAX)
+      wav['arr'][2 * i + 1] = frame[1] / float(INT16_MAX)
 
   wav_file.close()
   return wav
@@ -445,15 +442,11 @@ def new_zone_from_file(path):
   zone = jm_key_zone()
   lib.jm_init_key_zone(byref(zone))
 
-  zone.wave[0] = wav[0]
-  if len(wav) > 1:
-    zone.wave[1] = wav[1]
-  # just point L and R to same if mono
-  else:
-    zone.wave[1] = wav[0]
+  zone.num_channels = wav['num_channels']
+  zone.wave = wav['arr']
 
-  zone.right = len(wav[0]) - 1
-  zone.wave_length = len(wav[0])
+  zone.right = len(wav['arr']) / wav['num_channels']
+  zone.wave_length = len(wav['arr']) / wav['num_channels']
 
   return zone
 
