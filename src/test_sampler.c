@@ -48,11 +48,11 @@ int main() {
   
   printf("opening wav\n");
   //SNDFILE* wav = sf_open("rhodes_note.wav", SFM_READ, &sf_info);
-  //SNDFILE* wav = sf_open("afx.wav", SFM_READ, &sf_info);
-  SNDFILE* wav = sf_open("4_F_a.wav", SFM_READ, &sf_info);
+  SNDFILE* wav = sf_open("afx.wav", SFM_READ, &sf_info);
+  //SNDFILE* wav = sf_open("4_F_a.wav", SFM_READ, &sf_info);
 
   printf("wave length: %" PRIi64 "\n", sf_info.frames);
-  sample_t* wave[2];
+  float* wave[2];
   //wave[1] = (sample_t*) malloc(sizeof(sample_t) * sf_info.frames);
 
   //zone1.wave[1] = wave[1];
@@ -63,10 +63,10 @@ int main() {
   //zone1.right = sf_info.frames;
   zone1.loop_on = 1;
   zone1.start = 0;
-  //zone1.left = (int) (44100 * 1.10);
-  zone1.left = 0;
-  //zone1.right = (int) (44100 * 2.7);
-  zone1.right = sf_info.frames;
+  zone1.left = (int) (44100 * 1.10);
+  //zone1.left = 0;
+  zone1.right = (int) (44100 * 2.7);
+  //zone1.right = sf_info.frames;
   zone1.crossfade = (int) (44100 * 100 / 1000.);
   //zone1.crossfade = 0;
 
@@ -80,7 +80,7 @@ int main() {
   }
   */
 
-  wave[0] = (sample_t*) malloc(zone1.num_channels * zone1.wave_length * sizeof(sample_t));
+  wave[0] = (float*) malloc(zone1.num_channels * zone1.wave_length * sizeof(float));
   zone1.wave = wave[0];
   sf_read_float(wav, zone1.wave, zone1.num_channels * zone1.wave_length);
   sf_close(wav);

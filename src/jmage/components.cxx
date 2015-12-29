@@ -11,7 +11,7 @@
 
 #define MAX_VELOCITY 127
 // boost for controllers that don't reach 127 easily
-#define VELOCITY_BOOST 1.2
+#define VELOCITY_BOOST 1.2f
 
 void AudioStream::init(const jm_key_zone& zone) {
   loop_on = zone.loop_on;
@@ -27,7 +27,7 @@ void AudioStream::init(const jm_key_zone& zone) {
   crossfade = zone.crossfade;
 }
 
-int AudioStream::read(sample_t buf[], int nframes) {
+int AudioStream::read(float buf[], int nframes) {
   if (loop_on) {
     int out_offset = 0;
     int to_copy;
@@ -45,7 +45,7 @@ int AudioStream::read(sample_t buf[], int nframes) {
       if (to_copy > frames_left)
         to_copy = frames_left;
 
-      memcpy(buf + out_offset, wave + num_channels * cur_frame, num_channels * to_copy * sizeof(sample_t));
+      memcpy(buf + out_offset, wave + num_channels * cur_frame, num_channels * to_copy * sizeof(float));
       cur_frame += to_copy;
       out_offset += to_copy * num_channels;
       if (out_offset / num_channels >= nframes) {
@@ -68,24 +68,24 @@ crossfading:
       while (cf_timer < crossfade) {
         //printf("fade_in_pos1: %i\n", fade_in_pos);
         if (num_channels == 1) {
-          buf[out_offset] = 0.0;
+          buf[out_offset] = 0.0f;
           if (cur_frame < wave_length)
-            buf[out_offset] +=  (1.0 - cf_timer / (double) crossfade) * wave[cur_frame];
+            buf[out_offset] +=  (1.0f - cf_timer / (float) crossfade) * wave[cur_frame];
           if (fade_in_start + cf_timer >= 0) {
-            buf[out_offset] +=  cf_timer / (double) crossfade * wave[fade_in_start + cf_timer];
+            buf[out_offset] +=  cf_timer / (float) crossfade * wave[fade_in_start + cf_timer];
           }
         }
         else {
-          //printf("cf1: %f,%f\n",(1.0 - cf_timer / (double) crossfade),cf_timer / (double) crossfade);
-          buf[out_offset] = 0.0;
-          buf[out_offset + 1] = 0.0;
+          //printf("cf1: %f,%f\n",(1.0 - cf_timer / (float) crossfade),cf_timer / (float) crossfade);
+          buf[out_offset] = 0.0f;
+          buf[out_offset + 1] = 0.0f;
           if (cur_frame < wave_length) {
-            buf[out_offset] +=  (1.0 - cf_timer / (double) crossfade) * wave[num_channels * cur_frame];
-            buf[out_offset + 1] +=  (1.0 - cf_timer / (double) crossfade) * wave[num_channels * cur_frame + 1];
+            buf[out_offset] += (1.0f - cf_timer / (float) crossfade) * wave[num_channels * cur_frame];
+            buf[out_offset + 1] += (1.0f - cf_timer / (float) crossfade) * wave[num_channels * cur_frame + 1];
           }
           if (fade_in_start + cf_timer >= 0) {
-            buf[out_offset] += cf_timer / (double) crossfade * wave[num_channels * fade_in_start + num_channels * cf_timer];
-            buf[out_offset + 1] += cf_timer / (double) crossfade * wave[num_channels * fade_in_start + num_channels * cf_timer + 1];
+            buf[out_offset] += cf_timer / (float) crossfade * wave[num_channels * fade_in_start + num_channels * cf_timer];
+            buf[out_offset + 1] += cf_timer / (float) crossfade * wave[num_channels * fade_in_start + num_channels * cf_timer + 1];
           }
         }
         ++cur_frame;
@@ -113,7 +113,7 @@ crossfading:
 
     int to_copy = frames_left < nframes ? frames_left : nframes;
     
-    memcpy(buf, wave + num_channels * cur_frame, num_channels * to_copy * sizeof(sample_t));
+    memcpy(buf, wave + num_channels * cur_frame, num_channels * to_copy * sizeof(float));
     cur_frame += to_copy;
     return to_copy;
   }
@@ -122,7 +122,7 @@ crossfading:
 Playhead::Playhead(JMStack<Playhead*>* playhead_pool, jack_nframes_t pitch_buf_size):
     playhead_pool(playhead_pool) {
   // buf size * 2 to make room for stereo
-  pitch_buf = new sample_t[pitch_buf_size * 2];
+  pitch_buf = new float[pitch_buf_size * 2];
   int error;
   // have to always make it stereo since they are allocated in advance
   resampler = src_new(SRC_SINC_FASTEST, 2, &error);
@@ -159,7 +159,7 @@ void Playhead::init(const jm_key_zone& zone, int pitch) {
 }
 
 void Playhead::pre_process(jack_nframes_t nframes) {
-  memset(pitch_buf, 0,  2 * nframes * sizeof(sample_t));
+  memset(pitch_buf, 0,  2 * nframes * sizeof(float));
 
   out_offset = 0;
 
@@ -206,7 +206,7 @@ void Playhead::inc() {
     state = FINISHED;
 }
 
-void Playhead::get_values(double values[]) {
+void Playhead::get_values(float values[]) {
   values[0] = pitch_buf[2 * cur_frame];
   values[1] = pitch_buf[2 * cur_frame + 1];
 }
@@ -222,8 +222,8 @@ void AmpEnvGenerator::init(SoundGenerator* sg, const jm_key_zone& zone, int pitc
   release = zone.release;
   timer = 0;
   rel_amp = zone.sustain;
-  double calc_amp = zone.amp * VELOCITY_BOOST * velocity / MAX_VELOCITY;
-  amp = calc_amp > 1.0 ? 1.0 : calc_amp;
+  float calc_amp = zone.amp * VELOCITY_BOOST * velocity / (float) MAX_VELOCITY;
+  amp = calc_amp > 1.0f ? 1.0f : calc_amp;
 }
 
 void AmpEnvGenerator::inc() {
@@ -264,7 +264,7 @@ void AmpEnvGenerator::inc() {
   }
 }
 
-double AmpEnvGenerator::get_amp() {
+float AmpEnvGenerator::get_amp() {
   switch (state) {
     case ATTACK:
       // envelope from 0.0 to 1.0
@@ -274,7 +274,7 @@ double AmpEnvGenerator::get_amp() {
     case DECAY:
       // envelope from 1.0 to sustain
       if (decay != 0)
-        return amp * (-(1.0 - sustain) * timer / decay + 1.0);
+        return amp * (-(1.0f - sustain) * timer / decay + 1.0f);
       break;
     case SUSTAIN:
       return amp * sustain;
@@ -290,8 +290,8 @@ double AmpEnvGenerator::get_amp() {
   return amp;
 }
 
-void AmpEnvGenerator::get_values(double values[]) {
-  double cur_amp = get_amp();
+void AmpEnvGenerator::get_values(float values[]) {
+  float cur_amp = get_amp();
   sg->get_values(values);
   values[0] *= cur_amp;
   values[1] *= cur_amp;

@@ -19,7 +19,7 @@ class AudioStream {
     bool crossfading;
     int cf_timer;
     // assume interleaved stereo
-    sample_t* wave;
+    float* wave;
     // offsets are int because even 32-bit signed int indexes will cover 2 hours of
     // stereo interleaved audio sampled at 192khz
     // i doubt normal sampler usage would require more than minutes of audio
@@ -34,7 +34,7 @@ class AudioStream {
 
   public:
     void init(const jm_key_zone& zone);
-    int read(sample_t buf[], int nframes);
+    int read(float buf[], int nframes);
 };
 
 class SoundGenerator {
@@ -45,7 +45,7 @@ class SoundGenerator {
     void init(int pitch){note_off = false; this->pitch = pitch;}
     virtual void pre_process(jack_nframes_t nframes){}
     virtual void inc() = 0;
-    virtual void get_values(double values[]) = 0;
+    virtual void get_values(float values[]) = 0;
     virtual void set_release() = 0;
     virtual bool is_finished() = 0;
     virtual void release_resources() = 0;
@@ -60,8 +60,8 @@ class Playhead: public SoundGenerator {
     JMStack<Playhead*>* playhead_pool;
     AudioStream as;
     SRC_STATE* resampler;
-    sample_t in_buf[PH_BUF_SIZE];
-    sample_t* pitch_buf;
+    float in_buf[PH_BUF_SIZE];
+    float* pitch_buf;
     double speed;
     int num_channels; // only implemented to handle 1 or 2 channels
     int in_offset;
@@ -76,7 +76,7 @@ class Playhead: public SoundGenerator {
     void init(const jm_key_zone& zone, int pitch);
     void pre_process(jack_nframes_t nframes);
     void inc();
-    void get_values(double values[]);
+    void get_values(float values[]);
     void set_release() {state = FINISHED;}
     bool is_finished(){return state == FINISHED;}
     void release_resources() {playhead_pool->push(this);}
@@ -94,22 +94,22 @@ class AmpEnvGenerator: public SoundGenerator {
     } state;
     JMStack<AmpEnvGenerator*>* amp_gen_pool;
     SoundGenerator* sg;
-    double amp;
+    float amp;
     int attack;
     int hold;
     int decay;
-    double sustain;
+    float sustain;
     int release;
     int timer;
-    double rel_amp;
+    float rel_amp;
 
-    double get_amp();
+    float get_amp();
   public:
     AmpEnvGenerator(JMStack<AmpEnvGenerator*>* amp_gen_pool): amp_gen_pool(amp_gen_pool) {}
     void init(SoundGenerator* sg, const jm_key_zone& zone, int pitch, int velocity);
     void pre_process(jack_nframes_t nframes) {sg->pre_process(nframes);}
     void inc();
-    void get_values(double values[]);
+    void get_values(float values[]);
     void set_release();
     bool is_finished(){return state == FINISHED;}
     void release_resources() {sg->release_resources(); amp_gen_pool->push(this);}

@@ -11,8 +11,7 @@
 typedef jack_default_audio_sample_t sample_t;
 
 typedef struct {
-  //sample_t* wave[2];
-  sample_t* wave;
+  float* wave;
   int num_channels;
   int wave_length;
   int start;
@@ -21,11 +20,11 @@ typedef struct {
   int lower_bound;
   int upper_bound;
   int origin;
-  double amp;
+  float amp;
   int attack;
   int hold;
   int decay;
-  double sustain;
+  float sustain;
   int release;
   double pitch_corr;
   int loop_on;

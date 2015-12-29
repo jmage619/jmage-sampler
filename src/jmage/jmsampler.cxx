@@ -17,9 +17,9 @@
 
 void JMSampler::init_amp(JMSampler* jms) {
   for (int i = 0; i < VOL_STEPS; i++) {
-    jms->amp[i]  = 1 / 100. * pow(10, 2 * i / (VOL_STEPS - 1.0));
+    jms->amp[i]  = 1 / 100.f * pow(10.f, 2 * i / (VOL_STEPS - 1.0f));
   }
-  jms->amp[0] = 0.0;
+  jms->amp[0] = 0.0f;
 }
 
 JMSampler::JMSampler():
@@ -134,8 +134,8 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
   sample_t* buffer1 = (sample_t*) jack_port_get_buffer(jms->output_port1, nframes);
   sample_t* buffer2 = (sample_t*) jack_port_get_buffer(jms->output_port2, nframes);
 
-  memset(buffer1, 0, sizeof(jack_default_audio_sample_t) * nframes);
-  memset(buffer2, 0, sizeof(jack_default_audio_sample_t) * nframes);
+  memset(buffer1, 0, sizeof(sample_t) * nframes);
+  memset(buffer2, 0, sizeof(sample_t) * nframes);
 
   // handle any UI messages
   jm_msg msg;
@@ -239,7 +239,7 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
     }
 
     for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
-      double values[2];
+      float values[2];
       sg_el->sg->get_values(values);
       buffer1[n] += jms->amp[jms->level] * values[0];
       buffer2[n] += jms->amp[jms->level] * values[1];

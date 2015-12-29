@@ -28,7 +28,7 @@ class JMSampler {
     JMQueue<jm_msg> msg_q_out;
 
     // volume control; should amp really be a member?
-    double amp[VOL_STEPS];
+    float amp[VOL_STEPS];
     int level;
 
     std::vector<jm_key_zone> zones;
