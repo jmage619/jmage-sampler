@@ -267,9 +267,12 @@ void AmpEnvGenerator::inc() {
 float AmpEnvGenerator::get_env_val() {
   switch (state) {
     case ATTACK:
-      // envelope from 0.0 to 1.0
+      // envelope from 0.0 to 1.0; linear feels better here
       if (attack != 0)
         return timer / (float) attack;
+      /*if (attack != 0)
+        return 0.00001f * pow(10.f, 5.0f * timer / (float) attack);
+      */
       break;
     case DECAY:
       // envelope from 1.0 to sustain
@@ -277,8 +280,14 @@ float AmpEnvGenerator::get_env_val() {
         return amp * (-(1.0f - sustain) * timer / decay + 1.0f);
       */
       // decay rate 1.0 to 0.0; stop when we hit sustain
-      if (decay != 0) {
+      /*if (decay != 0) {
         float calc_val = 1.0f - timer / (float) decay;
+        calc_val = calc_val < sustain ? sustain: calc_val;
+        return calc_val;
+      }
+      */
+      if (decay != 0) {
+        float calc_val = 0.00001f * pow(10.f, 5.0f * (1.0f - timer / (float) decay));
         calc_val = calc_val < sustain ? sustain: calc_val;
         return calc_val;
       }
@@ -293,9 +302,17 @@ float AmpEnvGenerator::get_env_val() {
         return rel_amp;
       */
       // release rate 1.0 to 0.0; start from released value and stop when hit 0.0
-      if (release != 0) {
+      /*if (release != 0) {
         float calc_val = env_rel_val - timer / (float) release;
         calc_val = calc_val < 0.0f ? 0.0f: calc_val;
+        return calc_val;
+      }
+      else
+        return env_rel_val;
+      */
+      if (release != 0) {
+        float calc_val = env_rel_val * 0.00001f * pow(10.f, 5.0f * (1.0f - timer / (float) release));
+        //calc_val = calc_val < 0.0f ? 0.0f: calc_val;
         return calc_val;
       }
       else
