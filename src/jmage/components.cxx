@@ -221,7 +221,7 @@ void AmpEnvGenerator::init(SoundGenerator* sg, const jm_key_zone& zone, int pitc
   sustain = zone.sustain;
   release = zone.release;
   timer = 0;
-  rel_amp = zone.sustain;
+  env_rel_val = zone.sustain;
   float calc_amp = zone.amp * VELOCITY_BOOST * velocity / (float) MAX_VELOCITY;
   amp = calc_amp > 1.0f ? 1.0f : calc_amp;
 }
@@ -264,41 +264,57 @@ void AmpEnvGenerator::inc() {
   }
 }
 
-float AmpEnvGenerator::get_amp() {
+float AmpEnvGenerator::get_env_val() {
   switch (state) {
     case ATTACK:
       // envelope from 0.0 to 1.0
       if (attack != 0)
-        return amp * (float) timer / attack;
+        return timer / (float) attack;
       break;
     case DECAY:
       // envelope from 1.0 to sustain
-      if (decay != 0)
+      /*if (decay != 0)
         return amp * (-(1.0f - sustain) * timer / decay + 1.0f);
+      */
+      // decay rate 1.0 to 0.0; stop when we hit sustain
+      if (decay != 0) {
+        float calc_val = 1.0f - timer / (float) decay;
+        calc_val = calc_val < sustain ? sustain: calc_val;
+        return calc_val;
+      }
       break;
     case SUSTAIN:
-      return amp * sustain;
+      return sustain;
     case RELEASE:
       // from rel_amp to 0.0
-      if (release != 0)
+      /*if (release != 0)
         return - rel_amp * timer / release + rel_amp;
       else
         return rel_amp;
+      */
+      // release rate 1.0 to 0.0; start from released value and stop when hit 0.0
+      if (release != 0) {
+        float calc_val = env_rel_val - timer / (float) release;
+        calc_val = calc_val < 0.0f ? 0.0f: calc_val;
+        return calc_val;
+      }
+      else
+        return env_rel_val;
     default:
       break;
   }
-  return amp;
+  return 1.0f;
 }
 
 void AmpEnvGenerator::get_values(float values[]) {
-  float cur_amp = get_amp();
+  float cur_env = get_env_val();
   sg->get_values(values);
-  values[0] *= cur_amp;
-  values[1] *= cur_amp;
+  values[0] *= cur_env * amp;
+  values[1] *= cur_env * amp;
 }
 
 void AmpEnvGenerator::set_release() {
-  rel_amp = get_amp();
+  env_rel_val = get_env_val();
   timer = 0;
   state = RELEASE;
 }

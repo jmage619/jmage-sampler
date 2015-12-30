@@ -101,9 +101,9 @@ class AmpEnvGenerator: public SoundGenerator {
     float sustain;
     int release;
     int timer;
-    float rel_amp;
+    float env_rel_val;
 
-    float get_amp();
+    float get_env_val();
   public:
     AmpEnvGenerator(JMStack<AmpEnvGenerator*>* amp_gen_pool): amp_gen_pool(amp_gen_pool) {}
     void init(SoundGenerator* sg, const jm_key_zone& zone, int pitch, int velocity);
