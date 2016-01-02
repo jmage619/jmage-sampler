@@ -25,6 +25,7 @@ from ctypes import c_int
 from ctypes import c_double
 from ctypes import c_float
 from ctypes import c_uint32
+from ctypes import c_char_p
 from ctypes import c_void_p
 from ctypes import c_size_t
 
@@ -39,6 +40,15 @@ OUT_LEN = 4.5
 
 class JMSampler(Structure):
   pass
+
+class jm_wave(Structure):
+  _fields_ = [('wave', POINTER(c_float)),
+    ('num_channels', c_int),
+    ('length', c_int),
+    ('left', c_int),
+    ('right', c_int),
+    ('has_loop', c_int)
+  ]
 
 class jm_key_zone(Structure):
   _fields_ = [('wave', POINTER(c_float)),
@@ -61,7 +71,6 @@ class jm_key_zone(Structure):
     ('crossfade', c_int)
   ]
 
-
 class jm_msg_data(Union):
   _fields_ = [('i', c_int)]
 
@@ -78,6 +87,8 @@ def getch():
   return key
 
 lib = ctypes.cdll.LoadLibrary('libjm_sampler.so')
+lib.jm_parse_wave.argtypes = [POINTER(jm_wave), c_char_p]
+lib.jm_destroy_wave.argtypes = [POINTER(jm_wave)]
 lib.jm_init_key_zone.argtypes = [POINTER(jm_key_zone)]
 lib.jm_new_sampler.restype = POINTER(JMSampler)
 lib.jm_destroy_sampler.argtypes = [POINTER(JMSampler)]
@@ -206,6 +217,14 @@ class MyFrame(wx.Frame):
         zone.lower_bound = int(region['lokey'])
         zone.upper_bound = int(region['hikey'])
         zone.origin = int(region['pitch_keycenter'])
+        # loop_mode should have default value?
+        if 'loop_mode' in region and region['loop_mode'] == 'loop_continuous':
+          zone.loop_on = 1
+        # start and end should not have defaults, may be defined inside wav
+        if 'loop_start' in region:
+          zone.left = region['loop_start']
+        if 'loop_end' in region:
+          zone.right = region['loop_end']
         zone.decay = int(SAMPLE_RATE * float(region['ampeg_decay']))
         zone.sustain = float(region['ampeg_sustain']) / 100.
         zone.release = int(SAMPLE_RATE * float(region['ampeg_release']))
@@ -348,6 +367,7 @@ class MyFrame(wx.Frame):
     self.zone_panel.Add(tc)
 
     cb = wx.CheckBox(self.zone_panel)
+    cb.SetValue(zone.loop_on)
     self.zone_panel.Add(cb)
     self.Bind(wx.EVT_CHECKBOX, self.OnControlEvent, cb)
 
@@ -396,6 +416,7 @@ class MyFrame(wx.Frame):
       path = dlg.GetPath()
 
       zone = new_zone_from_file(path)
+
       lib.jm_add_zone(SAMPLER, byref(zone))
       self.AddZone(zone, path)
 
@@ -415,21 +436,8 @@ class MyFrame(wx.Frame):
     ControlCallback(e.GetEventObject())
 
 def load_wave(path):
-  wav_file = wave.open(path)
-  wave_length = wav_file.getnframes()
-  num_channels = wav_file.getnchannels()
-  wav = {'num_channels': num_channels, 'arr': (c_float * (wave_length * num_channels))()}
-  if num_channels == 1:
-    for i in range(wave_length):
-      frame = struct.unpack('<h', wav_file.readframes(1))
-      wav['arr'][i] = frame[0] / float(INT16_MAX)
-  else:
-    for i in range(wave_length):
-      frame = struct.unpack('<hh', wav_file.readframes(1))
-      wav['arr'][2 * i] = frame[0] / float(INT16_MAX)
-      wav['arr'][2 * i + 1] = frame[1] / float(INT16_MAX)
-
-  wav_file.close()
+  wav = jm_wave()
+  lib.jm_parse_wave(byref(wav), path)
   return wav
 
 def new_zone_from_file(path):
@@ -442,11 +450,13 @@ def new_zone_from_file(path):
   zone = jm_key_zone()
   lib.jm_init_key_zone(byref(zone))
 
-  zone.num_channels = wav['num_channels']
-  zone.wave = wav['arr']
+  zone.num_channels = wav.num_channels
+  zone.wave = wav.wave
 
-  zone.right = len(wav['arr']) / wav['num_channels']
-  zone.wave_length = len(wav['arr']) / wav['num_channels']
+  zone.wave_length = wav.length
+  zone.left = wav.left
+  zone.right = wav.right
+  zone.loop_on = wav.has_loop
 
   return zone
 
@@ -509,3 +519,6 @@ if __name__ == '__main__':
 
   app.MainLoop()
   lib.jm_destroy_sampler(SAMPLER)
+
+  for wav in WAVES:
+    lib.jm_destroy_wave(byref(WAVES[wav]))

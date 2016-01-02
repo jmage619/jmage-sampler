@@ -13,6 +13,15 @@ typedef jack_default_audio_sample_t sample_t;
 typedef struct {
   float* wave;
   int num_channels;
+  int length;
+  int left;
+  int right;
+  int has_loop;
+} jm_wave;
+
+typedef struct {
+  float* wave;
+  int num_channels;
   int wave_length;
   int start;
   int left;
@@ -49,6 +58,9 @@ typedef struct JMSampler JMSampler;
 #ifdef __cplusplus
 extern "C" {
 #endif
+  void jm_parse_wave(jm_wave* wav, char const * path);
+  void jm_destroy_wave(jm_wave* wav);
+
   void jm_init_key_zone(jm_key_zone* zone);
   int jm_zone_contains(jm_key_zone const * zone, int pitch);
 

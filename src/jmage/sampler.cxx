@@ -2,11 +2,43 @@
 
 #include <limits.h>
 #include <stdlib.h>
+#include <sndfile.h>
 #include <jack/jack.h>
 #include <jack/types.h>
 
 #include "jmage/sampler.h"
 #include "jmage/jmsampler.h"
+
+void jm_parse_wave(jm_wave* wav, char const * path) {
+  SF_INFO sf_info;
+  sf_info.format = 0;
+  SNDFILE* sf_wav = sf_open(path, SFM_READ, &sf_info);
+  wav->length = sf_info.frames;
+  wav->num_channels = sf_info.channels;
+  wav->wave = new float[wav->num_channels * wav->length];
+  sf_read_float(sf_wav, wav->wave, wav->num_channels * wav->length);
+
+  SF_INSTRUMENT inst;
+  sf_command(sf_wav, SFC_GET_INSTRUMENT, &inst, sizeof(inst));
+
+  wav->has_loop = 0;
+  wav->left = 0;
+  wav->right = wav->length;
+
+  // if the wav has loops, just pick its first one(?)
+  // also ignoring loop mode and count for now
+  if (inst.loop_count > 0) {
+    wav->has_loop = 1;
+    wav->left = inst.loops[0].start;
+    wav->right = inst.loops[0].end;
+  }
+
+  sf_close(sf_wav);
+}
+
+void jm_destroy_wave(jm_wave* wav) {
+  delete [] wav->wave;
+}
 
 // why aren't we initializing zone->right
 void jm_init_key_zone(jm_key_zone* zone) {
