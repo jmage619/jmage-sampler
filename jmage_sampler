@@ -164,7 +164,7 @@ class MyFrame(wx.Frame):
     vbox.Add(hbox1, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border=10)
 
     # create zone grid
-    self.zone_panel = jmage.ui.StretchColGrid(18, self.panel1, style=wx.TAB_TRAVERSAL)
+    self.zone_panel = jmage.ui.StretchColGrid(20, self.panel1, style=wx.TAB_TRAVERSAL)
     vbox.Add(self.zone_panel, flag=wx.LEFT | wx.RIGHT | wx.TOP | wx.EXPAND, border=10, proportion=1)
     self.AddZoneHeader()
 
@@ -219,6 +219,8 @@ class MyFrame(wx.Frame):
         zone.low_key = region['lokey']
         zone.high_key = region['hikey']
         zone.origin = region['pitch_keycenter']
+        zone.low_vel = region['lovel']
+        zone.high_vel = region['hivel']
         # loop_mode, start, and end do not have defaults, may be defined inside wav
         if 'loop_mode' in region and region['loop_mode'] == 'loop_continuous':
           zone.loop_on = 1
@@ -258,6 +260,14 @@ class MyFrame(wx.Frame):
 
     st = wx.StaticText(self.zone_panel, label="Upper")
     st.SetSize((8 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Lo Vel")
+    st.SetSize((5 * self.char_width, -1))
+    self.zone_panel.Add(st)
+
+    st = wx.StaticText(self.zone_panel, label="Hi Vel")
+    st.SetSize((5 * self.char_width, -1))
     self.zone_panel.Add(st)
 
     st = wx.StaticText(self.zone_panel, label="Pitch")
@@ -341,6 +351,18 @@ class MyFrame(wx.Frame):
     cb.SetFont(self.font)
     self.zone_panel.Add(cb)
     self.Bind(wx.EVT_CHOICE, self.OnControlEvent, cb)
+
+    tc = jmage.ui.DragBox(1, 0, 127, self.zone_panel,
+      callback=ControlCallback, style=wx.TE_RIGHT)
+    tc.ChangeValue(zone.low_vel)
+    tc.SetFont(self.font)
+    self.zone_panel.Add(tc)
+
+    tc = jmage.ui.DragBox(1, 0, 127, self.zone_panel,
+      callback=ControlCallback, style=wx.TE_RIGHT)
+    tc.ChangeValue(zone.high_vel)
+    tc.SetFont(self.font)
+    self.zone_panel.Add(tc)
 
     tc = jmage.ui.DragBox(0.01, -0.5, 0.5, self.zone_panel,
       fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
@@ -479,26 +501,30 @@ def ControlCallback(win):
   elif index[1] == 5:
     zone.high_key = win.GetSelection()
   elif index[1] == 6:
-    zone.pitch_corr = win.GetValue()
+    zone.low_vel = int(win.GetValue())
   elif index[1] == 7:
-    zone.start = int(SAMPLE_RATE * win.GetValue())
+    zone.high_vel = int(win.GetValue())
   elif index[1] == 8:
-    zone.left = int(SAMPLE_RATE * win.GetValue())
+    zone.pitch_corr = win.GetValue()
   elif index[1] == 9:
-    zone.right = int(SAMPLE_RATE * win.GetValue())
+    zone.start = int(SAMPLE_RATE * win.GetValue())
   elif index[1] == 10:
-    zone.loop_on = int(win.GetValue())
+    zone.left = int(SAMPLE_RATE * win.GetValue())
   elif index[1] == 11:
-    zone.crossfade = int(SAMPLE_RATE * win.GetValue() / 1000.)
+    zone.right = int(SAMPLE_RATE * win.GetValue())
   elif index[1] == 12:
-    zone.attack = int(SAMPLE_RATE * win.GetValue())
+    zone.loop_on = int(win.GetValue())
   elif index[1] == 13:
-    zone.hold = int(SAMPLE_RATE * win.GetValue())
+    zone.crossfade = int(SAMPLE_RATE * win.GetValue() / 1000.)
   elif index[1] == 14:
-    zone.decay = int(SAMPLE_RATE * win.GetValue())
-  if index[1] == 15:
-    zone.sustain = win.GetValue()
+    zone.attack = int(SAMPLE_RATE * win.GetValue())
+  elif index[1] == 15:
+    zone.hold = int(SAMPLE_RATE * win.GetValue())
   elif index[1] == 16:
+    zone.decay = int(SAMPLE_RATE * win.GetValue())
+  if index[1] == 17:
+    zone.sustain = win.GetValue()
+  elif index[1] == 18:
     zone.release = int(SAMPLE_RATE * win.GetValue())
 
   lib.jm_update_zone(SAMPLER, zone_index, byref(zone))

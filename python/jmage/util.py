@@ -5,6 +5,8 @@ VALID_SECTIONS = set(['group', 'region'])
 DEFAULT_VALUES = {
   'lokey': 0,
   'hikey': 127,
+  'lovel': 0,
+  'hivel': 127,
   'pitch_keycenter': 32,
   'ampeg_attack': 0.0, 
   'ampeg_hold': 0.0,
@@ -86,7 +88,8 @@ class SFZParser(object):
       self.handle_data()
 
 def convert_and_validate(key, value):
-  if key == 'lokey' or key == 'hikey' or key == 'pitch_keycenter': 
+  if (key == 'lokey' or key == 'hikey' or key == 'pitch_keycenter'
+      or key == 'lovel' or key == 'hivel'): 
     conv_val = int(value)
     if conv_val < 0 or conv_val > 127:
       raise RuntimeError('%s must be between 0 and 127' % key)
