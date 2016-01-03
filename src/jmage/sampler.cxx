@@ -44,9 +44,11 @@ void jm_destroy_wave(jm_wave* wav) {
 void jm_init_key_zone(jm_key_zone* zone) {
   zone->start = 0;
   zone->left = 0;
-  zone->lower_bound = NOTE_MIN;
-  zone->upper_bound = NOTE_MAX;
+  zone->low_key = NOTE_MIN;
+  zone->high_key = NOTE_MAX;
   zone->origin = ORIGIN_DEFAULT;
+  zone->low_vel = VEL_MIN;
+  zone->high_vel = VEL_MAX;
   zone->amp = 1.0;
   zone->attack = 0;
   zone->hold = 0;
@@ -58,8 +60,9 @@ void jm_init_key_zone(jm_key_zone* zone) {
   zone->crossfade = 0;
 }
 
-int jm_zone_contains(jm_key_zone const * zone, int pitch) {
-  if (pitch >= zone->lower_bound && pitch <= zone->upper_bound)
+int jm_zone_contains(jm_key_zone const * zone, int pitch, int velocity) {
+  if (pitch >= zone->low_key && pitch <= zone->high_key
+      && velocity >= zone->low_vel && velocity <= zone->high_vel)
     return 1;
   return 0;
 }

@@ -177,7 +177,8 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
           // we can safely assume this mutex will be unlocked in a real take
           pthread_mutex_lock(&jms->zone_lock);
           for (it = jms->zones.begin(); it != jms->zones.end(); ++it) {
-            if (jm_zone_contains(&*it, event.buffer[1])) {
+            printf("contains: %i\n",jm_zone_contains(&*it, event.buffer[1], event.buffer[2]));
+            if (jm_zone_contains(&*it, event.buffer[1], event.buffer[2])) {
               printf("sg num: %li\n", jms->sound_gens.size());
               if (jms->sound_gens.size() >= POLYPHONY) {
                 printf("hit poly lim!\n");

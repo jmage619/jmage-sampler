@@ -6,6 +6,8 @@
 #define VOL_STEPS 17
 #define NOTE_MIN 0
 #define NOTE_MAX 127
+#define VEL_MIN 0
+#define VEL_MAX 127
 #define ORIGIN_DEFAULT 36
 
 typedef jack_default_audio_sample_t sample_t;
@@ -26,9 +28,11 @@ typedef struct {
   int start;
   int left;
   int right;
-  int lower_bound;
-  int upper_bound;
+  int low_key;
+  int high_key;
   int origin;
+  int low_vel;
+  int high_vel;
   float amp;
   int attack;
   int hold;
@@ -62,7 +66,7 @@ extern "C" {
   void jm_destroy_wave(jm_wave* wav);
 
   void jm_init_key_zone(jm_key_zone* zone);
-  int jm_zone_contains(jm_key_zone const * zone, int pitch);
+  int jm_zone_contains(jm_key_zone const * zone, int pitch, int velocity);
 
   JMSampler* jm_new_sampler();
   void jm_destroy_sampler(JMSampler* jms);

@@ -35,8 +35,8 @@ int main() {
 
   /**** load wav 1 ***/
   zone1.origin = 48;
-  zone1.lower_bound = INT_MIN;
-  zone1.upper_bound = INT_MAX;
+  zone1.low_key = INT_MIN;
+  zone1.high_key = INT_MAX;
   //zone1.attack = 44100;
   //zone1.hold = 44100;
   //zone1.decay = 44100 / 2;
@@ -87,8 +87,8 @@ int main() {
 
   /**** load wav 2 ***/
   /*jm_zones[1].origin = 50;
-  jm_zones[1].lower_bound = INT_MIN;
-  jm_zones[1].upper_bound = INT_MAX;
+  jm_zones[1].low_key = INT_MIN;
+  jm_zones[1].high_key = INT_MAX;
   jm_zones[1].amp = 0.1;
   jm_zones[1].pitch_corr = 0.5;
   jm_zones[1].rel_time = RELEASE_TIME;

@@ -57,9 +57,11 @@ class jm_key_zone(Structure):
     ('start', c_int),
     ('left', c_int),
     ('right', c_int),
-    ('lower_bound', c_int),
-    ('upper_bound', c_int),
+    ('low_key', c_int),
+    ('high_key', c_int),
     ('origin', c_int),
+    ('low_vel', c_int),
+    ('high_vel', c_int),
     ('amp', c_float),
     ('attack', c_int),
     ('hold', c_int),
@@ -214,8 +216,8 @@ class MyFrame(wx.Frame):
         wav_path = os.path.join(sfz_dir, region['sample'])
         zone = new_zone_from_file(wav_path)
         # these should really be already validated and converted inside parse
-        zone.lower_bound = int(region['lokey'])
-        zone.upper_bound = int(region['hikey'])
+        zone.low_key = int(region['lokey'])
+        zone.high_key = int(region['hikey'])
         zone.origin = int(region['pitch_keycenter'])
         # loop_mode should have default value?
         if 'loop_mode' in region and region['loop_mode'] == 'loop_continuous':
@@ -330,13 +332,13 @@ class MyFrame(wx.Frame):
     self.Bind(wx.EVT_CHOICE, self.OnControlEvent, cb)
 
     cb = jmage.ui.NoteChoice(self.zone_panel)
-    cb.Select(zone.lower_bound)
+    cb.Select(zone.low_key)
     cb.SetFont(self.font)
     self.zone_panel.Add(cb)
     self.Bind(wx.EVT_CHOICE, self.OnControlEvent, cb)
 
     cb = jmage.ui.NoteChoice(self.zone_panel)
-    cb.Select(zone.upper_bound)
+    cb.Select(zone.high_key)
     cb.SetFont(self.font)
     self.zone_panel.Add(cb)
     self.Bind(wx.EVT_CHOICE, self.OnControlEvent, cb)
@@ -474,9 +476,9 @@ def ControlCallback(win):
   elif index[1] == 3:
     zone.origin = win.GetSelection()
   elif index[1] == 4:
-    zone.lower_bound = win.GetSelection()
+    zone.low_key = win.GetSelection()
   elif index[1] == 5:
-    zone.upper_bound = win.GetSelection()
+    zone.high_key = win.GetSelection()
   elif index[1] == 6:
     zone.pitch_corr = win.GetValue()
   elif index[1] == 7:
