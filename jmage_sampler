@@ -216,20 +216,19 @@ class MyFrame(wx.Frame):
         wav_path = os.path.join(sfz_dir, region['sample'])
         zone = new_zone_from_file(wav_path)
         # these should really be already validated and converted inside parse
-        zone.low_key = int(region['lokey'])
-        zone.high_key = int(region['hikey'])
-        zone.origin = int(region['pitch_keycenter'])
-        # loop_mode should have default value?
+        zone.low_key = region['lokey']
+        zone.high_key = region['hikey']
+        zone.origin = region['pitch_keycenter']
+        # loop_mode, start, and end do not have defaults, may be defined inside wav
         if 'loop_mode' in region and region['loop_mode'] == 'loop_continuous':
           zone.loop_on = 1
-        # start and end should not have defaults, may be defined inside wav
         if 'loop_start' in region:
           zone.left = region['loop_start']
         if 'loop_end' in region:
           zone.right = region['loop_end']
-        zone.decay = int(SAMPLE_RATE * float(region['ampeg_decay']))
-        zone.sustain = float(region['ampeg_sustain']) / 100.
-        zone.release = int(SAMPLE_RATE * float(region['ampeg_release']))
+        zone.decay = int(SAMPLE_RATE * region['ampeg_decay'])
+        zone.sustain = region['ampeg_sustain'] / 100.
+        zone.release = int(SAMPLE_RATE * region['ampeg_release'])
         lib.jm_add_zone(SAMPLER, byref(zone))
         self.AddZone(zone, wav_path)
       sfz.close()
