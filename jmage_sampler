@@ -480,6 +480,7 @@ def new_zone_from_file(path):
   zone.left = wav.left
   zone.right = wav.right
   zone.loop_on = wav.has_loop
+  print "new zone loop on?", zone.loop_on
 
   return zone
 

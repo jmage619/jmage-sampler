@@ -62,7 +62,7 @@ typedef struct JMSampler JMSampler;
 #ifdef __cplusplus
 extern "C" {
 #endif
-  void jm_parse_wave(jm_wave* wav, char const * path);
+  int jm_parse_wave(jm_wave* wav, char const * path);
   void jm_destroy_wave(jm_wave* wav);
 
   void jm_init_key_zone(jm_key_zone* zone);

@@ -2,6 +2,7 @@
 
 #include <limits.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <sndfile.h>
 #include <jack/jack.h>
 #include <jack/types.h>
@@ -9,21 +10,29 @@
 #include "jmage/sampler.h"
 #include "jmage/jmsampler.h"
 
-void jm_parse_wave(jm_wave* wav, char const * path) {
+int jm_parse_wave(jm_wave* wav, char const * path) {
   SF_INFO sf_info;
   sf_info.format = 0;
   SNDFILE* sf_wav = sf_open(path, SFM_READ, &sf_info);
+  if (sf_wav == NULL) {
+    fprintf(stderr, "error opening %s: %s\n", path, sf_strerror(NULL));
+    return 1;
+  }
   wav->length = sf_info.frames;
   wav->num_channels = sf_info.channels;
   wav->wave = new float[wav->num_channels * wav->length];
   sf_read_float(sf_wav, wav->wave, wav->num_channels * wav->length);
 
-  SF_INSTRUMENT inst;
-  sf_command(sf_wav, SFC_GET_INSTRUMENT, &inst, sizeof(inst));
-
   wav->has_loop = 0;
   wav->left = 0;
   wav->right = wav->length;
+
+  SF_INSTRUMENT inst;
+  if (sf_command(sf_wav, SFC_GET_INSTRUMENT, &inst, sizeof(inst)) == SF_FALSE) {
+    printf("wav %s: no instrument info found, assuming 0 loop points\n", path);
+    sf_close(sf_wav);
+    return 0;
+  } 
 
   // if the wav has loops, just pick its first one(?)
   // also ignoring loop mode and count for now
@@ -34,6 +43,7 @@ void jm_parse_wave(jm_wave* wav, char const * path) {
   }
 
   sf_close(sf_wav);
+  return 0;
 }
 
 void jm_destroy_wave(jm_wave* wav) {
