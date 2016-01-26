@@ -12,7 +12,8 @@ import jmage.ui
 import jmage.util
 
 import ctypes
-from time import sleep
+#from time import sleep
+import time
 from ctypes import pointer
 from ctypes import byref
 from ctypes import cast 
@@ -212,6 +213,8 @@ class MyFrame(wx.Frame):
       sfz = jmage.util.parse_sfz(path)
       #print sfz.regions
       sfz_dir = os.path.dirname(path)
+
+      t = time.time()
       for region in sfz.regions:
         wav_path = os.path.join(sfz_dir, region['sample'])
         zone = new_zone_from_file(wav_path)
@@ -233,6 +236,7 @@ class MyFrame(wx.Frame):
         zone.release = int(SAMPLE_RATE * region['ampeg_release'])
         lib.jm_add_zone(SAMPLER, byref(zone))
         self.AddZone(zone, wav_path)
+      print "time to load sfz: %f\n" % (time.time() - t)
       sfz.close()
 
     dlg.Destroy()
