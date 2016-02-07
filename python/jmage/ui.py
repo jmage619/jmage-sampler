@@ -555,3 +555,124 @@ class BigScrollList(wx.ScrolledWindow):
 
     self.cur_size = new_size
     e.Skip()
+
+class Grid(wx.ScrolledWindow):
+  class RowPanel(BigScrollList):
+    def __init__(self, header, *args, **kwargs):
+      self.header = header
+      super(Grid.RowPanel, self).__init__(*args, **kwargs)
+
+    def PopulateRow(self, row, data_row):
+      pass
+
+    def UpdateRow(self, row, data_row):
+      pass
+
+    def CreateWin(self, item):
+      row = StretchRow(self)
+      self.PopulateRow(row, item)
+
+      # update sizes and positions to match header in case it was stretched
+      row.Resize(self.header)
+
+      return row
+
+    def UpdateWin(self, win, item):
+      self.UpdateRow(win, item)
+
+  def __init__(self, HeadRowClass, MainRowClass, data, *args, **kwargs):
+    super(Grid, self).__init__(*args, **kwargs)
+
+    sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+    # contains first col header and row header
+    col_sizer1 = wx.BoxSizer(wx.VERTICAL)
+    self.col_header1 = StretchRow(self, stretch_callback=self.OnCol1Stretch)
+
+    self.col_header1.EnableDrag()
+    # will populate with ColHead1.Add
+
+    col_sizer1.Add(self.col_header1)
+
+    # row header (sticky columns on LHS)
+    self.row_header = HeadRowClass(self.col_header1, data, self)
+    col_sizer1.Add(self.row_header, proportion=1)
+
+    # register row header with controlling header
+    self.col_header1.AddPanel(self.row_header)
+
+    sizer.Add(col_sizer1, flag=wx.EXPAND)
+
+    # contains 2nd col header and main item grid
+    col_sizer2 = wx.BoxSizer(wx.VERTICAL)
+
+    # need an intermeidate panel so ScrollWindow call
+    # doesn't mess with child element positions inside col_header
+    # throwing off offset calculations on resize
+    self.ch_panel2 = wx.Panel(self)
+    self.col_header2 = StretchRow(self.ch_panel2, stretch_callback=self.OnCol2Stretch)
+    # important to set position, we can't manage this with a sizer
+    # and without, when stretching, row Fit call will mess up scroll offset
+    self.col_header2.SetPosition((0,0))
+
+    self.col_header2.EnableDrag()
+
+    # will populate with ColHead2.Add
+    col_sizer2.Add(self.ch_panel2)
+
+    # add grid
+    self.grid = MainRowClass(self.col_header2, data, self, scroll_win=self)
+
+    col_sizer2.Add(self.grid, proportion=1, flag=wx.EXPAND)
+
+    # register grid with controlling header
+    self.col_header2.AddPanel(self.grid)
+    self.SetTargetWindow(self.grid)
+
+    sizer.Add(col_sizer2, proportion=1, flag=wx.EXPAND)
+    self.SetSizer(sizer)
+    self.SetScrollRate(1,1)
+
+    # for manually scrolling headers
+    self.x = 0
+    self.y = 0
+
+    self.Bind(wx.EVT_SCROLLWIN, self.OnScroll)
+    self.Bind(wx.EVT_CHILD_FOCUS, self.OnFocus)
+
+  def GetColHead1(self):
+    return self.col_header1
+
+  def GetColHead2(self):
+    return self.col_header2
+
+  def OnCol1Stretch(self, win):
+    # hack to update scrollbars
+    self.SetSize(self.GetSize())
+    self.GetSizer().Layout()
+
+  def OnCol2Stretch(self, win):
+    # must manually adjust, FitInside won't work!
+    # when scrolled it seems to truncate to visible window size
+    vsize = self.grid.GetVirtualSize()
+    vsize.width = win.GetSize().width
+    self.grid.SetVirtualSize(vsize)
+    # hack to update scrollbars
+    self.SetSize(self.GetSize())
+    self.GetSizer().Layout()
+
+  def OnScroll(self, e):
+    if (e.GetOrientation() == wx.HORIZONTAL):
+      cur_pos = e.GetPosition()
+      self.ch_panel2.ScrollWindow(self.x - cur_pos, 0)
+      self.x = cur_pos
+    elif (e.GetOrientation() == wx.VERTICAL):
+      cur_pos = e.GetPosition()
+      self.row_header.ScrollWindow(0, self.y - cur_pos)
+      self.y = cur_pos
+    e.Skip()
+
+  # this is to disable autoscrolling on clicking elements or tabbing
+  def OnFocus(self, e):
+    pass
+

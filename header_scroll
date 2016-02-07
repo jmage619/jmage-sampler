@@ -3,47 +3,27 @@
 import wx
 import jmage.ui
 
-class SRHead(jmage.ui.BigScrollList):
-  def __init__(self, header, *args, **kwargs):
-    self.header = header
-    super(SRHead, self).__init__(*args, **kwargs)
+class HeadRowClass(jmage.ui.Grid.RowPanel):
+    def PopulateRow(self, row, data_row):
+      for el in data_row[:2]:
+        tc = wx.TextCtrl(row)
+        tc.SetValue(el)
+        row.Add(tc)
 
-  def CreateWin(self, item):
-    row = jmage.ui.StretchRow(self)
-    for el in item[:2]:
-      tc = wx.TextCtrl(row)
-      tc.SetValue(el)
-      row.Add(tc)
+    def UpdateRow(self, row, data_row):
+      for i in range(len(row.windows)):
+        row.windows[i].SetValue(data_row[i])
 
-    # update sizes and positions to match header in case it was stretched
-    row.Resize(self.header)
+class MainRowClass(jmage.ui.Grid.RowPanel):
+    def PopulateRow(self, row, data_row):
+      for el in data_row[2:]:
+        tc = wx.TextCtrl(row)
+        tc.SetValue(el)
+        row.Add(tc)
 
-    return row
-
-  def UpdateWin(self, win, item):
-    for i in range(len(win.windows)):
-      win.windows[i].SetValue(item[i])
-
-class SRList(jmage.ui.BigScrollList):
-  def __init__(self, header, *args, **kwargs):
-    self.header = header
-    super(SRList, self).__init__(*args, **kwargs)
-
-  def CreateWin(self, item):
-    row = jmage.ui.StretchRow(self)
-    for el in item[2:]:
-      tc = wx.TextCtrl(row)
-      tc.SetValue(el)
-      row.Add(tc)
-
-    # update sizes and positions to match header in case it was stretched
-    row.Resize(self.header)
-
-    return row
-
-  def UpdateWin(self, win, item):
-    for i in range(len(win.windows)):
-      win.windows[i].SetValue(item[i + 2])
+    def UpdateRow(self, row, data_row):
+      for i in range(len(row.windows)):
+        row.windows[i].SetValue(data_row[i + 2])
 
 data = []
 for i in range(100): 
@@ -56,104 +36,21 @@ class MyFrame(wx.Frame):
   def __init__(self, *args, **kwargs):
     super(MyFrame, self).__init__(*args, **kwargs)
 
-    self.panel = wx.ScrolledWindow(self)
+    self.grid = jmage.ui.Grid(HeadRowClass, MainRowClass, data, self)
 
-    sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-    # contains first col header and row header
-    col_sizer1 = wx.BoxSizer(wx.VERTICAL)
-    col_header = jmage.ui.StretchRow(self.panel, stretch_callback=self.OnCol1Stretch)
-
-    col_header.EnableDrag()
-
+    col_head1 = self.grid.GetColHead1()
     for i in range(2): 
-      tc = wx.TextCtrl(col_header)      
+      tc = wx.TextCtrl(col_head1)      
       tc.SetValue("head %i" % i)
-      col_header.Add(tc)
+      col_head1.Add(tc)
 
-    col_sizer1.Add(col_header)
-
-    # row header (sticky columns on LHS)
-    self.row_header = SRHead(col_header, data, self.panel)
-    col_sizer1.Add(self.row_header, proportion=1)
-
-    # register row header with controlling header
-    col_header.AddPanel(self.row_header)
-
-    sizer.Add(col_sizer1, flag=wx.EXPAND)
-
-    # contains 2nd col header and main item grid
-    col_sizer2 = wx.BoxSizer(wx.VERTICAL)
-
-    # need an intermeidate panel so ScrollWindow call
-    # doesn't mess with child element positions inside col_header
-    # throwing off offset calculations on resize
-    self.ch_panel2 = wx.Panel(self.panel)
-    col_header = jmage.ui.StretchRow(self.ch_panel2, stretch_callback=self.OnCol2Stretch)
-    # important to set position, we can't manage this with a sizer
-    # and without, when stretching, row Fit call will mess up scroll offset
-    col_header.SetPosition((0,0))
-
-    col_header.EnableDrag()
-
+    col_head2 = self.grid.GetColHead2()
     for i in range(2,8): 
-      tc = wx.TextCtrl(col_header)      
+      tc = wx.TextCtrl(col_head2)      
       tc.SetValue("head %i" % i)
-      col_header.Add(tc)
-
-    col_sizer2.Add(self.ch_panel2)
-
-    # add grid
-    self.grid = SRList(col_header, data, self.panel, scroll_win=self.panel)
-
-    col_sizer2.Add(self.grid, proportion=1, flag=wx.EXPAND)
-
-    # register grid with controlling header
-    col_header.AddPanel(self.grid)
-    self.panel.SetTargetWindow(self.grid)
-
-    sizer.Add(col_sizer2, proportion=1, flag=wx.EXPAND)
-    self.panel.SetSizer(sizer)
-    self.panel.SetScrollRate(1,1)
-
-    # for manually scrolling headers
-    self.x = 0
-    self.y = 0
-
-    self.panel.Bind(wx.EVT_SCROLLWIN, self.OnScroll)
-    self.panel.Bind(wx.EVT_CHILD_FOCUS, self.OnFocus)
+      col_head2.Add(tc)
 
     self.Show()
-
-  def OnCol1Stretch(self, win):
-    # hack to update scrollbars
-    self.panel.SetSize(self.panel.GetSize())
-    self.panel.GetSizer().Layout()
-
-  def OnCol2Stretch(self, win):
-    # must manually adjust, FitInside won't work!
-    # when scrolled it seems to truncate to visible window size
-    vsize = self.grid.GetVirtualSize()
-    vsize.width = win.GetSize().width
-    self.grid.SetVirtualSize(vsize)
-    # hack to update scrollbars
-    self.panel.SetSize(self.panel.GetSize())
-    self.panel.GetSizer().Layout()
-
-  def OnScroll(self, e):
-    if (e.GetOrientation() == wx.HORIZONTAL):
-      cur_pos = e.GetPosition()
-      self.ch_panel2.ScrollWindow(self.x - cur_pos, 0)
-      self.x = cur_pos
-    elif (e.GetOrientation() == wx.VERTICAL):
-      cur_pos = e.GetPosition()
-      self.row_header.ScrollWindow(0, self.y - cur_pos)
-      self.y = cur_pos
-    e.Skip()
-
-  # this is to disable autoscrolling on clicking elements or tabbing
-  def OnFocus(self, e):
-    pass
 
 if __name__ == '__main__':
   app = wx.App()
