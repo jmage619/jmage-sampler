@@ -134,6 +134,9 @@ class StretchRow(wx.PyPanel):
     self.cur_pos += win.GetSize().width + self.border
     self.Fit()
 
+  def GetWindows(self):
+    return self.windows
+
   def AddPanel(self, panel):
     self.panels.append(panel)
 

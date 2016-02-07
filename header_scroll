@@ -11,8 +11,9 @@ class HeadRowClass(jmage.ui.Grid.RowPanel):
         row.Add(tc)
 
     def UpdateRow(self, row, data_row):
-      for i in range(len(row.windows)):
-        row.windows[i].SetValue(data_row[i])
+      windows = row.GetWindows()
+      for i in range(len(windows)):
+        windows[i].SetValue(data_row[i])
 
 class MainRowClass(jmage.ui.Grid.RowPanel):
     def PopulateRow(self, row, data_row):
@@ -22,8 +23,9 @@ class MainRowClass(jmage.ui.Grid.RowPanel):
         row.Add(tc)
 
     def UpdateRow(self, row, data_row):
-      for i in range(len(row.windows)):
-        row.windows[i].SetValue(data_row[i + 2])
+      windows = row.GetWindows()
+      for i in range(len(windows)):
+        windows[i].SetValue(data_row[i + 2])
 
 data = []
 for i in range(100): 
