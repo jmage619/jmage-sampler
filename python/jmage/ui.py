@@ -361,7 +361,7 @@ class StretchColGrid(wx.ScrolledWindow):
     e.Skip()
 
 class BigScrollList(wx.ScrolledWindow):
-  def __init__(self, data, *args, **kwargs):
+  def __init__(self, *args, **kwargs):
     # default scrollwin to myself
     # but allow overriding if this panel is to be controlled
     # by an external scroll win
@@ -378,7 +378,6 @@ class BigScrollList(wx.ScrolledWindow):
     self.cur_size = self.GetClientSize()
     self.scroll_win.Bind(wx.EVT_SCROLLWIN, self.OnScroll)
     self.Bind(wx.EVT_SIZE, self.OnResize)
-    self.RegisterData(data)
 
   def CreateWin(self, item):
     pass
@@ -605,7 +604,7 @@ class Grid(wx.ScrolledWindow):
     def UpdateWin(self, win, item):
       self.UpdateRow(win, item)
 
-  def __init__(self, HeadRowClass, MainRowClass, data, *args, **kwargs):
+  def __init__(self, HeadRowClass, MainRowClass, *args, **kwargs):
     super(Grid, self).__init__(*args, **kwargs)
 
     sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -620,7 +619,7 @@ class Grid(wx.ScrolledWindow):
     col_sizer1.Add(self.col_header1)
 
     # row header (sticky columns on LHS)
-    self.row_header = HeadRowClass(self.col_header1, data, self)
+    self.row_header = HeadRowClass(self.col_header1, self)
     col_sizer1.Add(self.row_header, proportion=1)
 
     # register row header with controlling header
@@ -646,7 +645,7 @@ class Grid(wx.ScrolledWindow):
     col_sizer2.Add(self.ch_panel2)
 
     # add grid
-    self.grid = MainRowClass(self.col_header2, data, self, scroll_win=self)
+    self.grid = MainRowClass(self.col_header2, self, scroll_win=self)
 
     col_sizer2.Add(self.grid, proportion=1, flag=wx.EXPAND)
 
@@ -664,6 +663,10 @@ class Grid(wx.ScrolledWindow):
 
     self.Bind(wx.EVT_SCROLLWIN, self.OnScroll)
     self.Bind(wx.EVT_CHILD_FOCUS, self.OnFocus)
+
+  def RegisterData(self, data):
+    self.row_header.RegisterData(data)
+    self.grid.RegisterData(data)
 
   def GetColHead1(self):
     return self.col_header1
