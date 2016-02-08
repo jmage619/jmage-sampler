@@ -425,8 +425,8 @@ class BigScrollList(wx.ScrolledWindow):
       win = self.CreateWin(item)
       self.Add(win)
 
-  def Append(self, item):
-    self.data.append(item)
+  def Append(self):
+    item = self.data[-1]
 
     if len(self.windows) == 0:
       win = self.CreateWin(item)
@@ -449,7 +449,29 @@ class BigScrollList(wx.ScrolledWindow):
         self.UpdateWin(self.windows[len(self.windows) - 1], item)
     # no matter what virtual size increases causing scroll pos to move up
     self.max_scroll = False
-        
+
+  # simplifying assumption - can only remove what is visible
+  def Remove(self, i):
+    self.SetVirtualSize((self.GetVirtualSize().width, self.item_height * len(self.data)))
+
+    # corner case, if scrollbar maxed out, it must shift up by
+    # self.item_height to remain valid, so rotate to compensate
+    if self.max_scroll:
+      self.Rotate(-1)
+    # corner case, remove top window if beyond data range
+    elif self.first_index + len(self.windows) > len(self.data):
+      win = self.windows.pop()
+      win.Destroy()
+
+    # re align visible elements >= i
+    for j in range(len(self.windows) - (i - self.first_index)):
+      # may go over if scrolled to bottom trying to update last invisible win
+      if i + j < len(self.data):
+        self.UpdateWin(self.windows[i - self.first_index + j], self.data[i + j])
+
+  def Index(self, win):
+    return self.first_index + self.windows.index(win)
+
   def Rotate(self, iterations):
     # rotate by 1 is special case, only requires updating 1 cell 
     if iterations == -1:
