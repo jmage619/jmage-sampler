@@ -189,6 +189,7 @@ class StretchRow(wx.PyPanel):
       self.resize_el = len(self.windows) - 1
 
     self.down_size = self.windows[self.resize_el].GetSize()
+    e.Skip()
 
   def OnMouseMove(self, e):
     if self.is_down:
@@ -198,6 +199,7 @@ class StretchRow(wx.PyPanel):
       else:
         x = e.GetEventObject().GetPosition()[0] + e.GetPosition()[0]
       self.delta = x - self.down_x
+    e.Skip()
 
   def OnMouseUp(self, e):
     if self.is_down:
@@ -212,6 +214,7 @@ class StretchRow(wx.PyPanel):
       self.is_down = False
       self.resize_el = -1
       self.delta = 0
+    e.Skip()
 
 class StretchColGrid(wx.ScrolledWindow):
   def __init__(self, n_cols, *args, **kwargs):
@@ -451,14 +454,26 @@ class BigScrollList(wx.ScrolledWindow):
 
   # simplifying assumption - can only remove what is visible
   def Remove(self, i):
+    orig_virt_height = self.GetVirtualSize().height
+
+    # corner case, if scrollbar maxed out, it must shift up by
     self.SetVirtualSize((self.GetVirtualSize().width, self.item_height * len(self.data)))
 
     # corner case, if scrollbar maxed out, it must shift up by
     # self.item_height to remain valid, so rotate to compensate
     if self.max_scroll:
-      self.Rotate(-1)
+      height = self.GetSize().height
+      virt_height = self.GetVirtualSize().height
+
+      if virt_height > height:
+        self.Rotate(-1)
+      # transitioned to no scrollbars, delete cur and the hidden row
+      elif orig_virt_height > height and virt_height <= height:
+        win = self.windows.pop()
+        win.Destroy()
+        
     # corner case, remove top window if beyond data range
-    elif self.first_index + len(self.windows) > len(self.data):
+    if self.first_index + len(self.windows) > len(self.data):
       win = self.windows.pop()
       win.Destroy()
 
@@ -667,6 +682,13 @@ class Grid(wx.ScrolledWindow):
   def RegisterData(self, data):
     self.row_header.RegisterData(data)
     self.grid.RegisterData(data)
+
+  def Remove(self, index):
+    self.row_header.Remove(index)
+    self.grid.Remove(index)
+    # hack to update scrollbars
+    self.SetSize(self.GetSize())
+    #self.GetSizer().Layout()
 
   def GetColHead1(self):
     return self.col_header1
