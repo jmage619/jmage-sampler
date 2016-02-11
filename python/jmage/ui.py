@@ -448,7 +448,6 @@ class BigScrollList(wx.ScrolledWindow):
     # no matter what virtual size increases causing scroll pos to move up
     self.max_scroll = False
 
-  # simplifying assumption - can only remove what is visible
   def Remove(self, i):
     self.SetVirtualSize((self.GetVirtualSize().width, self.item_height * len(self.data)))
 
@@ -476,6 +475,7 @@ class BigScrollList(wx.ScrolledWindow):
       # may go over if scrolled to bottom trying to update last invisible win
       if i + j < len(self.data):
         self.UpdateWin(self.windows[i - self.first_index + j], self.data[i + j])
+
 
   def Index(self, win):
     return self.first_index + self.windows.index(win)
@@ -521,7 +521,8 @@ class BigScrollList(wx.ScrolledWindow):
       self.scroll_x -= dx
     if dy != 0:
       new_pos = self.scroll_y - dy
-      self.ScrollToPos(new_pos)
+      # convert to scroll units
+      self.ScrollToPos(new_pos / self.item_height)
       self.scroll_y = new_pos
     super(BigScrollList, self).ScrollWindow(dx, dy, **kwargs)
 
@@ -661,6 +662,25 @@ class Grid(wx.ScrolledWindow):
     self.Bind(wx.EVT_SCROLLWIN, self.OnScroll)
     self.Bind(wx.EVT_CHILD_FOCUS, self.OnFocus)
 
+  # hack to update scrollbars
+  def UpdateScrollbars(self):
+    self.SetSize(self.GetSize())
+    new_y = self.row_header.windows[0].GetPosition()[1]
+    # stupidly sometimes things move down unexpectedly
+    # ensure first rows always begin at 0
+    '''
+    if new_y != 0:
+      delta = 0 - new_y
+      for win in self.row_header.windows:
+        pos = win.GetPosition()
+        pos[1] += delta
+        win.Move(pos)
+      for win in self.grid.windows:
+        pos = win.GetPosition()
+        pos[1] += delta
+        win.Move(pos)
+    '''
+
   def RegisterData(self, data):
     self.row_header.RegisterData(data)
     self.grid.RegisterData(data)
@@ -671,7 +691,8 @@ class Grid(wx.ScrolledWindow):
     self.row_header.Remove(index)
     self.grid.Remove(index)
     # hack to update scrollbars
-    self.SetSize(self.GetSize())
+    #self.SetSize(self.GetSize())
+    self.UpdateScrollbars()
     #self.GetSizer().Layout()
 
   def GetColHead1(self):
@@ -682,7 +703,8 @@ class Grid(wx.ScrolledWindow):
 
   def OnCol1Stretch(self, win):
     # hack to update scrollbars
-    self.SetSize(self.GetSize())
+    #self.SetSize(self.GetSize())
+    self.UpdateScrollbars()
     self.GetSizer().Layout()
 
   def OnCol2Stretch(self, win):
@@ -692,7 +714,8 @@ class Grid(wx.ScrolledWindow):
     vsize.width = win.GetSize().width
     self.grid.SetVirtualSize(vsize)
     # hack to update scrollbars
-    self.SetSize(self.GetSize())
+    #self.SetSize(self.GetSize())
+    self.UpdateScrollbars()
     self.GetSizer().Layout()
 
   def OnScroll(self, e):
@@ -701,7 +724,8 @@ class Grid(wx.ScrolledWindow):
       self.ch_panel2.ScrollWindow(self.x - cur_pos, 0)
       self.x = cur_pos
     elif (e.GetOrientation() == wx.VERTICAL):
-      cur_pos = e.GetPosition()
+      # convert scroll units to px
+      cur_pos = self.row_header.item_height * e.GetPosition()
       self.row_header.ScrollWindow(0, self.y - cur_pos)
       self.y = cur_pos
     e.Skip()

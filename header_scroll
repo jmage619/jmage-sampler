@@ -37,6 +37,7 @@ class MainRowClass(jmage.ui.Grid.RowPanel):
 
 data = []
 for i in range(8):
+#for i in range(100):
   row = []
   for j in range(8):
     row.append("%i,%i" % (i,j))
@@ -67,4 +68,5 @@ class MyFrame(wx.Frame):
 if __name__ == '__main__':
   app = wx.App()
   frame = MyFrame(None, size=(300,200))
+  #frame = MyFrame(None, size=(300,220))
   app.MainLoop()
