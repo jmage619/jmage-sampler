@@ -363,34 +363,215 @@ class StretchColGrid(wx.ScrolledWindow):
       self.down_x = abs_x
     e.Skip()
 
-class BigScrollList(wx.ScrolledWindow):
+class ScrollList(wx.Panel):
+  def __init__(self, *args, **kwargs):
+    super(ScrollList, self).__init__(*args, **kwargs)
+    self.cur_pos = 0
+    self.panels = []
+    #self.item_height = -1
+    # just hardcode until we get it right
+    self.item_height = 31
+    self.num_vis_rows = 0
+    self.scroll_x = 0
+    #self.scroll_y = 0
+    self.max_scroll = False
+    self.cur_size = self.GetClientSize()
+    self.Bind(wx.EVT_SCROLLWIN, self.OnScroll)
+    self.Bind(wx.EVT_SIZE, self.OnResize)
+
+  def Add(self, panel):
+    self.panels.append(panel)
+
+  def RegisterData(self, data):
+    self.data = data
+
+    if len(data) == 0:
+      return
+
+    for p in self.panels:
+      win = p.CreateWin(data[0])
+    #size = win.GetSize()
+    #self.item_height = size.height
+      p.Add(win)
+
+    self.num_vis_rows += 1
+ 
+    if len(data) == 1:
+      return
+
+    view_height = self.GetClientSize().height
+    for item in data[1:]:
+      # ceil ensures we count partially visible windows
+      if self.num_vis_rows >= math.ceil(view_height / float(self.item_height)):
+        return
+      for p in self.panels:
+        win = p.CreateWin(item)
+        p.Add(win)
+
+  def Append(self):
+    item = self.data[-1]
+
+    if self.num_vis_rows == 0:
+      for p in self.panels:
+        win = p.CreateWin(item)
+      # figure out item height calc later
+      #size = win.GetSize()
+      #self.item_height = size.height
+      #self.SetVirtualSize((size.width, self.item_height * len(self.data)))
+        p.Add(win)
+        self.num_vis_rows += 1
+    else:
+      # case below my not create new window so reuse last virt width
+      # -1 is never ok, it disables virt size in that direction
+      #self.SetVirtualSize((self.GetVirtualSize().width, self.item_height * len(self.data)))
+      view_height = self.GetClientSize().height
+      # ceil ensures we count partially visible windows
+      if self.num_vis_rows < math.ceil(view_height / float(self.item_height)):
+        for p in self.panels:
+          win = p.CreateWin(item)
+          p.Add(win)
+        self.num_vis_rows += 1
+
+    # no matter what virtual size increases causing scroll pos to move up
+    self.max_scroll = False
+    self.UpdateScrollbars()
+
+  # i is an index into data
+  # for now it is also assumed i is also a visible row
+  def Remove(self, i):
+    self.data.pop(i)
+    # corner case, if elements are still available from top, just rotate
+    if self.cur_pos > 0 and self.num_vis_rows <= len(self.data):
+      for p in self.panels:
+        # probably not right way to handle dx
+        p.ScrollWindow(0, - self.item_height)
+      # update removed el offset
+      i -= 1
+      self.cur_pos -= 1
+
+    # corner case, if less data than visible windows, remove one
+    elif self.cur_pos + self.num_vis_rows > len(self.data):
+      for p in self.panels:
+        p.RemoveLast()
+      self.num_vis_rows -= 1
+
+      self.max_scroll = True
+
+    # re align visible elements >= i
+    for j in range(self.num_vis_rows - (i - self.cur_pos)):
+      for p in self.panels:
+        p.UpdateWin(i - self.cur_pos + j, self.data[i + j])
+
+    self.UpdateScrollbars()
+
+  def ScrollToPos(self, pos):
+    max_pos = len(self.data) - self.GetClientSize().height / self.item_height
+
+    if pos >= max_pos:
+      self.max_scroll = True
+    else:
+      self.max_scroll = False
+
+    num_steps = pos - self.cur_pos
+
+    if num_steps != 0:
+    # corner cases if view size is not divisible by item height
+      if self.GetClientSize().height % self.item_height != 0:
+        #  remove last element when hit max scroll
+        if self.max_scroll:
+          for p in self.panels:
+            p.RemoveLast()
+          self.num_vis_rows -= 1
+
+        # leaving max scroll pos, re-add last element
+        elif self.cur_pos == max_pos and num_steps < 0:
+          for p in self.panels:
+            win = p.CreateWin(self.data[len(self.data) - 1])
+            p.Add(win)
+          self.num_vis_rows += 1
+
+      dy = self.item_height * num_steps
+      for p in self.panels:
+        p.ScrollWindow(0, dy)
+
+      self.cur_pos = pos
+    #self.scroll_y = new_y
+
+  def OnScroll(self, e):
+    self.ScrollToPos(e.GetPosition())
+    e.Skip()
+
+  def UpdateScrollbars(self):
+    self.SetScrollbar(wx.VERTICAL, self.cur_pos, self.GetClientSize().height / self.item_height, len(self.data))
+
+  def OnResize(self, e):
+    self.UpdateScrollbars()
+
+    # on resize position may be pushed up if at max scroll pos
+    # correct for it by scrolling contents
+    pos = self.GetScrollPos(wx.VERTICAL)
+    if pos != self.cur_pos:
+      self.ScrollToPos(pos)
+
+    # important to update panel size after updating scroll
+    # since below depends on cur_pos, and scrolling changes cur_pos
+    new_size = self.GetClientSize()
+    if new_size.height > self.cur_size.height:
+      for item in self.data[self.cur_pos + self.num_vis_rows:]:
+        # ceil ensures we count partially visible windows
+        if self.num_vis_rows >= math.ceil(new_size.height / float(self.item_height)):
+          break
+
+        for p in self.panels:
+          win = p.CreateWin(item)
+          p.Add(win)
+
+        self.num_vis_rows += 1
+
+    elif new_size.height < self.cur_size.height:
+      # decreasing size always moves scrollbar from max pos
+      self.max_scroll = False
+      while self.num_vis_rows > math.ceil(new_size.height / float(self.item_height)):
+        for p in self.panels:
+          p.RemoveLast()
+
+        self.num_vis_rows -= 1
+
+    self.cur_size = new_size
+
+    # will have to revisit when test with mult panels
+    self.panels[0].SetClientSize(self.GetClientSize())
+    e.Skip()
+
+class ScrollListPane(wx.Panel):
   def __init__(self, *args, **kwargs):
     # default scrollwin to myself
     # but allow overriding if this panel is to be controlled
     # by an external scroll win
-    self.scroll_win = kwargs.pop('scroll_win', self)
-    super(BigScrollList, self).__init__(*args, **kwargs)
+    #self.scroll_win = kwargs.pop('scroll_win', self)
+    super(ScrollListPane, self).__init__(*args, **kwargs)
     self.windows = []
-    self.item_height = -1
-    self.first_index = 0
+    #self.item_height = -1
+    #self.first_index = 0
     # we track scroll positions ourselves since 
     # we use a combination of ScrolledWindow and ScrollWindow
     self.scroll_x = 0
     self.scroll_y = 0
     self.max_scroll = False
     self.cur_size = self.GetClientSize()
-    self.scroll_win.Bind(wx.EVT_SCROLLWIN, self.OnScroll)
-    self.Bind(wx.EVT_SIZE, self.OnResize)
 
   def CreateWin(self, item):
     pass
 
-  def UpdateWin(self, win, item):
+  def UpdateWin(self, i, item):
     pass
 
+  def GetItemHeight(self):
+    return self.item_height
+
   def Add(self, win):
-    #new_pos = self.scroll_win.CalcScrolledPosition(0, self.item_height * (self.first_index + len(self.windows)))
-    new_pos = (0 - self.scroll_x, self.item_height * (self.first_index + len(self.windows)) - self.scroll_y)
+    #new_pos = (0 - self.scroll_x, self.item_height * (self.first_index + len(self.windows)) - self.scroll_y)
+    new_pos = (0 - self.GetParent().scroll_x, self.GetParent().item_height * len(self.windows))
     win.Move(new_pos)
     self.windows.append(win)
     #print "win added, count: %i, val: %s, virt y: %i; scroll: %i" % (len(self.windows), win.GetLabel(), self.item_height * (self.first_index + len(self.windows) - 1), self.scroll_y)
@@ -403,7 +584,7 @@ class BigScrollList(wx.ScrolledWindow):
     self.windows.insert(0, win)
     #print "win inserted, count: %i, virt y: %i" % (len(self.windows), self.item_height * (self.first_index))
 
-  def RegisterData(self, data):
+  '''def RegisterData(self, data):
     self.data = data
 
     if len(data) == 0:
@@ -412,7 +593,6 @@ class BigScrollList(wx.ScrolledWindow):
     win = self.CreateWin(data[0])
     size = win.GetSize()
     self.item_height = size.height
-    self.SetVirtualSize((size.width, self.item_height * len(data)))
     self.Add(win)
  
     if len(data) == 1:
@@ -425,6 +605,7 @@ class BigScrollList(wx.ScrolledWindow):
         return
       win = self.CreateWin(item)
       self.Add(win)
+  '''
 
   def Append(self):
     item = self.data[-1]
@@ -433,12 +614,12 @@ class BigScrollList(wx.ScrolledWindow):
       win = self.CreateWin(item)
       size = win.GetSize()
       self.item_height = size.height
-      self.SetVirtualSize((size.width, self.item_height * len(self.data)))
+      #self.SetVirtualSize((size.width, self.item_height * len(self.data)))
       self.Add(win)
     else:
       # case below my not create new window so reuse last virt width
       # -1 is never ok, it disables virt size in that direction
-      self.SetVirtualSize((self.GetVirtualSize().width, self.item_height * len(self.data)))
+      #self.SetVirtualSize((self.GetVirtualSize().width, self.item_height * len(self.data)))
       view_height = self.GetClientSize().height
       # ceil ensures we count partially visible windows
       if len(self.windows) < math.ceil(view_height / float(self.item_height)):
@@ -449,137 +630,49 @@ class BigScrollList(wx.ScrolledWindow):
     self.max_scroll = False
 
   def Remove(self, i):
-    self.SetVirtualSize((self.GetVirtualSize().width, self.item_height * len(self.data)))
+    # corner case, if at max scroll pos and 
+    # elements are still available from top, just rotate
+    if self.max_scroll and len(self.windows) <= len(self.data):
+      self.Rotate(-1)
+      # update removed el offset
+      i -= 1
+      # hack!
+      self.GetParent().cur_pos -= 1
+      self.scroll_y -= self.item_height
 
-    # corner case for max scroll to deal with unexpected
-    # down shift of all elements
-    if self.max_scroll:
-      self.first_index -= 1
-      for j in range(len(self.windows)):
-        pos = self.windows[j].GetPosition()
-        pos[1] -= self.item_height
-        self.UpdateWin(self.windows[j], self.data[self.first_index + j])
-        self.windows[j].Move(pos)
-      # at this point scrollbar is gone, turn off max scroll
-      if self.GetVirtualSize().height <= self.GetClientSize().height:
-        self.max_scroll = False
-      return
-
-    # corner case, remove top window if beyond data range
-    if self.first_index + len(self.windows) > len(self.data):
+    # corner case, if less data than visible windows, remove one
+    elif self.first_index + len(self.windows) > len(self.data):
       win = self.windows.pop()
       win.Destroy()
+      self.max_scroll = True
 
     # re align visible elements >= i
     for j in range(len(self.windows) - (i - self.first_index)):
-      # may go over if scrolled to bottom trying to update last invisible win
-      if i + j < len(self.data):
-        self.UpdateWin(self.windows[i - self.first_index + j], self.data[i + j])
+      self.UpdateWin(self.windows[i - self.first_index + j], self.data[i + j])
 
+  def RemoveLast(self):
+    win = self.windows.pop()
+    win.Destroy()
 
   def Index(self, win):
-    return self.first_index + self.windows.index(win)
+    return self.GetParent().cur_pos + self.windows.index(win)
 
   def Rotate(self, iterations):
-    # hack prevent negative rotations on resize if scrollbar maxed out
-    if iterations == 0 or self.max_scroll and iterations < 0:
+    if iterations == 0:
       return
 
-    # corner case if view size is not divisible by item height,
-    #  remove last element when hit max scroll
-    if self.GetClientSize().height % self.item_height != 0:
-      max_pos = math.ceil(float(self.GetVirtualSize().height - self.GetClientSize().height) / self.item_height)
-      if self.max_scroll:
-        win = self.windows.pop()
-        win.Destroy()
-      # leaving max scroll pos, re-add last element
-      elif self.first_index == max_pos and iterations < 0:
-        win = self.CreateWin(self.data[len(self.data) - 1])
-        self.Add(win)
-
-    self.first_index += iterations
-
+    #print "rotate; num wins: %i; len data: %i; cur_pos: %i; iterations: %i" % (len(self.windows), len(self.GetParent().data), self.GetParent().cur_pos, iterations)
     for i in range(len(self.windows)):
-      self.UpdateWin(self.windows[i], self.data[self.first_index + i])
-      pos = self.windows[i].GetPosition()
-      pos[1] += iterations * self.item_height
-      self.windows[i].Move(pos)
-
-  def ScrollToPos(self, pos):
-    max_pos = math.ceil(float(self.GetVirtualSize().height - self.GetClientSize().height) / self.item_height)
-    if (pos >= max_pos):
-      self.max_scroll = True
-    else:
-      self.max_scroll = False
-
-    rotations = pos - self.first_index
-    
-    self.Rotate(rotations)
+      # parent cur_pos isn't updated yet, so include  iterations
+      self.UpdateWin(i, self.GetParent().data[self.GetParent().cur_pos + iterations + i])
 
   def ScrollWindow(self, dx, dy, **kwargs):
-    if dx != 0:
-      self.scroll_x -= dx
-    if dy != 0:
-      new_pos = self.scroll_y - dy
-      # convert to scroll units
-      self.ScrollToPos(new_pos / self.item_height)
-      self.scroll_y = new_pos
-    super(BigScrollList, self).ScrollWindow(dx, dy, **kwargs)
+    rotations = dy / self.GetParent().item_height
 
-    #print "ScrollWindow called"
-
-  def OnScroll(self, e):
-    if (e.GetOrientation() == wx.HORIZONTAL):
-      self.scroll_x = e.GetPosition()
-    elif (e.GetOrientation() == wx.VERTICAL):
-      new_pos = e.GetPosition()
-      self.ScrollToPos(new_pos)
-      '''if (new_pos >= self.GetVirtualSize().height - self.GetClientSize().height):
-        self.max_scroll = True
-      else:
-        self.max_scroll = False
-
-      first_y = self.item_height * self.first_index
-      rotations = (new_pos - first_y) / self.item_height
-      # prevent negative rotations on resize if scrollbar maxed out
-      if rotations != 0 and not (self.max_scroll and rotations < 0):
-        #print "rotating; old view start y: %i; new view start y: %i" % (e.GetEventObject().GetViewStart()[1], self.scroll_y)
-        self.Rotate(rotations)
-      '''
-
-      # important to update after rotating to prevent quantization errors in row placement
-      self.scroll_y = self.item_height * new_pos
-    e.Skip()
-
-  def OnResize(self, e):
-    new_size = self.GetClientSize()
-    if new_size.height > self.cur_size.height:
-      # special case, if scrollbar maxed out, add to beginning of window list rather than end
-      if self.max_scroll:
-        # use integer division to only add when fully visible
-        while len(self.windows) < new_size.height / self.item_height and len(self.windows) < len(self.data):
-          win = self.CreateWin(self.data[self.first_index - 1])
-          self.InsertFront(win)
-      else:
-        for item in self.data[self.first_index + len(self.windows):]:
-          # ceil ensures we count partially visible windows
-          if len(self.windows) >= math.ceil(new_size.height / float(self.item_height)):
-            break
-          win = self.CreateWin(item)
-          self.Add(win)
-
-    elif new_size.height < self.cur_size.height:
-      # decreasing size always moves scrollbar from max pos
-      self.max_scroll = False
-      while len(self.windows) > math.ceil(new_size.height / float(self.item_height)):
-        win = self.windows.pop()
-        win.Destroy()
-
-    self.cur_size = new_size
-    e.Skip()
+    self.Rotate(rotations)
 
 class Grid(wx.ScrolledWindow):
-  class RowPanel(BigScrollList):
+  class RowPanel(ScrollListPane):
     def __init__(self, header, *args, **kwargs):
       self.header = header
       super(Grid.RowPanel, self).__init__(*args, **kwargs)
