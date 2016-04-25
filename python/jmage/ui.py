@@ -112,7 +112,8 @@ class StretchRow(wx.PyPanel):
     self.resize_el = -1
     self.delta = 0
     # we will resize all rows in a list of panels
-    self.panels = []
+    #self.panels = []
+    self.rows = []
     self.cur_pos = 0
     # add our own pane
     #self.panels.append(self.GetParent())
@@ -137,8 +138,10 @@ class StretchRow(wx.PyPanel):
   def GetWindows(self):
     return self.windows
 
-  def AddPanel(self, panel):
-    self.panels.append(panel)
+  #def AddPanel(self, panel):
+  def AddRow(self, row):
+    #self.panels.append(panel)
+    self.rows.append(row)
 
   def Resize(self, other):
     for i in range(len(other.windows)):
@@ -204,9 +207,10 @@ class StretchRow(wx.PyPanel):
   def OnMouseUp(self, e):
     if self.is_down:
       self.Stretch(self.resize_el, self.delta)
-      for p in self.panels:
-        for row in p.GetChildren():
-          row.Stretch(self.resize_el, self.delta)
+      #for p in self.panels:
+      for row in self.rows:
+        #for row in p.GetChildren():
+        row.Stretch(self.resize_el, self.delta)
 
       if self.stretch_callback is not None:
         self.stretch_callback(self)
