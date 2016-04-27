@@ -372,19 +372,37 @@ class ScrollList(wx.Panel):
     super(ScrollList, self).__init__(*args, **kwargs)
     self.cur_pos = 0
     self.panels = []
+    self.hbox = wx.BoxSizer(wx.HORIZONTAL)
     #self.item_height = -1
     # just hardcode until we get it right
     self.item_height = 31
     self.num_vis_rows = 0
     self.scroll_x = 0
     #self.scroll_y = 0
-    self.max_scroll = False
+    self.scroll_x_maxed = False
+    self.scroll_y_maxed = False
     self.cur_size = self.GetClientSize()
     self.Bind(wx.EVT_SCROLLWIN, self.OnScroll)
     self.Bind(wx.EVT_SIZE, self.OnResize)
+    self.SetSizer(self.hbox)
 
   def Add(self, panel):
     self.panels.append(panel)
+    self.hbox.Add(panel)
+    # call layout here?
+
+  def AddRow(self, item):
+    win = self.panels[0].CreateWin(item)
+    self.panels[0].Add(win)
+
+    win = self.panels[1].CreateWin(item)
+    self.panels[1].Add(win)
+    # correct for x scroll only for panel 1
+    # can't use Move since it doesn't respect -1 coord
+    size = win.GetSize()
+    win.SetDimensions(- self.scroll_x, win.GetPosition()[1], size.width, size.height, wx.SIZE_ALLOW_MINUS_ONE)
+
+    self.num_vis_rows += 1
 
   def RegisterData(self, data):
     self.data = data
@@ -392,13 +410,7 @@ class ScrollList(wx.Panel):
     if len(data) == 0:
       return
 
-    for p in self.panels:
-      win = p.CreateWin(data[0])
-    #size = win.GetSize()
-    #self.item_height = size.height
-      p.Add(win)
-
-    self.num_vis_rows += 1
+    self.AddRow(data[0])
  
     if len(data) == 1:
       return
@@ -408,33 +420,21 @@ class ScrollList(wx.Panel):
       # ceil ensures we count partially visible rows
       if self.num_vis_rows >= math.ceil(view_height / float(self.item_height)):
         return
-      for p in self.panels:
-        win = p.CreateWin(item)
-        p.Add(win)
+      self.AddRow(item)
 
   def Append(self, item):
     self.data.append(item)
 
     if self.num_vis_rows == 0:
-      for p in self.panels:
-        win = p.CreateWin(item)
-      # figure out item height calc later
-      #size = win.GetSize()
-      #self.item_height = size.height
-      #self.SetVirtualSize((size.width, self.item_height * len(self.data)))
-        p.Add(win)
-        self.num_vis_rows += 1
+      self.AddRow(item)
     else:
       view_height = self.GetClientSize().height
       # ceil ensures we count partially visible windows
       if self.num_vis_rows < math.ceil(view_height / float(self.item_height)):
-        for p in self.panels:
-          win = p.CreateWin(item)
-          p.Add(win)
-        self.num_vis_rows += 1
+        self.AddRow(item)
 
     # no matter what virtual size increases causing scroll pos to move up
-    self.max_scroll = False
+    self.scroll_y_maxed = False
     self.UpdateScrollbars()
 
   # i is an index into data
@@ -444,7 +444,6 @@ class ScrollList(wx.Panel):
     # corner case, if elements are still available from top, just rotate
     if self.cur_pos > 0 and self.num_vis_rows <= len(self.data):
       for p in self.panels:
-        # probably not right way to handle dx
         p.ScrollWindow(0, - self.item_height)
       # update removed el offset
       i -= 1
@@ -456,7 +455,7 @@ class ScrollList(wx.Panel):
         p.RemoveLast()
       self.num_vis_rows -= 1
 
-      self.max_scroll = True
+      self.scroll_y_maxed = True
 
     # re align visible elements >= i
     for j in range(self.num_vis_rows - (i - self.cur_pos)):
@@ -465,13 +464,18 @@ class ScrollList(wx.Panel):
 
     self.UpdateScrollbars()
 
+  def GetMaxScrollX(self):
+    # use first window for now until we implement scroll pane headers
+    return self.panels[0].windows[0].GetSize().width + self.panels[1].windows[0].GetSize().width - self.GetClientSize().width
+
+  # assumed to only ever handle vertical scrolling
   def ScrollToPos(self, pos):
     max_pos = len(self.data) - self.GetClientSize().height / self.item_height
 
     if pos >= max_pos:
-      self.max_scroll = True
+      self.scroll_y_maxed = True
     else:
-      self.max_scroll = False
+      self.scroll_y_maxed = False
 
     num_steps = pos - self.cur_pos
 
@@ -479,17 +483,14 @@ class ScrollList(wx.Panel):
     # corner cases if view size is not divisible by item height
       if self.GetClientSize().height % self.item_height != 0:
         #  remove last element when hit max scroll
-        if self.max_scroll:
+        if self.scroll_y_maxed:
           for p in self.panels:
             p.RemoveLast()
           self.num_vis_rows -= 1
 
         # leaving max scroll pos, re-add last element
         elif self.cur_pos == max_pos and num_steps < 0:
-          for p in self.panels:
-            win = p.CreateWin(self.data[len(self.data) - 1])
-            p.Add(win)
-          self.num_vis_rows += 1
+          self.AddRow(self.data[len(self.data) - 1])
 
       dy = self.item_height * num_steps
       for p in self.panels:
@@ -499,10 +500,23 @@ class ScrollList(wx.Panel):
     #self.scroll_y = new_y
 
   def OnScroll(self, e):
-    self.ScrollToPos(e.GetPosition())
+    if e.GetOrientation() == wx.HORIZONTAL:
+      new_pos = e.GetPosition()
+      self.panels[1].ScrollWindow(self.scroll_x - new_pos, 0)
+      self.scroll_x = new_pos
+
+      if self.scroll_x >= self.GetMaxScrollX():
+        self.scroll_x_maxed = True
+      else:
+        self.scroll_x_maxed = False
+
+    else:
+      self.ScrollToPos(e.GetPosition())
     e.Skip()
 
   def UpdateScrollbars(self):
+    # use first window for now until we implement scroll pane headers
+    self.SetScrollbar(wx.HORIZONTAL, self.scroll_x, self.GetClientSize().width, self.panels[0].windows[0].GetSize().width + self.panels[1].windows[0].GetSize().width)
     self.SetScrollbar(wx.VERTICAL, self.cur_pos, self.GetClientSize().height / self.item_height, len(self.data))
 
   def OnResize(self, e):
@@ -517,31 +531,51 @@ class ScrollList(wx.Panel):
     # important to update panel size after updating scroll
     # since below depends on cur_pos, and scrolling changes cur_pos
     new_size = self.GetClientSize()
+
+    ### deal with virtical resize
     if new_size.height > self.cur_size.height:
       for item in self.data[self.cur_pos + self.num_vis_rows:]:
         # ceil ensures we count partially visible windows
         if self.num_vis_rows >= math.ceil(new_size.height / float(self.item_height)):
           break
 
-        for p in self.panels:
-          win = p.CreateWin(item)
-          p.Add(win)
-
-        self.num_vis_rows += 1
+        self.AddRow(item)
 
     elif new_size.height < self.cur_size.height:
       # decreasing size always moves scrollbar from max pos
-      self.max_scroll = False
+      self.scroll_y_maxed = False
       while self.num_vis_rows > math.ceil(new_size.height / float(self.item_height)):
         for p in self.panels:
           p.RemoveLast()
 
         self.num_vis_rows -= 1
 
+    ### deal with horizontal resize
+
+    if new_size.width > self.cur_size.width:
+      if self.scroll_x >= self.GetMaxScrollX():
+        self.scroll_x_maxed = True
+
+      # if at max scroll, scroll in resize direction
+      # to maintain max scroll
+      if self.scroll_x_maxed and self.scroll_x > 0:
+        del_width = new_size.width - self.cur_size.width
+
+        if del_width > self.scroll_x:
+          del_width = self.scroll_x
+
+        self.panels[1].ScrollWindow(del_width, 0)
+        self.scroll_x -= del_width 
+
+    # negative resize always moves bar from max_scroll
+    elif new_size.width < self.cur_size.width:
+      self.scroll_x_maxed = False
+
     self.cur_size = new_size
 
     # will have to revisit when test with mult panels
-    self.panels[0].SetClientSize(self.GetClientSize())
+    # self.panels[0].SetClientSize(self.GetClientSize())
+    # call to layout instead? 
     e.Skip()
 
 class ScrollListPane(wx.Panel):
@@ -556,7 +590,7 @@ class ScrollListPane(wx.Panel):
     pass
 
   def Add(self, win):
-    new_pos = (0 - self.GetParent().scroll_x, self.GetParent().item_height * len(self.windows))
+    new_pos = (0, self.GetParent().item_height * len(self.windows))
     win.Move(new_pos)
     self.windows.append(win)
 
@@ -568,14 +602,17 @@ class ScrollListPane(wx.Panel):
     return self.GetParent().cur_pos + self.windows.index(win)
 
   def ScrollWindow(self, dx, dy, **kwargs):
-    iterations = dy / self.GetParent().item_height
+    # scroll x first
+    super(ScrollListPane, self).ScrollWindow(dx, 0)
 
+    iterations = dy / self.GetParent().item_height
     if iterations == 0:
       return
 
     for i in range(len(self.windows)):
       # parent cur_pos isn't updated yet, so include iterations
       self.UpdateWin(i, self.GetParent().data[self.GetParent().cur_pos + iterations + i])
+
 
 class Grid(wx.ScrolledWindow):
   class RowPanel(ScrollListPane):
