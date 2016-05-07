@@ -391,12 +391,19 @@ class ScrollList(wx.Panel):
     self.hbox.Add(panel)
     # call layout here?
 
-  def AddRow(self, item):
-    win = self.panels[0].CreateWin(item)
-    self.panels[0].Add(win)
+  def AddRow(self, item, header=False):
+    if header:
+      win = self.panels[0].CreateHeader(item)
+      self.panels[0].Add(win)
 
-    win = self.panels[1].CreateWin(item)
-    self.panels[1].Add(win)
+      win = self.panels[1].CreateHeader(item)
+      self.panels[1].Add(win)
+    else:
+      win = self.panels[0].CreateWin(item)
+      self.panels[0].Add(win)
+
+      win = self.panels[1].CreateWin(item)
+      self.panels[1].Add(win)
     # correct for x scroll only for panel 1
     # can't use Move since it doesn't respect -1 coord
     size = win.GetSize()
@@ -410,7 +417,8 @@ class ScrollList(wx.Panel):
     if len(data) == 0:
       return
 
-    self.AddRow(data[0])
+    # first row is header
+    self.AddRow(data[0], True)
  
     if len(data) == 1:
       return
@@ -425,8 +433,9 @@ class ScrollList(wx.Panel):
   def Append(self, item):
     self.data.append(item)
 
+    # first row is header
     if self.num_vis_rows == 0:
-      self.AddRow(item)
+      self.AddRow(item, True)
     else:
       view_height = self.GetClientSize().height
       # ceil ensures we count partially visible windows
@@ -583,6 +592,9 @@ class ScrollListPane(wx.Panel):
     super(ScrollListPane, self).__init__(*args, **kwargs)
     self.windows = []
 
+  def CreateHeader(self, item):
+    pass
+
   def CreateWin(self, item):
     pass
 
@@ -609,7 +621,8 @@ class ScrollListPane(wx.Panel):
     if iterations == 0:
       return
 
-    for i in range(len(self.windows)):
+    # skip first element it's the header
+    for i in range(1, len(self.windows)):
       # parent cur_pos isn't updated yet, so include iterations
       self.UpdateWin(i, self.GetParent().data[self.GetParent().cur_pos + iterations + i])
 
