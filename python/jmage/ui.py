@@ -383,9 +383,9 @@ class Grid(wx.Panel):
     self.cur_pos = 0
     self.panels = []
     self.hbox = wx.BoxSizer(wx.HORIZONTAL)
-    #self.item_height = -1
+    #self.row_height = -1
     # just hardcode until we get it right
-    self.item_height = 31
+    self.row_height = 31
     self.num_vis_rows = 0
     self.scroll_x = 0
     #self.scroll_y = 0
@@ -436,7 +436,7 @@ class Grid(wx.Panel):
     view_height = self.GetClientSize().height
     for data_row in data[1:]:
       # ceil ensures we count partially visible rows
-      if self.num_vis_rows >= math.ceil(view_height / float(self.item_height)):
+      if self.num_vis_rows >= math.ceil(view_height / float(self.row_height)):
         return
       self.AddRow(data_row)
 
@@ -449,7 +449,7 @@ class Grid(wx.Panel):
     else:
       view_height = self.GetClientSize().height
       # ceil ensures we count partially visible windows
-      if self.num_vis_rows < math.ceil(view_height / float(self.item_height)):
+      if self.num_vis_rows < math.ceil(view_height / float(self.row_height)):
         self.AddRow(data_row)
 
     # no matter what virtual size increases causing scroll pos to move up
@@ -463,7 +463,7 @@ class Grid(wx.Panel):
     # corner case, if elements are still available from top, just rotate
     if self.cur_pos > 0 and self.num_vis_rows <= len(self.data):
       for p in self.panels:
-        p.ScrollWindow(0, - self.item_height)
+        p.ScrollWindow(0, - self.row_height)
       # update removed el offset
       i -= 1
       self.cur_pos -= 1
@@ -489,7 +489,7 @@ class Grid(wx.Panel):
 
   # assumed to only ever handle vertical scrolling
   def ScrollToPos(self, pos):
-    max_pos = len(self.data) - self.GetClientSize().height / self.item_height
+    max_pos = len(self.data) - self.GetClientSize().height / self.row_height
 
     if pos >= max_pos:
       self.scroll_y_maxed = True
@@ -500,7 +500,7 @@ class Grid(wx.Panel):
 
     if num_steps != 0:
     # corner cases if view size is not divisible by item height
-      if self.GetClientSize().height % self.item_height != 0:
+      if self.GetClientSize().height % self.row_height != 0:
         #  remove last element when hit max scroll
         if self.scroll_y_maxed:
           for p in self.panels:
@@ -511,7 +511,7 @@ class Grid(wx.Panel):
         elif self.cur_pos == max_pos and num_steps < 0:
           self.AddRow(self.data[len(self.data) - 1])
 
-      dy = self.item_height * num_steps
+      dy = self.row_height * num_steps
       for p in self.panels:
         p.ScrollWindow(0, dy)
 
@@ -536,7 +536,7 @@ class Grid(wx.Panel):
   def UpdateScrollbars(self):
     # use first window since it's the header
     self.SetScrollbar(wx.HORIZONTAL, self.scroll_x, self.GetClientSize().width, self.panels[0].rows[0].GetSize().width + self.panels[1].rows[0].GetSize().width)
-    self.SetScrollbar(wx.VERTICAL, self.cur_pos, self.GetClientSize().height / self.item_height, len(self.data))
+    self.SetScrollbar(wx.VERTICAL, self.cur_pos, self.GetClientSize().height / self.row_height, len(self.data))
 
   def OnResize(self, e):
     self.UpdateScrollbars()
@@ -555,7 +555,7 @@ class Grid(wx.Panel):
     if new_size.height > self.cur_size.height:
       for data_row in self.data[self.cur_pos + self.num_vis_rows:]:
         # ceil ensures we count partially visible windows
-        if self.num_vis_rows >= math.ceil(new_size.height / float(self.item_height)):
+        if self.num_vis_rows >= math.ceil(new_size.height / float(self.row_height)):
           break
 
         self.AddRow(data_row)
@@ -563,7 +563,7 @@ class Grid(wx.Panel):
     elif new_size.height < self.cur_size.height:
       # decreasing size always moves scrollbar from max pos
       self.scroll_y_maxed = False
-      while self.num_vis_rows > math.ceil(new_size.height / float(self.item_height)):
+      while self.num_vis_rows > math.ceil(new_size.height / float(self.row_height)):
         for p in self.panels:
           p.RemoveLast()
 
@@ -648,7 +648,7 @@ class GridPanel(wx.Panel):
     return row
 
   def Add(self, win):
-    new_pos = (0, self.GetParent().item_height * len(self.rows))
+    new_pos = (0, self.GetParent().row_height * len(self.rows))
     win.Move(new_pos)
     self.rows.append(win)
 
@@ -664,7 +664,7 @@ class GridPanel(wx.Panel):
     # scroll x first
     super(GridPanel, self).ScrollWindow(dx, 0)
 
-    iterations = dy / self.GetParent().item_height
+    iterations = dy / self.GetParent().row_height
     if iterations == 0:
       return
 
