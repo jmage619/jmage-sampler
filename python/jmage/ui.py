@@ -597,6 +597,26 @@ class ScrollList(wx.Panel):
     # call to layout instead? 
     e.Skip()
 
+  def OnColStretch(self, win):
+    self.UpdateScrollbars()
+
+    max_scroll_pos = self.GetMaxScrollX()
+
+    # col stretch always mods max scroll pos
+    # so update max scroll
+    if self.scroll_x >= max_scroll_pos:
+      self.scroll_x_maxed = True
+      if max_scroll_pos < 0:
+        max_scroll_pos = 0
+      # if at max scroll and virt size gets smaller, scroll dx
+      # back down to  max scroll
+      self.panels[1].ScrollWindow(self.scroll_x - max_scroll_pos, 0)
+      self.scroll_x = max_scroll_pos
+    else:
+      self.scroll_x_maxed = False
+
+    self.hbox.Layout()
+
 class ScrollListPane(wx.Panel):
   def __init__(self, *args, **kwargs):
     super(ScrollListPane, self).__init__(*args, **kwargs)
@@ -609,11 +629,23 @@ class ScrollListPane(wx.Panel):
     pass
 
   def DestroyWin(self, i):
+    # header row list is 1 less since it doesn't include itself
+    self.header.RemoveRow(i - 1)
     win = self.windows.pop(i)
     win.Destroy()
 
   def UpdateWin(self, i, item):
     pass
+
+  def NewHeader(self):
+    self.header = StretchRow(self, stretch_callback=self.GetParent().OnColStretch)
+    self.header.EnableDrag()
+    return self.header
+
+  def NewRow(self):
+    row = StretchRow(self)
+    self.header.AddRow(row)
+    return row
 
   def Add(self, win):
     new_pos = (0, self.GetParent().item_height * len(self.windows))
