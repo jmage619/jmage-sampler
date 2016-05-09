@@ -143,6 +143,9 @@ class StretchRow(wx.PyPanel):
     #self.panels.append(panel)
     self.rows.append(row)
 
+  def RemoveRow(self, i):
+    self.rows.pop(i)
+
   def Resize(self, other):
     for i in range(len(other.windows)):
       self.windows[i].SetSize(other.windows[i].GetSize())
@@ -598,6 +601,10 @@ class ScrollListPane(wx.Panel):
   def CreateWin(self, item):
     pass
 
+  def DestroyWin(self, i):
+    win = self.windows.pop(i)
+    win.Destroy()
+
   def UpdateWin(self, i, item):
     pass
 
@@ -607,8 +614,9 @@ class ScrollListPane(wx.Panel):
     self.windows.append(win)
 
   def RemoveLast(self):
-    win = self.windows.pop()
-    win.Destroy()
+    self.DestroyWin(len(self.windows) - 1)
+    #win = self.windows.pop()
+    #win.Destroy()
 
   def Index(self, win):
     return self.GetParent().cur_pos + self.windows.index(win)
