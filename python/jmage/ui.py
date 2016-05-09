@@ -401,18 +401,18 @@ class Grid(wx.Panel):
     self.hbox.Add(panel)
     # call layout here?
 
-  def AddRow(self, item, header=False):
+  def AddRow(self, data_row, header=False):
     if header:
-      win = self.panels[0].CreateHeader(item)
+      win = self.panels[0].CreateHeader(data_row)
       self.panels[0].Add(win)
 
-      win = self.panels[1].CreateHeader(item)
+      win = self.panels[1].CreateHeader(data_row)
       self.panels[1].Add(win)
     else:
-      win = self.panels[0].CreateRow(item)
+      win = self.panels[0].CreateRow(data_row)
       self.panels[0].Add(win)
 
-      win = self.panels[1].CreateRow(item)
+      win = self.panels[1].CreateRow(data_row)
       self.panels[1].Add(win)
     # correct for x scroll only for panel 1
     # can't use Move since it doesn't respect -1 coord
@@ -434,23 +434,23 @@ class Grid(wx.Panel):
       return
 
     view_height = self.GetClientSize().height
-    for item in data[1:]:
+    for data_row in data[1:]:
       # ceil ensures we count partially visible rows
       if self.num_vis_rows >= math.ceil(view_height / float(self.item_height)):
         return
-      self.AddRow(item)
+      self.AddRow(data_row)
 
-  def Append(self, item):
-    self.data.append(item)
+  def Append(self, data_row):
+    self.data.append(data_row)
 
     # first row is header
     if self.num_vis_rows == 0:
-      self.AddRow(item, True)
+      self.AddRow(data_row, True)
     else:
       view_height = self.GetClientSize().height
       # ceil ensures we count partially visible windows
       if self.num_vis_rows < math.ceil(view_height / float(self.item_height)):
-        self.AddRow(item)
+        self.AddRow(data_row)
 
     # no matter what virtual size increases causing scroll pos to move up
     self.scroll_y_maxed = False
@@ -553,12 +553,12 @@ class Grid(wx.Panel):
 
     ### deal with virtical resize
     if new_size.height > self.cur_size.height:
-      for item in self.data[self.cur_pos + self.num_vis_rows:]:
+      for data_row in self.data[self.cur_pos + self.num_vis_rows:]:
         # ceil ensures we count partially visible windows
         if self.num_vis_rows >= math.ceil(new_size.height / float(self.item_height)):
           break
 
-        self.AddRow(item)
+        self.AddRow(data_row)
 
     elif new_size.height < self.cur_size.height:
       # decreasing size always moves scrollbar from max pos
@@ -622,10 +622,10 @@ class GridPanel(wx.Panel):
     super(GridPanel, self).__init__(*args, **kwargs)
     self.windows = []
 
-  def CreateHeader(self, item):
+  def CreateHeader(self, data_row):
     pass
 
-  def CreateRow(self, item):
+  def CreateRow(self, data_row):
     pass
 
   def DestroyRow(self, i):
@@ -634,7 +634,7 @@ class GridPanel(wx.Panel):
     win = self.windows.pop(i)
     win.Destroy()
 
-  def UpdateRow(self, i, item):
+  def UpdateRow(self, i, data_row):
     pass
 
   def NewHeader(self):

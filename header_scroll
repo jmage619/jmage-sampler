@@ -4,59 +4,59 @@ import wx
 import jmage.ui
 
 class LPanel(jmage.ui.GridPanel):
-  def CreateHeader(self, item):
+  def CreateHeader(self, data_row):
     header = self.NewHeader()
     for i in range(3): 
       tc = wx.TextCtrl(header)
-      tc.SetValue(item[i])
+      tc.SetValue(data_row[i])
       header.Add(tc)
 
     return header
 
-  def CreateRow(self, item):
+  def CreateRow(self, data_row):
     row = self.NewRow()
     button = wx.Button(row, -1, "-")
     row.Add(button)
     self.Bind(wx.EVT_BUTTON, self.OnRemove, button)
-    for el in item[:2]:
+    for el in data_row[:2]:
       tc = wx.TextCtrl(row)
       tc.SetValue(el)
       row.Add(tc)
 
     return row
 
-  def UpdateRow(self, i, item):
+  def UpdateRow(self, i, data_row):
     windows = self.windows[i].GetWindows()
     for j in range(1, len(windows)):
-      windows[j].SetValue(item[j - 1])
+      windows[j].SetValue(data_row[j - 1])
 
   def OnRemove(self, e):
     i = self.Index(e.GetEventObject().GetParent())
     self.GetParent().Remove(i)
 
 class RPanel(jmage.ui.GridPanel):
-  def CreateHeader(self, item):
+  def CreateHeader(self, data_row):
     header = self.NewHeader()
     for i in range(2, 8): 
       tc = wx.TextCtrl(header)
-      tc.SetValue(item[i])
+      tc.SetValue(data_row[i])
       header.Add(tc)
 
     return header
 
-  def CreateRow(self, item):
+  def CreateRow(self, data_row):
     row = self.NewRow()
-    for el in item[2:]:
+    for el in data_row[2:]:
       tc = wx.TextCtrl(row)
       tc.SetValue(el)
       row.Add(tc)
 
     return row
 
-  def UpdateRow(self, i, item):
+  def UpdateRow(self, i, data_row):
     windows = self.windows[i].GetWindows()
     for j in range(len(windows)):
-      windows[j].SetValue(item[j + 2])
+      windows[j].SetValue(data_row[j + 2])
 
 data = []
 head = []
@@ -65,7 +65,7 @@ for i in range(8):
 data.append(head)
 
 for i in range(1,8):
-#for i in range(100):
+#for i in range(1,100):
   row = []
   for j in range(8):
     row.append("%i,%i" % (i,j))
