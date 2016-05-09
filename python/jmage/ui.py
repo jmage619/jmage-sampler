@@ -107,6 +107,7 @@ class StretchRow(wx.PyPanel):
     #self.SetSizer(self.sizer)
     # hardcode border for now
     self.windows = []
+    self.master = None
     self.border = 7
     self.is_down = False
     self.resize_el = -1
@@ -127,6 +128,11 @@ class StretchRow(wx.PyPanel):
     return size
 
   def Add(self, win):
+    # resize win to same width as master element
+    if self.master is not None:
+      width = self.master.GetWindows()[len(self.windows)].GetSize().width
+      win.SetSize((width, -1))
+
     self.windows.append(win)
     # need to bind mouse listeners to sub windows for consistent mouse events
     win.Bind(wx.EVT_MOTION, self.OnMouseMove)
@@ -142,6 +148,7 @@ class StretchRow(wx.PyPanel):
   def AddRow(self, row):
     #self.panels.append(panel)
     self.rows.append(row)
+    row.master = self
 
   def RemoveRow(self, i):
     self.rows.pop(i)
