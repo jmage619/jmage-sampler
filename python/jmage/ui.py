@@ -377,9 +377,9 @@ class StretchColGrid(wx.ScrolledWindow):
       self.down_x = abs_x
     e.Skip()
 
-class ScrollList(wx.Panel):
+class Grid(wx.Panel):
   def __init__(self, *args, **kwargs):
-    super(ScrollList, self).__init__(*args, **kwargs)
+    super(Grid, self).__init__(*args, **kwargs)
     self.cur_pos = 0
     self.panels = []
     self.hbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -409,10 +409,10 @@ class ScrollList(wx.Panel):
       win = self.panels[1].CreateHeader(item)
       self.panels[1].Add(win)
     else:
-      win = self.panels[0].CreateWin(item)
+      win = self.panels[0].CreateRow(item)
       self.panels[0].Add(win)
 
-      win = self.panels[1].CreateWin(item)
+      win = self.panels[1].CreateRow(item)
       self.panels[1].Add(win)
     # correct for x scroll only for panel 1
     # can't use Move since it doesn't respect -1 coord
@@ -479,7 +479,7 @@ class ScrollList(wx.Panel):
     # re align visible elements >= i
     for j in range(self.num_vis_rows - (i - self.cur_pos)):
       for p in self.panels:
-        p.UpdateWin(i - self.cur_pos + j, self.data[i + j])
+        p.UpdateRow(i - self.cur_pos + j, self.data[i + j])
 
     self.UpdateScrollbars()
 
@@ -617,24 +617,24 @@ class ScrollList(wx.Panel):
 
     self.hbox.Layout()
 
-class ScrollListPane(wx.Panel):
+class GridPanel(wx.Panel):
   def __init__(self, *args, **kwargs):
-    super(ScrollListPane, self).__init__(*args, **kwargs)
+    super(GridPanel, self).__init__(*args, **kwargs)
     self.windows = []
 
   def CreateHeader(self, item):
     pass
 
-  def CreateWin(self, item):
+  def CreateRow(self, item):
     pass
 
-  def DestroyWin(self, i):
+  def DestroyRow(self, i):
     # header row list is 1 less since it doesn't include itself
     self.header.RemoveRow(i - 1)
     win = self.windows.pop(i)
     win.Destroy()
 
-  def UpdateWin(self, i, item):
+  def UpdateRow(self, i, item):
     pass
 
   def NewHeader(self):
@@ -653,7 +653,7 @@ class ScrollListPane(wx.Panel):
     self.windows.append(win)
 
   def RemoveLast(self):
-    self.DestroyWin(len(self.windows) - 1)
+    self.DestroyRow(len(self.windows) - 1)
     #win = self.windows.pop()
     #win.Destroy()
 
@@ -662,7 +662,7 @@ class ScrollListPane(wx.Panel):
 
   def ScrollWindow(self, dx, dy, **kwargs):
     # scroll x first
-    super(ScrollListPane, self).ScrollWindow(dx, 0)
+    super(GridPanel, self).ScrollWindow(dx, 0)
 
     iterations = dy / self.GetParent().item_height
     if iterations == 0:
@@ -671,10 +671,10 @@ class ScrollListPane(wx.Panel):
     # skip first element it's the header
     for i in range(1, len(self.windows)):
       # parent cur_pos isn't updated yet, so include iterations
-      self.UpdateWin(i, self.GetParent().data[self.GetParent().cur_pos + iterations + i])
+      self.UpdateRow(i, self.GetParent().data[self.GetParent().cur_pos + iterations + i])
 
 
-class Grid(wx.ScrolledWindow):
+'''class Grid(wx.ScrolledWindow):
   class RowPanel(ScrollListPane):
     def __init__(self, header, *args, **kwargs):
       self.header = header
@@ -764,18 +764,6 @@ class Grid(wx.ScrolledWindow):
     new_y = self.row_header.windows[0].GetPosition()[1]
     # stupidly sometimes things move down unexpectedly
     # ensure first rows always begin at 0
-    '''
-    if new_y != 0:
-      delta = 0 - new_y
-      for win in self.row_header.windows:
-        pos = win.GetPosition()
-        pos[1] += delta
-        win.Move(pos)
-      for win in self.grid.windows:
-        pos = win.GetPosition()
-        pos[1] += delta
-        win.Move(pos)
-    '''
 
   def RegisterData(self, data):
     self.row_header.RegisterData(data)
@@ -829,4 +817,4 @@ class Grid(wx.ScrolledWindow):
   # this is to disable autoscrolling on clicking elements or tabbing
   def OnFocus(self, e):
     pass
-
+'''
