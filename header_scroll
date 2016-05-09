@@ -26,7 +26,7 @@ class LPanel(jmage.ui.GridPanel):
     return row
 
   def UpdateRow(self, i, data_row):
-    windows = self.windows[i].GetWindows()
+    windows = self.rows[i].GetWindows()
     for j in range(1, len(windows)):
       windows[j].SetValue(data_row[j - 1])
 
@@ -54,7 +54,7 @@ class RPanel(jmage.ui.GridPanel):
     return row
 
   def UpdateRow(self, i, data_row):
-    windows = self.windows[i].GetWindows()
+    windows = self.rows[i].GetWindows()
     for j in range(len(windows)):
       windows[j].SetValue(data_row[j + 2])
 

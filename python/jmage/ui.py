@@ -484,8 +484,8 @@ class Grid(wx.Panel):
     self.UpdateScrollbars()
 
   def GetMaxScrollX(self):
-    # use first window for now until we implement scroll pane headers
-    return self.panels[0].windows[0].GetSize().width + self.panels[1].windows[0].GetSize().width - self.GetClientSize().width
+    # use first window since it's the header
+    return self.panels[0].rows[0].GetSize().width + self.panels[1].rows[0].GetSize().width - self.GetClientSize().width
 
   # assumed to only ever handle vertical scrolling
   def ScrollToPos(self, pos):
@@ -534,8 +534,8 @@ class Grid(wx.Panel):
     e.Skip()
 
   def UpdateScrollbars(self):
-    # use first window for now until we implement scroll pane headers
-    self.SetScrollbar(wx.HORIZONTAL, self.scroll_x, self.GetClientSize().width, self.panels[0].windows[0].GetSize().width + self.panels[1].windows[0].GetSize().width)
+    # use first window since it's the header
+    self.SetScrollbar(wx.HORIZONTAL, self.scroll_x, self.GetClientSize().width, self.panels[0].rows[0].GetSize().width + self.panels[1].rows[0].GetSize().width)
     self.SetScrollbar(wx.VERTICAL, self.cur_pos, self.GetClientSize().height / self.item_height, len(self.data))
 
   def OnResize(self, e):
@@ -620,7 +620,7 @@ class Grid(wx.Panel):
 class GridPanel(wx.Panel):
   def __init__(self, *args, **kwargs):
     super(GridPanel, self).__init__(*args, **kwargs)
-    self.windows = []
+    self.rows = []
 
   def CreateHeader(self, data_row):
     pass
@@ -631,7 +631,7 @@ class GridPanel(wx.Panel):
   def DestroyRow(self, i):
     # header row list is 1 less since it doesn't include itself
     self.header.RemoveRow(i - 1)
-    win = self.windows.pop(i)
+    win = self.rows.pop(i)
     win.Destroy()
 
   def UpdateRow(self, i, data_row):
@@ -648,17 +648,17 @@ class GridPanel(wx.Panel):
     return row
 
   def Add(self, win):
-    new_pos = (0, self.GetParent().item_height * len(self.windows))
+    new_pos = (0, self.GetParent().item_height * len(self.rows))
     win.Move(new_pos)
-    self.windows.append(win)
+    self.rows.append(win)
 
   def RemoveLast(self):
-    self.DestroyRow(len(self.windows) - 1)
-    #win = self.windows.pop()
+    self.DestroyRow(len(self.rows) - 1)
+    #win = self.rows.pop()
     #win.Destroy()
 
   def Index(self, win):
-    return self.GetParent().cur_pos + self.windows.index(win)
+    return self.GetParent().cur_pos + self.rows.index(win)
 
   def ScrollWindow(self, dx, dy, **kwargs):
     # scroll x first
@@ -669,7 +669,7 @@ class GridPanel(wx.Panel):
       return
 
     # skip first element it's the header
-    for i in range(1, len(self.windows)):
+    for i in range(1, len(self.rows)):
       # parent cur_pos isn't updated yet, so include iterations
       self.UpdateRow(i, self.GetParent().data[self.GetParent().cur_pos + iterations + i])
 
