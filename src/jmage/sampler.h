@@ -1,6 +1,7 @@
 #ifndef JM_SAMPLER_H
 #define JM_SAMPLER_H
 
+#include <linux/limits.h>
 #include <jack/types.h>
 
 #define VOL_STEPS 17
@@ -42,6 +43,9 @@ typedef struct {
   double pitch_corr;
   int loop_on;
   int crossfade;
+  // some meta info only used by ui
+  char name[PATH_MAX];
+  char path[PATH_MAX];
 } jm_key_zone;
 
 typedef enum {MT_VOLUME} msg_type;
@@ -66,6 +70,8 @@ extern "C" {
   void jm_destroy_wave(jm_wave* wav);
 
   void jm_init_key_zone(jm_key_zone* zone);
+  void jm_zone_set_name(jm_key_zone* zone, char const * name);
+  void jm_zone_set_path(jm_key_zone* zone, char const * path);
   int jm_zone_contains(jm_key_zone const * zone, int pitch, int velocity);
 
   JMSampler* jm_new_sampler();

@@ -26,11 +26,13 @@ from ctypes import c_int
 from ctypes import c_double
 from ctypes import c_float
 from ctypes import c_uint32
+from ctypes import c_char
 from ctypes import c_char_p
 from ctypes import c_void_p
 from ctypes import c_size_t
 
 INT16_MAX = 2**16 / 2 - 1
+PATH_MAX = 4096
 SAMPLE_RATE = 44100
 MT_VOLUME = 0
 VOL_STEPS  = 17
@@ -71,7 +73,9 @@ class jm_key_zone(Structure):
     ('release', c_int),
     ('pitch_corr', c_double),
     ('loop_on', c_int),
-    ('crossfade', c_int)
+    ('crossfade', c_int),
+    ('name', c_char * PATH_MAX),
+    ('path', c_char * PATH_MAX)
   ]
 
 class jm_msg_data(Union):
@@ -93,6 +97,8 @@ lib = ctypes.cdll.LoadLibrary('libjm_sampler.so')
 lib.jm_parse_wave.argtypes = [POINTER(jm_wave), c_char_p]
 lib.jm_destroy_wave.argtypes = [POINTER(jm_wave)]
 lib.jm_init_key_zone.argtypes = [POINTER(jm_key_zone)]
+lib.jm_zone_set_name.argtypes = [POINTER(jm_key_zone), c_char_p]
+lib.jm_zone_set_path.argtypes = [POINTER(jm_key_zone), c_char_p]
 lib.jm_new_sampler.restype = POINTER(JMSampler)
 lib.jm_destroy_sampler.argtypes = [POINTER(JMSampler)]
 lib.jm_add_zone.argtypes = [POINTER(JMSampler), POINTER(jm_key_zone)]
@@ -235,7 +241,7 @@ class MyFrame(wx.Frame):
         zone.sustain = region['ampeg_sustain'] / 100.
         zone.release = int(SAMPLE_RATE * region['ampeg_release'])
         lib.jm_add_zone(SAMPLER, byref(zone))
-        self.AddZone(zone, wav_path)
+        self.AddZone(zone)
       print "time to load sfz: %f\n" % (time.time() - t)
       sfz.close()
 
@@ -321,16 +327,17 @@ class MyFrame(wx.Frame):
     st.SetSize((64 * self.char_width, -1))
     self.zone_panel.Add(st)
 
-  def AddZone(self, zone, path):
+  def AddZone(self, zone):
     # zone removal button
     remove_zone_button = wx.Button(self.zone_panel, -1, "-")
     self.zone_panel.Add(remove_zone_button)
     self.Bind(wx.EVT_BUTTON, self.OnZoneRemove, remove_zone_button)
 
-    tc = wx.TextCtrl(self.zone_panel)
-    tc.SetValue("Zone %i" % self.zone_name_index)
-    self.zone_panel.Add(tc)
+    lib.jm_zone_set_name(byref(zone), "Zone %i" % self.zone_name_index)
     self.zone_name_index += 1
+    tc = wx.TextCtrl(self.zone_panel)
+    tc.SetValue(zone.name)
+    self.zone_panel.Add(tc)
 
     tc = jmage.ui.DragBox(0.01, 0.0, 1.0, self.zone_panel,
       fmt="%.2f", callback=ControlCallback, style=wx.TE_RIGHT)
@@ -434,7 +441,7 @@ class MyFrame(wx.Frame):
     tc.SetFont(self.font)
     self.zone_panel.Add(tc)
 
-    st = wx.StaticText(self.zone_panel, label=path)
+    st = wx.StaticText(self.zone_panel, label=zone.path)
     self.zone_panel.Add(st)
 
   def OnZoneAdd(self, e):
@@ -445,7 +452,7 @@ class MyFrame(wx.Frame):
       zone = new_zone_from_file(path)
 
       lib.jm_add_zone(SAMPLER, byref(zone))
-      self.AddZone(zone, path)
+      self.AddZone(zone)
 
     dlg.Destroy()
 
@@ -477,6 +484,7 @@ def new_zone_from_file(path):
   zone = jm_key_zone()
   lib.jm_init_key_zone(byref(zone))
 
+  lib.jm_zone_set_path(byref(zone), path)
   zone.num_channels = wav.num_channels
   zone.wave = wav.wave
 

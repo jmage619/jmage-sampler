@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <sndfile.h>
 #include <jack/jack.h>
 #include <jack/types.h>
@@ -68,6 +69,14 @@ void jm_init_key_zone(jm_key_zone* zone) {
   zone->pitch_corr = 0.0;
   zone->loop_on = 0;
   zone->crossfade = 0;
+}
+
+void jm_zone_set_name(jm_key_zone* zone, char const * name) {
+  strcpy(zone->name, name);
+}
+
+void jm_zone_set_path(jm_key_zone* zone, char const * path) {
+  strcpy(zone->path, path);
 }
 
 int jm_zone_contains(jm_key_zone const * zone, int pitch, int velocity) {
