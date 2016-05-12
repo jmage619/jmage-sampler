@@ -15,8 +15,11 @@ test_sampler : test_sampler.o libjm_sampler.so
 test_sampler.o: src/test_sampler.c src/jmage/sampler.h
 	gcc -Wall -g -Isrc -c -o $@ $<
 
-libjm_sampler.so: sampler.o components.o jmsampler.o
+libjm_sampler.so: sampler.o jmzonelist.o components.o jmsampler.o
 	$(CXX) $(LIB) $(LDFLAGS) -shared -o $@ $^
+
+jmzonelist.o : src/jmage/jmzonelist.cxx src/jmage/jmzonelist.h src/jmage/sampler.h
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -fPIC -Isrc -c -o $@ $<
 
 jmsampler.o : src/jmage/jmsampler.cxx src/jmage/jmsampler.h src/jmage/sampler.h \
 src/jmage/components.h src/jmage/collections.h
@@ -29,4 +32,4 @@ components.o : src/jmage/components.cxx src/jmage/components.h src/jmage/collect
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -fPIC -Isrc -c -o $@ $<
 
 clean:
-	rm -f test_sampler test_sampler.o libjm_sampler.so jmsampler.o sampler.o components.o python/jmage/*.pyc 
+	rm -f test_sampler test_sampler.o libjm_sampler.so jmzonelist.o jmsampler.o sampler.o components.o python/jmage/*.pyc 

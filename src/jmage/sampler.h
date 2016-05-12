@@ -60,6 +60,9 @@ typedef struct {
 //extern jm_key_zone* jm_zones;
 //extern int jm_num_zones;
 
+// opaque type for the zone list
+typedef struct JMZoneList JMZoneList;
+
 // opaque type for the sampler object
 typedef struct JMSampler JMSampler;
 
@@ -74,6 +77,18 @@ extern "C" {
   void jm_zone_set_path(jm_key_zone* zone, char const * path);
   int jm_zone_contains(jm_key_zone const * zone, int pitch, int velocity);
 
+  // wrappers for JMZoneList
+  JMZoneList* jm_new_zonelist();
+  void jm_destroy_zonelist(JMZoneList* jzl);
+  void jm_zonelist_insert(JMZoneList* jzl, int index, jm_key_zone const * zone);
+  int jm_zonelist_get(JMZoneList* jzl, int index, jm_key_zone* zone);
+  int jm_zonelist_set(JMZoneList* jzl, int index, jm_key_zone const * zone);
+  int jm_zonelist_erase(JMZoneList* jzl, int index);
+  size_t jm_zonelist_size(JMZoneList* jzl);
+  void jm_zonelist_lock(JMZoneList* jzl);
+  void jm_zonelist_unlock(JMZoneList* jzl);
+
+  // wrappers for JMSampler
   JMSampler* jm_new_sampler();
   void jm_destroy_sampler(JMSampler* jms);
 

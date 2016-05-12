@@ -10,6 +10,7 @@
 
 #include "jmage/sampler.h"
 #include "jmage/jmsampler.h"
+#include "jmage/jmzonelist.h"
 
 int jm_parse_wave(jm_wave* wav, char const * path) {
   SF_INFO sf_info;
@@ -86,6 +87,63 @@ int jm_zone_contains(jm_key_zone const * zone, int pitch, int velocity) {
   return 0;
 }
 
+// wrappers for JMZoneList
+JMZoneList* jm_new_zonelist() {
+  return new JMZoneList;
+}
+
+void jm_destroy_zonelist(JMZoneList* jzl) {
+  delete jzl;
+}
+
+void jm_zonelist_insert(JMZoneList* jzl, int index, jm_key_zone const * zone) {
+  jzl->insert(index, *zone); 
+}
+
+int jm_zonelist_get(JMZoneList* jzl, int index, jm_key_zone * zone) {
+  try {
+    *zone = jzl->get(index); 
+  }
+  catch (const std::out_of_range& oor) {
+    return -1;
+  }
+  return 0;
+}
+
+int jm_zonelist_set(JMZoneList* jzl, int index, jm_key_zone const * zone) {
+  try {
+    jzl->set(index, *zone); 
+  }
+  catch (const std::out_of_range& oor) {
+    return -1;
+  }
+  return 0;
+}
+
+int jm_zonelist_erase(JMZoneList* jzl, int index) {
+  try {
+    jzl->erase(index); 
+  }
+  catch (const std::out_of_range& oor) {
+    return -1;
+  }
+  return 0;
+}
+
+size_t jm_zonelist_size(JMZoneList* jzl) {
+  return jzl->size();
+}
+
+void jm_zonelist_lock(JMZoneList* jzl) {
+  jzl->lock();
+}
+
+void jm_zonelist_unlock(JMZoneList* jzl) {
+  jzl->unlock();
+}
+
+
+// wrappers for JMSampler
 JMSampler* jm_new_sampler() {
   try { 
     return new JMSampler();
