@@ -8,6 +8,7 @@ import termios
 import wave
 import struct
 import wx
+import jmage.interface as jm
 import jmage.ui
 import jmage.util
 
@@ -53,37 +54,6 @@ class jm_wave(Structure):
     ('has_loop', c_int)
   ]
 
-class jm_key_zone(Structure):
-  _fields_ = [('wave', POINTER(c_float)),
-    ('num_channels', c_int),
-    ('wave_length', c_int),
-    ('start', c_int),
-    ('left', c_int),
-    ('right', c_int),
-    ('low_key', c_int),
-    ('high_key', c_int),
-    ('origin', c_int),
-    ('low_vel', c_int),
-    ('high_vel', c_int),
-    ('amp', c_float),
-    ('attack', c_int),
-    ('hold', c_int),
-    ('decay', c_int),
-    ('sustain', c_float),
-    ('release', c_int),
-    ('pitch_corr', c_double),
-    ('loop_on', c_int),
-    ('crossfade', c_int),
-    ('name', c_char * PATH_MAX),
-    ('path', c_char * PATH_MAX)
-  ]
-
-class jm_msg_data(Union):
-  _fields_ = [('i', c_int)]
-
-class jm_msg(Structure):
-  _fields_ = [('type', c_int), ('data', jm_msg_data)]
-
 # imitate getch in python
 def getch():
   fd = sys.stdin.fileno()
@@ -96,21 +66,8 @@ def getch():
 lib = ctypes.cdll.LoadLibrary('libjm_sampler.so')
 lib.jm_parse_wave.argtypes = [POINTER(jm_wave), c_char_p]
 lib.jm_destroy_wave.argtypes = [POINTER(jm_wave)]
-lib.jm_init_key_zone.argtypes = [POINTER(jm_key_zone)]
-lib.jm_zone_set_name.argtypes = [POINTER(jm_key_zone), c_char_p]
-lib.jm_zone_set_path.argtypes = [POINTER(jm_key_zone), c_char_p]
-lib.jm_new_sampler.restype = POINTER(JMSampler)
-lib.jm_destroy_sampler.argtypes = [POINTER(JMSampler)]
-lib.jm_add_zone.argtypes = [POINTER(JMSampler), POINTER(jm_key_zone)]
-lib.jm_get_zone.argtypes = [POINTER(JMSampler), c_int, POINTER(jm_key_zone)]
-lib.jm_update_zone.argtypes = [POINTER(JMSampler), c_int, POINTER(jm_key_zone)]
-lib.jm_remove_zone.argtypes = [POINTER(JMSampler), c_int]
-lib.jm_num_zones.argtypes = [POINTER(JMSampler)]
-lib.jm_num_zones.restype = c_size_t
-lib.jm_send_msg.argtypes = [POINTER(JMSampler), POINTER(jm_msg)]
-lib.jm_receive_msg.argtypes = [POINTER(JMSampler), POINTER(jm_msg)]
-lib.jm_receive_msg.restype = c_int
 
+ZONE_LIST = None
 SAMPLER = None
 # this caches loaded wav files
 WAVES = {}
@@ -192,10 +149,10 @@ class MyFrame(wx.Frame):
 
   def OnVolScroll(self, e):
     level = e.GetEventObject().GetValue()
-    msg = jm_msg()
+    msg = jm.msg()
     msg.type = MT_VOLUME
     msg.data.i = level
-    lib.jm_send_msg(SAMPLER, byref(msg))
+    SAMPLER.send_msg(msg)
 
     self.output.SetValue(str(level))
 
@@ -204,10 +161,10 @@ class MyFrame(wx.Frame):
     try:
       level = int(val)
       if level >= 0 and level < VOL_STEPS:
-        msg = jm_msg()
+        msg = jm.msg()
         msg.type = MT_VOLUME
         msg.data.i = level
-        lib.jm_send_msg(SAMPLER, byref(msg))
+        SAMPLER.send_msg(msg)
         self.slider.SetValue(level)
     except ValueError:
       pass
@@ -240,7 +197,6 @@ class MyFrame(wx.Frame):
         zone.decay = int(SAMPLE_RATE * region['ampeg_decay'])
         zone.sustain = region['ampeg_sustain'] / 100.
         zone.release = int(SAMPLE_RATE * region['ampeg_release'])
-        lib.jm_add_zone(SAMPLER, byref(zone))
         self.AddZone(zone)
       print "time to load sfz: %f\n" % (time.time() - t)
       sfz.close()
@@ -328,13 +284,16 @@ class MyFrame(wx.Frame):
     self.zone_panel.Add(st)
 
   def AddZone(self, zone):
+    jm.zone_set_name(zone, "Zone %i" % self.zone_name_index)
+    self.zone_name_index += 1
+
+    ZONE_LIST.append(zone)
+    
     # zone removal button
     remove_zone_button = wx.Button(self.zone_panel, -1, "-")
     self.zone_panel.Add(remove_zone_button)
     self.Bind(wx.EVT_BUTTON, self.OnZoneRemove, remove_zone_button)
 
-    lib.jm_zone_set_name(byref(zone), "Zone %i" % self.zone_name_index)
-    self.zone_name_index += 1
     tc = wx.TextCtrl(self.zone_panel)
     tc.SetValue(zone.name)
     self.zone_panel.Add(tc)
@@ -451,7 +410,6 @@ class MyFrame(wx.Frame):
 
       zone = new_zone_from_file(path)
 
-      lib.jm_add_zone(SAMPLER, byref(zone))
       self.AddZone(zone)
 
     dlg.Destroy()
@@ -481,10 +439,10 @@ def new_zone_from_file(path):
     wav = load_wave(path)
     WAVES[path] = wav
 
-  zone = jm_key_zone()
-  lib.jm_init_key_zone(byref(zone))
+  zone = jm.key_zone()
+  jm.init_key_zone(zone)
 
-  lib.jm_zone_set_path(byref(zone), path)
+  jm.zone_set_path(zone, path)
   zone.num_channels = wav.num_channels
   zone.wave = wav.wave
 
@@ -502,8 +460,7 @@ def ControlCallback(win):
   index = grid.GetIndex(win)
   # first index of grid is header
   zone_index = index[0] - 1
-  zone = jm_key_zone()
-  lib.jm_get_zone(SAMPLER, zone_index, byref(zone))
+  zone = ZONE_LIST[zone_index]
 
   if index[1] == 2:
     zone.amp = win.GetValue()
@@ -540,25 +497,27 @@ def ControlCallback(win):
   elif index[1] == 18:
     zone.release = int(SAMPLE_RATE * win.GetValue())
 
-  lib.jm_update_zone(SAMPLER, zone_index, byref(zone))
+  ZONE_LIST[zone_index] = zone
   
 if __name__ == '__main__':
-  SAMPLER = lib.jm_new_sampler()
+  ZONE_LIST = jm.ZoneList()
+  SAMPLER = jm.Sampler(ZONE_LIST)
 
   level = VOL_STEPS - 1
 
-  msg = jm_msg()
+  msg = jm.msg()
   msg.type = MT_VOLUME
   
   msg.data.i = level
-  lib.jm_send_msg(SAMPLER, byref(msg))
+  SAMPLER.send_msg(msg)
 
   app = wx.App()
 
   frame = MyFrame(None, size=(490,400))
 
   app.MainLoop()
-  lib.jm_destroy_sampler(SAMPLER)
+  SAMPLER.destroy()
+  ZONE_LIST.destroy()
 
   for wav in WAVES:
     lib.jm_destroy_wave(byref(WAVES[wav]))

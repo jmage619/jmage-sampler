@@ -13,6 +13,8 @@ class JMZoneList {
   public:
     JMZoneList();
     ~JMZoneList();
+    std::vector<jm_key_zone>::iterator begin();
+    std::vector<jm_key_zone>::iterator end();
     void insert(int index, const jm_key_zone& zone);
     const jm_key_zone& get(int index);
     void set(int index, const jm_key_zone& zone);

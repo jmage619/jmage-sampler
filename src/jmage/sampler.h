@@ -89,14 +89,8 @@ extern "C" {
   void jm_zonelist_unlock(JMZoneList* jzl);
 
   // wrappers for JMSampler
-  JMSampler* jm_new_sampler();
+  JMSampler* jm_new_sampler(JMZoneList* zones);
   void jm_destroy_sampler(JMSampler* jms);
-
-  void jm_add_zone(JMSampler* jms, jm_key_zone const * zone);
-  void jm_get_zone(JMSampler* jms, int index, jm_key_zone* zone);
-  void jm_update_zone(JMSampler* jms, int index, jm_key_zone const * zone);
-  void jm_remove_zone(JMSampler* jms, int index);
-  size_t jm_num_zones(JMSampler* jms);
 
   void jm_send_msg(JMSampler* jms, jm_msg const * msg);
   int jm_receive_msg(JMSampler* jms, jm_msg* msg);

@@ -12,6 +12,14 @@ JMZoneList::~JMZoneList() {
   pthread_mutex_destroy(&mutex);
 }
 
+std::vector<jm_key_zone>::iterator JMZoneList::begin() {
+  return values.begin();
+}
+
+std::vector<jm_key_zone>::iterator JMZoneList::end() {
+  return values.end();
+}
+
 void JMZoneList::insert(int index, const jm_key_zone& zone) {
   std::vector<jm_key_zone>::iterator it = values.begin() + index;
   // if index is beyond the end, just put the item at the end

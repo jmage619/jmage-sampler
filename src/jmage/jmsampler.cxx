@@ -12,6 +12,7 @@
 
 #include "jmage/jmsampler.h"
 #include "jmage/sampler.h"
+#include "jmage/jmzonelist.h"
 #include "jmage/components.h"
 #include "jmage/collections.h"
 
@@ -22,10 +23,11 @@ void JMSampler::init_amp(JMSampler* jms) {
   jms->amp[0] = 0.0f;
 }
 
-JMSampler::JMSampler():
+JMSampler::JMSampler(JMZoneList* zones):
     msg_q_in(MSG_Q_SIZE),
     msg_q_out(MSG_Q_SIZE),
     level(VOL_STEPS - 1),
+    zones(zones),
     sustain_on(false),
     sound_gens(POLYPHONY),
     playhead_pool(POLYPHONY),
@@ -33,13 +35,9 @@ JMSampler::JMSampler():
   // init amplitude array
   init_amp(this);
 
-  // init zone map lock
-  pthread_mutex_init(&zone_lock, NULL);
-
   // init jack
   jack_status_t status; 
   if ((client = jack_client_open("ghetto_sampler", JackNullOption, &status)) == NULL) {
-    pthread_mutex_destroy(&zone_lock);
     throw std::runtime_error("failed to open jack client");
   }
 
@@ -59,7 +57,6 @@ JMSampler::JMSampler():
     jack_port_unregister(client, output_port1);
     jack_port_unregister(client, output_port2);
     jack_client_close(client);
-    pthread_mutex_destroy(&zone_lock);
     throw std::runtime_error("cannot activate jack client");
   }
 }
@@ -86,39 +83,6 @@ JMSampler::~JMSampler() {
   while (amp_gen_pool.pop(ag)) {
     delete ag;
   }
-  pthread_mutex_destroy(&zone_lock);
-}
-
-void JMSampler::add_zone(const jm_key_zone& zone) {
-  pthread_mutex_lock(&zone_lock);
-  zones.push_back(zone);
-  pthread_mutex_unlock(&zone_lock);
-}
-
-const jm_key_zone& JMSampler::get_zone(int index) {
-  pthread_mutex_lock(&zone_lock);
-  jm_key_zone& zone = zones[index];
-  pthread_mutex_unlock(&zone_lock);
-  return zone;
-}
-
-void JMSampler::update_zone(int index, const jm_key_zone& zone) {
-  pthread_mutex_lock(&zone_lock);
-  zones[index] = zone;
-  pthread_mutex_unlock(&zone_lock);
-}
-
-void JMSampler::remove_zone(int index) {
-  pthread_mutex_lock(&zone_lock);
-  zones.erase(zones.begin() + index);
-  pthread_mutex_unlock(&zone_lock);
-}
-
-size_t JMSampler::num_zones() {
-  pthread_mutex_lock(&zone_lock);
-  size_t size = zones.size();
-  pthread_mutex_unlock(&zone_lock);
-  return size;
 }
 
 void JMSampler::send_msg(const jm_msg& msg) {
@@ -175,8 +139,8 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
           // we don't expect a musician to tweak zones during an actual take!
           // this allows for demoing zone changes in thread safe way in *almost* real time
           // we can safely assume this mutex will be unlocked in a real take
-          pthread_mutex_lock(&jms->zone_lock);
-          for (it = jms->zones.begin(); it != jms->zones.end(); ++it) {
+          jms->zones->lock();
+          for (it = jms->zones->begin(); it != jms->zones->end(); ++it) {
             if (jm_zone_contains(&*it, event.buffer[1], event.buffer[2])) {
               printf("sg num: %li\n", jms->sound_gens.size());
               if (jms->sound_gens.size() >= POLYPHONY) {
@@ -199,7 +163,7 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
               printf("event: note on;  note: %i; vel: %i\n", event.buffer[1], event.buffer[2]);
             }
           }
-          pthread_mutex_unlock(&jms->zone_lock);
+          jms->zones->unlock();
         }
         else if ((event.buffer[0] & 0xf0) == 0x80) {
           printf("event: note off; note: %i\n", event.buffer[1]);

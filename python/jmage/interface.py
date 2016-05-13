@@ -10,6 +10,7 @@ from ctypes import c_float
 from ctypes import c_double
 from ctypes import c_size_t
 from ctypes import Structure
+from ctypes import Union
 
 PATH_MAX = 4096
 
@@ -105,3 +106,32 @@ class ZoneList(collections.MutableSequence):
 
   def __len__(self):
     return lib.jm_zonelist_size(self.list)
+
+class _Sampler(Structure):
+  pass
+
+class msg_data(Union):
+  _fields_ = [('i', c_int)]
+
+class msg(Structure):
+  _fields_ = [('type', c_int), ('data', msg_data)]
+
+lib.jm_new_sampler.argtypes = [POINTER(_ZoneList)]
+lib.jm_new_sampler.restype = POINTER(_Sampler)
+lib.jm_destroy_sampler.argtypes = [POINTER(_Sampler)]
+lib.jm_send_msg.argtypes = [POINTER(_Sampler), POINTER(msg)]
+lib.jm_receive_msg.argtypes = [POINTER(_Sampler), POINTER(msg)]
+lib.jm_receive_msg.restype = c_int
+
+class Sampler(object):
+  def __init__(self, zone_list):
+    self.sampler = lib.jm_new_sampler(zone_list.list)
+
+  def destroy(self):
+    lib.jm_destroy_sampler(self.sampler)
+
+  def send_msg(self, msg):
+    lib.jm_send_msg(self.sampler, byref(msg))
+
+  def receive_msg(self, msg):
+    lib.jm_receive_msg(self.sampler, byref(msg))
