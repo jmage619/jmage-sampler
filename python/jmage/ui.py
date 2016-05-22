@@ -141,6 +141,9 @@ class StretchRow(wx.PyPanel):
     self.cur_pos += win.GetSize().width + self.border
     self.Fit()
 
+  def Index(self, win):
+    return self.windows.index(win)
+
   def GetWindows(self):
     return self.windows
 
@@ -559,17 +562,17 @@ class Grid(wx.Panel):
     ### deal with virtical resize
     if new_size.height > self.cur_size.height:
       # subtract 1 to ignore header
-      for data_row in self.data[self.cur_pos + self.num_vis_rows - 1:]:
+      for i in range(self.cur_pos + self.num_vis_rows - 1, len(self.data)):
         # ceil ensures we count partially visible windows
         if self.num_vis_rows >= math.ceil(new_size.height / float(self.row_height)):
           break
 
-        self.AddRow(data_row)
+        self.AddRow(self.data[i])
 
     elif new_size.height < self.cur_size.height:
       # decreasing size always moves scrollbar from max pos
       self.scroll_y_maxed = False
-      while self.num_vis_rows > math.ceil(new_size.height / float(self.row_height)):
+      while self.num_vis_rows > 1 and self.num_vis_rows > math.ceil(new_size.height / float(self.row_height)):
         for p in self.panels:
           p.RemoveLast()
 
