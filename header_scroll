@@ -4,11 +4,11 @@ import wx
 import jmage.ui
 
 class LPanel(jmage.ui.GridPanel):
-  def CreateHeader(self, data_row):
+  def CreateHeader(self):
     header = self.NewHeader()
     for i in range(3): 
       tc = wx.TextCtrl(header)
-      tc.SetValue(data_row[i])
+      tc.SetValue("head %i" % i)
       header.Add(tc)
 
     return header
@@ -35,11 +35,11 @@ class LPanel(jmage.ui.GridPanel):
     self.GetParent().Remove(i)
 
 class RPanel(jmage.ui.GridPanel):
-  def CreateHeader(self, data_row):
+  def CreateHeader(self):
     header = self.NewHeader()
     for i in range(2, 8): 
       tc = wx.TextCtrl(header)
-      tc.SetValue(data_row[i])
+      tc.SetValue("head %i" % i)
       header.Add(tc)
 
     return header
@@ -59,12 +59,8 @@ class RPanel(jmage.ui.GridPanel):
       windows[j].SetValue(data_row[j + 2])
 
 data = []
-head = []
-for i in range(8):
-  head.append("head %i" % i)
-data.append(head)
 
-for i in range(1,8):
+for i in range(0,8):
 #for i in range(1,100):
   row = []
   for j in range(8):
@@ -81,6 +77,7 @@ class MyFrame(wx.Frame):
     self.grid.Add(grid_pane)
     grid_pane = RPanel(self.grid)
     self.grid.Add(grid_pane)
+    self.grid.AddHeader()
     self.grid.RegisterData(data)
 
     self.Show()
