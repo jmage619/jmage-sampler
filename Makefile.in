@@ -7,7 +7,8 @@ CXXFLAGS := @CXXFLAGS@
 LIB = -lm -ljack -lsndfile -lsamplerate
 CXX = g++
 
-all : test_sampler
+#all : test_sampler
+all : libjm_sampler.so
 
 test_sampler : test_sampler.o libjm_sampler.so
 	$(CXX) $(LIB) $(LDFLAGS) -L. -ljm_sampler -o $@ $<
