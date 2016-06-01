@@ -89,7 +89,7 @@ class LGPanel(jmage.ui.GridPanel):
 
     return header
 
-  def CreateRow(self, zone):
+  def CreateRow(self):
     row = self.NewRow()
     # zone removal button
     remove_zone_button = wx.Button(row, -1, "-")
@@ -97,7 +97,6 @@ class LGPanel(jmage.ui.GridPanel):
     self.Bind(wx.EVT_BUTTON, self.OnZoneRemove, remove_zone_button)
 
     tc = wx.TextCtrl(row, style=wx.TE_PROCESS_ENTER)
-    tc.SetValue(zone.name)
     row.Add(tc)
     self.Bind(wx.EVT_TEXT_ENTER, self.OnControlEvent, tc)
 
@@ -202,111 +201,93 @@ class RGPanel(jmage.ui.GridPanel):
 
     return header
 
-  def CreateRow(self, zone):
+  def CreateRow(self):
     row = self.NewRow()
-    tc = jmage.ui.DragBox(0.01, 0.0, 1.0, row,
+    tc = jmage.ui.DragBox(0.01, 0.0, row, max=1.0,
       fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(zone.amp)
     tc.SetFont(self.font)
     row.Add(tc)
 
     cb = jmage.ui.NoteChoice(row)
-    cb.Select(zone.origin)
     cb.SetFont(self.font)
     row.Add(cb)
     self.Bind(wx.EVT_CHOICE, self.OnControlEvent, cb)
 
     cb = jmage.ui.NoteChoice(row)
-    cb.Select(zone.low_key)
     cb.SetFont(self.font)
     row.Add(cb)
     self.Bind(wx.EVT_CHOICE, self.OnControlEvent, cb)
 
     cb = jmage.ui.NoteChoice(row)
-    cb.Select(zone.high_key)
     cb.SetFont(self.font)
     row.Add(cb)
     self.Bind(wx.EVT_CHOICE, self.OnControlEvent, cb)
 
-    tc = jmage.ui.DragBox(1, 0, 127, row,
+    tc = jmage.ui.DragBox(1, 0, row, max=127,
       callback=self.ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(zone.low_vel)
     tc.SetFont(self.font)
     row.Add(tc)
 
-    tc = jmage.ui.DragBox(1, 0, 127, row,
+    tc = jmage.ui.DragBox(1, 0, row, max=127,
       callback=self.ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(zone.high_vel)
     tc.SetFont(self.font)
     row.Add(tc)
 
-    tc = jmage.ui.DragBox(0.01, -0.5, 0.5, row,
+    tc = jmage.ui.DragBox(0.01, -0.5, row, max=0.5,
       fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(zone.pitch_corr)
     tc.SetFont(self.font)
     row.Add(tc)
 
-    wav_end = float(zone.right) / SAMPLE_RATE
-    tc = jmage.ui.DragBox(0.01, 0.0, wav_end, row,
+    tc = jmage.ui.DragBox(0.01, 0.0, row,
       fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(float(zone.start) / SAMPLE_RATE)
     tc.SetFont(self.font)
     row.Add(tc)
 
-    tc = jmage.ui.DragBox(0.01, 0.0, wav_end, row,
+    tc = jmage.ui.DragBox(0.01, 0.0, row,
       fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(float(zone.left) / SAMPLE_RATE)
     tc.SetFont(self.font)
     row.Add(tc)
 
-    tc = jmage.ui.DragBox(0.01, 0.0, wav_end, row,
+    tc = jmage.ui.DragBox(0.01, 0.0, row,
       fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(wav_end)
     tc.SetFont(self.font)
     row.Add(tc)
 
     cb = wx.CheckBox(row)
-    cb.SetValue(zone.loop_on)
     row.Add(cb)
     self.Bind(wx.EVT_CHECKBOX, self.OnControlEvent, cb)
 
-    tc = jmage.ui.DragBox(1, 0, 1000, row,
+    tc = jmage.ui.DragBox(1, 0, row, max=1000,
       callback=self.ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(int(float(zone.crossfade) / SAMPLE_RATE * 1000))
     tc.SetFont(self.font)
     row.Add(tc)
 
-    tc = jmage.ui.DragBox(0.01, 0.0, wav_end, row,
+    tc = jmage.ui.DragBox(0.01, 0.0, row,
       fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(float(zone.attack) / SAMPLE_RATE)
     tc.SetFont(self.font)
     row.Add(tc)
 
-    tc = jmage.ui.DragBox(0.01, 0.0, wav_end, row,
+    tc = jmage.ui.DragBox(0.01, 0.0, row,
       fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(float(zone.hold) / SAMPLE_RATE)
     tc.SetFont(self.font)
     row.Add(tc)
 
-    tc = jmage.ui.DragBox(0.01, 0.0, wav_end, row,
+    tc = jmage.ui.DragBox(0.01, 0.0, row,
       fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(float(zone.decay) / SAMPLE_RATE)
     tc.SetFont(self.font)
     row.Add(tc)
 
-    tc = jmage.ui.DragBox(0.01, 0.0, 1.0, row,
+    tc = jmage.ui.DragBox(0.01, 0.0, row, max=1.0,
       fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(zone.sustain)
     tc.SetFont(self.font)
     row.Add(tc)
 
-    tc = jmage.ui.DragBox(0.01, 0.0, wav_end, row,
+    tc = jmage.ui.DragBox(0.01, 0.0, row,
       fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
-    tc.ChangeValue(float(zone.release) / SAMPLE_RATE)
     tc.SetFont(self.font)
     row.Add(tc)
 
-    st = wx.StaticText(row, label=zone.path)
+    st = wx.StaticText(row)
     row.Add(st)
 
     return row
@@ -320,15 +301,27 @@ class RGPanel(jmage.ui.GridPanel):
     windows[4].ChangeValue(zone.low_vel)
     windows[5].ChangeValue(zone.high_vel)
     windows[6].ChangeValue(zone.pitch_corr)
+    # zone.right makes no sense it can be changed by user
+    # this should be revisited anyway is there a better way to define
+    # max time values?
+    #wav_end = float(zone.right) / SAMPLE_RATE
+    wav_end = float(zone.wave_length) / SAMPLE_RATE
+    windows[7].SetMax(wav_end)
     windows[7].ChangeValue(float(zone.start) / SAMPLE_RATE)
+    windows[8].SetMax(wav_end)
     windows[8].ChangeValue(float(zone.left) / SAMPLE_RATE)
+    windows[9].SetMax(wav_end)
     windows[9].ChangeValue(float(zone.right) / SAMPLE_RATE)
     windows[10].SetValue(zone.loop_on)
     windows[11].ChangeValue(int(float(zone.crossfade) / SAMPLE_RATE * 1000))
+    windows[12].SetMax(wav_end)
     windows[12].ChangeValue(float(zone.attack) / SAMPLE_RATE)
+    windows[13].SetMax(wav_end)
     windows[13].ChangeValue(float(zone.hold) / SAMPLE_RATE)
+    windows[14].SetMax(wav_end)
     windows[14].ChangeValue(float(zone.decay) / SAMPLE_RATE)
     windows[15].ChangeValue(zone.sustain)
+    windows[16].SetMax(wav_end)
     windows[16].ChangeValue(float(zone.release) / SAMPLE_RATE)
     windows[17].SetLabel(zone.path)
 

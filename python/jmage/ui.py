@@ -26,30 +26,16 @@ class NoteChoice(wx.Choice):
 
 
 class DragBox(wx.TextCtrl):
-  def __init__(self, step, min, max, *args, **kwargs):
+  def __init__(self, step, min, *args, **kwargs):
+    # default max to min if not passed in
+    self.max = kwargs.pop('max', min)
     self.fmt = kwargs.pop('fmt', "%i")
     self.callback = kwargs.pop('callback', None)
     super(DragBox, self).__init__(*args, **kwargs)
 
     self.step = step
     self.min = min
-    self.max = max
-    cur_step = min
-
-    self.values = []
-    # epsilon here if we go over due to float err
-    # no good reason yet for picking this value
-    # other than music controls don't usually go beyond
-    # milli range
-    while cur_step <= max + 0.00001:
-      self.values.append(cur_step)
-      cur_step += step
-    # put in the exact max
-    # better to have near duplicates and the exact max
-    # near top than never being able to reach it
-    if self.values[len(self.values) - 1] < max:
-      self.values.append(max)
-
+    self.InitValues()
     self.index = 0
 
     self.mouse_down = False
@@ -59,6 +45,30 @@ class DragBox(wx.TextCtrl):
     self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseDown)
     self.Bind(wx.EVT_LEFT_UP, self.OnMouseUp)
     self.Bind(wx.EVT_MOTION, self.OnMouseMove)
+
+  def InitValues(self):
+    cur_step = self.min
+    self.values = []
+    # epsilon here if we go over due to float err
+    # no good reason yet for picking this value
+    # other than music controls don't usually go beyond
+    # milli range
+    while cur_step <= self.max + 0.00001:
+      self.values.append(cur_step)
+      cur_step += self.step
+    # put in the exact max
+    # better to have near duplicates and the exact max
+    # near top than never being able to reach it
+    if self.values[len(self.values) - 1] < self.max:
+      self.values.append(self.max)
+
+  def SetMax(self, max):
+    self.max = max
+    # not a good idea to have to rebuild this table
+    # every time we update max. should eventually
+    # consider keeping the table fixed and only updating scale factors
+    # to modify set / get range
+    self.InitValues()
 
   def GetValue(self):
     return self.values[self.index]
@@ -271,18 +281,21 @@ class Grid(wx.Panel):
 
     self.num_vis_rows += 1
 
-  def AddRow(self, data_row):
-    win = self.panels[0].CreateRow(data_row)
+    for i in range(16):
+      self.AddRow()
+
+  def AddRow(self):
+    win = self.panels[0].CreateRow()
+    win.Hide()
     self.panels[0].Add(win)
 
-    win = self.panels[1].CreateRow(data_row)
+    win = self.panels[1].CreateRow()
+    win.Hide()
     self.panels[1].Add(win)
     # correct for x scroll only for panel 1
     # can't use Move since it doesn't respect -1 coord
     size = win.GetSize()
     win.SetDimensions(- self.scroll_x, win.GetPosition()[1], size.width, size.height, wx.SIZE_ALLOW_MINUS_ONE)
-
-    self.num_vis_rows += 1
 
   def RegisterData(self, data):
     self.data = data
@@ -291,12 +304,15 @@ class Grid(wx.Panel):
       return
 
     view_height = self.GetClientSize().height
-    for data_row in data:
+    for i in range(len(data)):
       # ceil ensures we count partially visible rows
       if self.num_vis_rows >= math.ceil(view_height / float(self.row_height)):
         return
-      print "adding row: %s" % data[0]
-      self.AddRow(data_row)
+      for p in self.panels:
+        # add 1 to skip header
+        p.UpdateRow(i + 1, data[i])
+        p.GetRow(i + 1).Show()
+      self.num_vis_rows += 1
 
   def Append(self, data_row):
     self.data.append(data_row)
@@ -304,7 +320,10 @@ class Grid(wx.Panel):
     view_height = self.GetClientSize().height
     # ceil ensures we count partially visible windows
     if self.num_vis_rows < math.ceil(view_height / float(self.row_height)):
-      self.AddRow(data_row)
+      for p in self.panels:
+        p.UpdateRow(self.num_vis_rows, data_row)
+        p.GetRow(self.num_vis_rows).Show()
+      self.num_vis_rows += 1
 
     # no matter what virtual size increases causing scroll pos to move up
     self.scroll_y_maxed = False
@@ -315,8 +334,6 @@ class Grid(wx.Panel):
   def Remove(self, i):
     self.data.pop(i)
     # corner case, if elements are still available from top, just rotate
-    #if self.cur_pos > 0 and self.num_vis_rows <= len(self.data):
-    # if cur_pos > 0 isn't self.data alwasy at least 1 more than num_vis??
     if self.cur_pos > 0:
       for p in self.panels:
         p.ScrollWindow(0, - self.row_height)
@@ -328,7 +345,7 @@ class Grid(wx.Panel):
     # subtract 1 since num_vis_rows includes header 
     elif self.cur_pos + self.num_vis_rows - 1 > len(self.data):
       for p in self.panels:
-        p.RemoveLast()
+        p.GetRow(self.num_vis_rows - 1).Hide()
       self.num_vis_rows -= 1
 
       self.scroll_y_maxed = True
@@ -364,19 +381,21 @@ class Grid(wx.Panel):
         #  remove last element when hit max scroll
         if self.scroll_y_maxed:
           for p in self.panels:
-            p.RemoveLast()
+            p.GetRow(self.num_vis_rows - 1).Hide()
           self.num_vis_rows -= 1
 
         # leaving max scroll pos, re-add last element
         elif self.cur_pos == max_pos and num_steps < 0:
-          self.AddRow(self.data[len(self.data) - 1])
+          for p in self.panels:
+            p.UpdateRow(self.num_vis_rows, self.data[len(self.data) - 1])
+            p.GetRow(self.num_vis_rows).Show()
+          self.num_vis_rows += 1
 
       dy = self.row_height * num_steps
       for p in self.panels:
         p.ScrollWindow(0, dy)
 
       self.cur_pos = pos
-    #self.scroll_y = new_y
 
   def OnScroll(self, e):
     if e.GetOrientation() == wx.HORIZONTAL:
@@ -420,14 +439,17 @@ class Grid(wx.Panel):
         if self.num_vis_rows >= math.ceil(new_size.height / float(self.row_height)):
           break
 
-        self.AddRow(self.data[i])
+        for p in self.panels:
+          p.UpdateRow(self.num_vis_rows, self.data[i])
+          p.GetRow(self.num_vis_rows).Show()
+        self.num_vis_rows += 1
 
     elif new_size.height < self.cur_size.height:
       # decreasing size always moves scrollbar from max pos
       self.scroll_y_maxed = False
       while self.num_vis_rows > 1 and self.num_vis_rows > math.ceil(new_size.height / float(self.row_height)):
         for p in self.panels:
-          p.RemoveLast()
+          p.GetRow(self.num_vis_rows - 1).Hide()
 
         self.num_vis_rows -= 1
 
@@ -499,6 +521,9 @@ class GridPanel(wx.Panel):
   def UpdateRow(self, i, data_row):
     pass
 
+  def GetRow(self, i):
+    return self.rows[i]
+
   def NewHeader(self):
     self.header = StretchRow(self, stretch_callback=self.GetParent().OnColStretch)
     self.header.EnableDrag()
@@ -516,8 +541,6 @@ class GridPanel(wx.Panel):
 
   def RemoveLast(self):
     self.DestroyRow(len(self.rows) - 1)
-    #win = self.rows.pop()
-    #win.Destroy()
 
   def Index(self, win):
     # subtract 1 to ignore header
@@ -532,7 +555,7 @@ class GridPanel(wx.Panel):
       return
 
     # skip first element it's the header
-    for i in range(1, len(self.rows)):
+    for i in range(1, self.GetParent().num_vis_rows):
       # parent cur_pos isn't updated yet, so include iterations
       # subtract 1 since header makes ith window correspond to i - 1 data el
       self.UpdateRow(i, self.GetParent().data[self.GetParent().cur_pos - 1 + iterations + i])
