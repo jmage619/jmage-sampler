@@ -371,38 +371,55 @@ class RGPanel(jmage.ui.GridPanel):
 
     col_index = row.Index(win)
 
+    # amp
     if col_index == 0:
       zone.amp = win.GetValue()
+    # origin
     elif col_index == 1:
       zone.origin = win.GetSelection()
+    # lower
     elif col_index == 2:
       zone.low_key = win.GetSelection()
+    # upper
     elif col_index == 3:
       zone.high_key = win.GetSelection()
+    # lo vel
     elif col_index == 4:
       zone.low_vel = int(win.GetValue())
+    # hi vel
     elif col_index == 5:
       zone.high_vel = int(win.GetValue())
+    # pitch
     elif col_index == 6:
       zone.pitch_corr = win.GetValue()
+    # start
     elif col_index == 7:
       zone.start = int(SAMPLE_RATE * win.GetValue())
+    # left
     elif col_index == 8:
       zone.left = int(SAMPLE_RATE * win.GetValue())
+    # right
     elif col_index == 9:
       zone.right = int(SAMPLE_RATE * win.GetValue())
+    # loop
     elif col_index == 10:
       zone.loop_on = int(win.GetValue())
+    # cf
     elif col_index == 11:
       zone.crossfade = int(SAMPLE_RATE * win.GetValue() / 1000.)
+    # attack
     elif col_index == 12:
       zone.attack = int(SAMPLE_RATE * win.GetValue())
+    # hold
     elif col_index == 13:
       zone.hold = int(SAMPLE_RATE * win.GetValue())
+    # decay
     elif col_index == 14:
       zone.decay = int(SAMPLE_RATE * win.GetValue())
+    # sustain
     if col_index == 15:
       zone.sustain = win.GetValue()
+    # release
     elif col_index == 16:
       zone.release = int(SAMPLE_RATE * win.GetValue())
 
