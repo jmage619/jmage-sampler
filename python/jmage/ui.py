@@ -2,28 +2,28 @@ import collections
 import wx
 import math
 
+NOTES = []
+for i in range(-1,10):
+  NOTES.append("%iC" % i)
+  NOTES.append("%iC#" % i)
+  NOTES.append("%iD" % i)
+  NOTES.append("%iD#" % i)
+  NOTES.append("%iE" % i)
+  NOTES.append("%iF" % i)
+  NOTES.append("%iF#" % i)
+  NOTES.append("%iG" % i)
+  if i == 9:
+    break
+  NOTES.append("%iG#" % i)
+  NOTES.append("%iA" % i)
+  NOTES.append("%iA#" % i)
+  NOTES.append("%iB" % i)
+
 class NoteChoice(wx.Choice):
   def __init__(self, *args, **kwargs):
-    notes = []
-    for i in range(-1,10):
-      notes.append("%iC" % i)
-      notes.append("%iC#" % i)
-      notes.append("%iD" % i)
-      notes.append("%iD#" % i)
-      notes.append("%iE" % i)
-      notes.append("%iF" % i)
-      notes.append("%iF#" % i)
-      notes.append("%iG" % i)
-      if i == 9:
-        break
-      notes.append("%iG#" % i)
-      notes.append("%iA" % i)
-      notes.append("%iA#" % i)
-      notes.append("%iB" % i)
 
-    super(NoteChoice, self).__init__(*args, choices=notes, **kwargs)
+    super(NoteChoice, self).__init__(*args, choices=NOTES, **kwargs)
     self.Select(36)
-
 
 class DragBox(wx.TextCtrl):
   def __init__(self, *args, **kwargs):
