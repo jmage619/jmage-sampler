@@ -26,16 +26,15 @@ class NoteChoice(wx.Choice):
 
 
 class DragBox(wx.TextCtrl):
-  def __init__(self, step, min, *args, **kwargs):
+  def __init__(self, *args, **kwargs):
     # default max to min if not passed in
-    self.max = kwargs.pop('max', min)
+    self.min = kwargs.pop('min', 0.0)
+    self.max = kwargs.pop('max', 100.0)
+    self.steps = kwargs.pop('steps', 101)
     self.fmt = kwargs.pop('fmt', "%i")
     self.callback = kwargs.pop('callback', None)
     super(DragBox, self).__init__(*args, **kwargs)
 
-    self.step = step
-    self.min = min
-    self.InitValues()
     self.index = 0
 
     self.mouse_down = False
@@ -46,41 +45,19 @@ class DragBox(wx.TextCtrl):
     self.Bind(wx.EVT_LEFT_UP, self.OnMouseUp)
     self.Bind(wx.EVT_MOTION, self.OnMouseMove)
 
-  def InitValues(self):
-    cur_step = self.min
-    self.values = []
-    # epsilon here if we go over due to float err
-    # no good reason yet for picking this value
-    # other than music controls don't usually go beyond
-    # milli range
-    while cur_step <= self.max + 0.00001:
-      self.values.append(cur_step)
-      cur_step += self.step
-    # put in the exact max
-    # better to have near duplicates and the exact max
-    # near top than never being able to reach it
-    if self.values[len(self.values) - 1] < self.max:
-      self.values.append(self.max)
-
-  def SetMax(self, max):
-    self.max = max
-    # not a good idea to have to rebuild this table
-    # every time we update max. should eventually
-    # consider keeping the table fixed and only updating scale factors
-    # to modify set / get range
-    self.InitValues()
-
   def GetValue(self):
-    return self.values[self.index]
+    return (self.max - self.min) / (self.steps - 1) *  self.index + self.min
 
   def ChangeValue(self, value):
     try:
       if value < self.min:
-        value = self.min
+        self.index = 0
       elif value > self.max:
-        value = self.max
-      self.index = int((value - self.min) * 1 / self.step)
-      super(DragBox, self).ChangeValue(self.fmt % self.values[self.index])
+        self.index = self.steps - 1
+      # 0.05 is epsilon to deal with truncation errors
+      else:
+        self.index = int((self.steps - 1) * (value - self.min) / (self.max - self.min) + 0.05)
+      super(DragBox, self).ChangeValue(self.fmt % self.GetValue())
     except:
       pass
 
@@ -92,7 +69,6 @@ class DragBox(wx.TextCtrl):
 
   def OnMouseUp(self, e):
     self.mouse_down = False
-    #print e.GetPosition()
     e.Skip()
 
   def OnMouseMove(self, e):
@@ -100,11 +76,11 @@ class DragBox(wx.TextCtrl):
       index = self.down_index + self.down_y - e.GetY()
       if index < 0:
         self.index = 0
-      elif index >= len(self.values):
-        self.index = len(self.values) - 1
+      elif index >= self.steps:
+        self.index = self.steps - 1
       else:
         self.index = index
-      super(DragBox, self).ChangeValue(self.fmt % self.values[self.index])
+      super(DragBox, self).ChangeValue(self.fmt % self.GetValue())
       if self.callback is not None:
         self.callback(self)
     #e.Skip()
