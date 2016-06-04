@@ -277,19 +277,19 @@ class RGPanel(jmage.ui.GridPanel):
     row.Add(tc)
 
     # attack
-    tc = jmage.ui.DragBox(row, min=0.0,
+    tc = jmage.ui.DragBox(row, min=0.0, max=2.0,
       fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
     tc.SetFont(self.font)
     row.Add(tc)
 
     # hold
-    tc = jmage.ui.DragBox(row, min=0.0,
+    tc = jmage.ui.DragBox(row, min=0.0, max=2.0,
       fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
     tc.SetFont(self.font)
     row.Add(tc)
 
     # decay
-    tc = jmage.ui.DragBox(row, min=0.0,
+    tc = jmage.ui.DragBox(row, min=0.0, max=2.0,
       fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
     tc.SetFont(self.font)
     row.Add(tc)
@@ -301,7 +301,7 @@ class RGPanel(jmage.ui.GridPanel):
     row.Add(tc)
 
     # release
-    tc = jmage.ui.DragBox(row, min=0.0,
+    tc = jmage.ui.DragBox(row, min=0.0, max=2.0,
       fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
     tc.SetFont(self.font)
     row.Add(tc)
@@ -347,18 +347,14 @@ class RGPanel(jmage.ui.GridPanel):
     # cf
     windows[11].ChangeValue(int(float(zone.crossfade) / SAMPLE_RATE * 1000))
     # attack
-    windows[12].max = wav_end
     windows[12].ChangeValue(float(zone.attack) / SAMPLE_RATE)
     # hold
-    windows[13].max = wav_end
     windows[13].ChangeValue(float(zone.hold) / SAMPLE_RATE)
     # decay
-    windows[14].max = wav_end
     windows[14].ChangeValue(float(zone.decay) / SAMPLE_RATE)
     # sustain
     windows[15].ChangeValue(zone.sustain)
     # release
-    windows[16].max = wav_end
     windows[16].ChangeValue(float(zone.release) / SAMPLE_RATE)
     # path
     windows[17].SetLabel(zone.path)
