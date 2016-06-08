@@ -536,6 +536,29 @@ class MyFrame(wx.Frame):
     if dlg.ShowModal() == wx.ID_OK:
       path = dlg.GetPath()
       print path
+
+      sfz = jmage.util.SFZ()
+
+      for zone in ZONE_LIST:
+        region = {}
+        region['sample'] = os.path.basename(zone.path)
+        region['lokey'] = zone.low_key
+        region['hikey'] = zone.high_key
+        region['pitch_keycenter'] = zone.origin
+        region['lovel'] = zone.low_vel
+        region['hivel'] = zone.high_vel
+        if zone.loop_on:
+          region['loop_mode'] = 'loop_continuous'
+        else:
+          region['loop_mode'] = 'no_loop'
+        region['loop_start'] = zone.left
+        region['loop_end'] = zone.right
+        region['ampeg_decay'] = float(zone.decay) / SAMPLE_RATE
+        region['ampeg_sustain'] = zone.sustain * 100.
+        region['ampeg_release'] = float(zone.release) / SAMPLE_RATE
+        sfz.add_region(region)
+
+      sfz.write(sys.stdout)
       '''sfz = jmage.util.parse_sfz(path)
       #print sfz.regions
       sfz_dir = os.path.dirname(path)

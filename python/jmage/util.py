@@ -17,6 +17,22 @@ DEFAULT_VALUES = {
 
 REQUIRED_KEYS = set(['sample'])
 
+class SFZ(object):
+  def __init__(self):
+    self.regions = []
+
+  def add_region(self, region):
+    reg = dict(DEFAULT_VALUES)
+    reg.update(region)
+    self.regions.append(reg)
+
+  def write(self, out):
+    for reg in self.regions:
+      out.write("<region>")
+      for k in sorted(reg):
+        out.write(" %s=%s" % (k, reg[k]))
+      out.write('\n')
+    
 class SFZParser(object):
   def __init__(self, file):
     self.file = file
