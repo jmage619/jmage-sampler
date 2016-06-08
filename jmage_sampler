@@ -564,7 +564,10 @@ class MyFrame(wx.Frame):
         region['ampeg_release'] = float(zone.release) / SAMPLE_RATE
         sfz.add_region(region)
 
-      sfz.write(sys.stdout)
+      #sfz.write(sys.stdout)
+      f = open(path, 'w')
+      sfz.write(f)
+      f.close()
 
     dlg.Destroy()
 
