@@ -547,46 +547,24 @@ class MyFrame(wx.Frame):
         region['pitch_keycenter'] = zone.origin
         region['lovel'] = zone.low_vel
         region['hivel'] = zone.high_vel
+        # 0.05 epsilon to prevent truncation error
+        region['tune'] = int(zone.pitch_corr * 100. + 0.05)
+        region['offset'] = zone.start
         if zone.loop_on:
           region['loop_mode'] = 'loop_continuous'
         else:
           region['loop_mode'] = 'no_loop'
         region['loop_start'] = zone.left
         region['loop_end'] = zone.right
+        region['loop_crossfade'] = float(zone.crossfade) / SAMPLE_RATE
+        region['ampeg_attack'] = float(zone.attack) / SAMPLE_RATE
+        region['ampeg_hold'] = float(zone.hold) / SAMPLE_RATE
         region['ampeg_decay'] = float(zone.decay) / SAMPLE_RATE
         region['ampeg_sustain'] = zone.sustain * 100.
         region['ampeg_release'] = float(zone.release) / SAMPLE_RATE
         sfz.add_region(region)
 
       sfz.write(sys.stdout)
-      '''sfz = jmage.util.parse_sfz(path)
-      #print sfz.regions
-      sfz_dir = os.path.dirname(path)
-
-      t = time.time()
-      for region in sfz.regions:
-        wav_path = os.path.join(sfz_dir, region['sample'])
-        zone = new_zone_from_file(wav_path)
-        # these should really be already validated and converted inside parse
-        zone.low_key = region['lokey']
-        zone.high_key = region['hikey']
-        zone.origin = region['pitch_keycenter']
-        zone.low_vel = region['lovel']
-        zone.high_vel = region['hivel']
-        # loop_mode, start, and end do not have defaults, may be defined inside wav
-        if 'loop_mode' in region and region['loop_mode'] == 'loop_continuous':
-          zone.loop_on = 1
-        if 'loop_start' in region:
-          zone.left = region['loop_start']
-        if 'loop_end' in region:
-          zone.right = region['loop_end']
-        zone.decay = int(SAMPLE_RATE * region['ampeg_decay'])
-        zone.sustain = region['ampeg_sustain'] / 100.
-        zone.release = int(SAMPLE_RATE * region['ampeg_release'])
-        self.AddZone(zone)
-      print "time to load sfz: %f\n" % (time.time() - t)
-      sfz.close()
-    '''
 
     dlg.Destroy()
 
@@ -608,6 +586,8 @@ class MyFrame(wx.Frame):
         zone.origin = region['pitch_keycenter']
         zone.low_vel = region['lovel']
         zone.high_vel = region['hivel']
+        zone.pitch_corr = region['tune'] / 100.
+        zone.start = region['offset']
         # loop_mode, start, and end do not have defaults, may be defined inside wav
         if 'loop_mode' in region and region['loop_mode'] == 'loop_continuous':
           zone.loop_on = 1
@@ -615,6 +595,9 @@ class MyFrame(wx.Frame):
           zone.left = region['loop_start']
         if 'loop_end' in region:
           zone.right = region['loop_end']
+        zone.crossfade = int(SAMPLE_RATE * region['loop_crossfade'])
+        zone.attack = int(SAMPLE_RATE * region['ampeg_attack'])
+        zone.hold = int(SAMPLE_RATE * region['ampeg_hold'])
         zone.decay = int(SAMPLE_RATE * region['ampeg_decay'])
         zone.sustain = region['ampeg_sustain'] / 100.
         zone.release = int(SAMPLE_RATE * region['ampeg_release'])

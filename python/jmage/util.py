@@ -8,6 +8,13 @@ DEFAULT_VALUES = {
   'lovel': 0,
   'hivel': 127,
   'pitch_keycenter': 32,
+  'tune': 0,
+  'offset': 0,
+  # important to NOT ever have defaults for loop_mode, start, and end
+  # we do this since they may be set inside the wav file
+  # ideal prio would be: sfz default -> wav -> sfz override
+  # current sampler zone creation doesn't allow this
+  'loop_crossfade': 0.0,
   'ampeg_attack': 0.0, 
   'ampeg_hold': 0.0,
   'ampeg_decay': 0.0,
@@ -17,7 +24,7 @@ DEFAULT_VALUES = {
 
 REQUIRED_KEYS = set(['sample'])
 
-WRITE_ORDER = ['pitch_keycenter', 'lokey', 'hikey', 'lovel', 'hivel', 'loop_start', 'loop_end', 'loop_mode', 'ampeg_attack', 'ampeg_hold', 'ampeg_decay', 'ampeg_sustain', 'ampeg_release', 'sample']
+WRITE_ORDER = ['pitch_keycenter', 'lokey', 'hikey', 'lovel', 'hivel', 'tune', 'offset', 'loop_start', 'loop_end', 'loop_mode', 'loop_crossfade', 'ampeg_attack', 'ampeg_hold', 'ampeg_decay', 'ampeg_sustain', 'ampeg_release', 'sample']
 
 class SFZ(object):
   def __init__(self, regions=[]):
@@ -114,9 +121,14 @@ def convert_and_validate(key, value):
     if conv_val < 0 or conv_val > 127:
       raise RuntimeError('%s must be between 0 and 127' % key)
     return conv_val
-  if key == 'loop_start' or key == 'loop_end':
+  if key == 'tune':
+    conv_val = int(value)
+    if conv_val < -100 or conv_val > 100:
+      raise RuntimeError('%s must be between -100 and 100' % key)
+    return conv_val
+  if key == 'offset' or key == 'loop_start' or key == 'loop_end':
     return int(value)
-  if key == 'ampeg_decay' or key == 'ampeg_sustain' or key == 'ampeg_release':
+  if key == 'loop_crossfade' or key == 'ampeg_attack' or key == 'ampeg_hold' or key == 'ampeg_decay' or key == 'ampeg_sustain' or key == 'ampeg_release':
     return float(value)
   if key == 'loop_mode':
     if value != 'no_loop' and value != 'loop_continuous':
