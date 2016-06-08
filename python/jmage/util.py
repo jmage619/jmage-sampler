@@ -17,6 +17,8 @@ DEFAULT_VALUES = {
 
 REQUIRED_KEYS = set(['sample'])
 
+WRITE_ORDER = ['pitch_keycenter', 'lokey', 'hikey', 'lovel', 'hivel', 'loop_start', 'loop_end', 'loop_mode', 'ampeg_attack', 'ampeg_hold', 'ampeg_decay', 'ampeg_sustain', 'ampeg_release', 'sample']
+
 class SFZ(object):
   def __init__(self, regions=[]):
     self.regions = regions
@@ -29,7 +31,7 @@ class SFZ(object):
   def write(self, out):
     for reg in self.regions:
       out.write("<region>")
-      for k in sorted(reg):
+      for k in WRITE_ORDER:
         out.write(" %s=%s" % (k, reg[k]))
       out.write('\n')
     
