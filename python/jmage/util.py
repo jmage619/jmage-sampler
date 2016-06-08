@@ -18,8 +18,8 @@ DEFAULT_VALUES = {
 REQUIRED_KEYS = set(['sample'])
 
 class SFZ(object):
-  def __init__(self):
-    self.regions = []
+  def __init__(self, regions=[]):
+    self.regions = regions
 
   def add_region(self, region):
     reg = dict(DEFAULT_VALUES)
@@ -103,6 +103,8 @@ class SFZParser(object):
     if not self.in_section and len(self.data) > 0:
       self.handle_data()
 
+    return SFZ(self.regions)
+
 def convert_and_validate(key, value):
   if (key == 'lokey' or key == 'hikey' or key == 'pitch_keycenter'
       or key == 'lovel' or key == 'hivel'): 
@@ -128,6 +130,7 @@ def check_missing(region):
       raise RuntimeError('region missing required key "%s": %s' % (key, region))
 
 def parse_sfz(path):
-  sfz = SFZParser(open(path))
-  sfz.parse()
+  sfzp = SFZParser(open(path))
+  sfz = sfzp.parse()
+  sfzp.close()
   return sfz

@@ -620,7 +620,6 @@ class MyFrame(wx.Frame):
         zone.release = int(SAMPLE_RATE * region['ampeg_release'])
         self.AddZone(zone)
       print "time to load sfz: %f\n" % (time.time() - t)
-      sfz.close()
 
     dlg.Destroy()
 
