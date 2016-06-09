@@ -59,6 +59,10 @@ class SFZParser(object):
     self.cur_group = {}
     self.cur_section = None
     self.regions = []
+    self.cur_op = None
+    self.cur_group = None
+    self.cur_region = None
+    self.state = None
 
   def close(self):
     self.file.close()
@@ -90,69 +94,57 @@ class SFZParser(object):
     # just return it as-is if we don't know what it is
     return (False, value)
 
-  def parse_fields(self):
-    field_dict = {}
-    fields = ''.join(self.data).split()
-    for field in fields:
-      key,val = field.split('=')
-      field_dict[key] = self.convert_and_validate(key,val)[1]
-
-    return field_dict
-
   def check_missing(self, region):
     for key in self.required_keys:
       if key not in region:
         raise RuntimeError('region missing required key "%s": %s' % (key, region))
 
-  # somehwere this has to be called if we hit end of file
-  def handle_data(self):
-    #print "".join(data).split()
-    # exiting group section, update current group
-    if self.cur_section == 'group':
-      self.cur_group = dict(self.defaults)
-      self.cur_group.update(self.parse_fields())
-      #print cur_group
-    elif self.cur_section == 'region':
-      # start with current default group
-      region = dict(self.cur_group)
-      # parse the region and update relevant values
-      region.update(self.parse_fields())
-      self.check_missing(region)
-      #print "region: %s" % region
-      self.regions.append(region)
+  def save_prev(self):
+    if self.state == 'group':
+      self.cur_group[self.cur_op] = self.convert_and_validate(self.cur_op, "".join(self.data))[1]
+      self.data = []
+    elif self.state == 'region':
+      self.cur_region[self.cur_op] = self.convert_and_validate(self.cur_op, "".join(self.data))[1]
+      self.data = []
 
   def parse(self):
+    self.cur_group = dict(self.defaults)
     for line in self.file:
       # strip comment
       line = line.split('//')[0] 
 
-      for ch in line:
-        # parsing data
-        if not self.in_section:
-          # beginning a new section, handle data first
-          if ch == '<':
-            self.handle_data()
-            # clear out data, now entering next section tag
-            self.data = []
-            self.in_section = True
-          else:
-            self.data.append(ch)
-        # parsing section tag
+      for field in line.split():
+        # either a new tag
+        if field[0] == '<' and field[-1] == '>':
+          if len(self.data) > 0:
+            self.save_prev()
+            if self.state == 'region':
+              self.check_missing(self.cur_region)
+              self.regions.append(self.cur_region)
+          if field[1:-1] == 'group':
+            self.cur_group = dict(self.defaults)
+            self.state = 'group'
+          elif field[1:-1] == 'region':
+            self.cur_region = dict(self.cur_group)
+            self.state = 'region'
+        # or new op code
+        elif '=' in field:
+          if len(self.data) > 0:
+            self.save_prev()
+          fields = field.split('=')
+          self.cur_op = fields[0]
+          self.data.append(fields[1])
+        # or continuing space separated data for prev op code
         else:
-          # reached end of section tag
-          if ch == '>':
-            self.cur_section = ''.join(self.data)
-            if self.cur_section not in self.valid_sections:
-              print "unhandled section: %s" % self.cur_section
-            self.data = []
-            self.in_section = False
-          else:
-            self.data.append(ch)
+          self.data.append(" ")
+          self.data.append(field)
 
-    # handle data in last section of file
-    if not self.in_section and len(self.data) > 0:
-      self.handle_data()
-
+    # save last region if data left over
+    if len(self.data) > 0 and self.state == 'region':
+      self.save_prev()
+      self.check_missing(self.cur_region)
+      self.regions.append(self.cur_region)
+      
     return SFZ(self.regions)
 
 class JMZParser(SFZParser):
