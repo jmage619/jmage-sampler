@@ -21,6 +21,8 @@ SFZ_DEFAULTS = {
   'ampeg_release': 0.0
 }
 
+JMZ_DEFAULTS = dict(SFZ_DEFAULTS)
+JMZ_DEFAULTS['jm_amp'] = 1.0
 
 class SFZ(object):
   def __init__(self, regions=[]):
@@ -40,6 +42,12 @@ class SFZ(object):
         out.write(" %s=%s" % (k, reg[k]))
       out.write('\n')
     
+class JMZ(SFZ):
+  def __init__(self, regions=[]):
+    super(JMZ, self).__init__(regions)
+    self.defaults = JMZ_DEFAULTS
+    self.write_order = ['jm_name', 'jm_amp', 'pitch_keycenter', 'lokey', 'hikey', 'lovel', 'hivel', 'tune', 'offset', 'loop_start', 'loop_end', 'loop_mode', 'loop_crossfade', 'ampeg_attack', 'ampeg_hold', 'ampeg_decay', 'ampeg_sustain', 'ampeg_release', 'sample']
+
 class SFZParser(object):
   def __init__(self, file):
     self.defaults = SFZ_DEFAULTS
@@ -55,36 +63,39 @@ class SFZParser(object):
   def close(self):
     self.file.close()
 
+  # return a tuple of success and value
+  # rather than raising exception
+  # so we can just return unknown types rather than bailing out
   def convert_and_validate(self, key, value):
     if (key == 'lokey' or key == 'hikey' or key == 'pitch_keycenter'
         or key == 'lovel' or key == 'hivel'): 
       conv_val = int(value)
       if conv_val < 0 or conv_val > 127:
         raise RuntimeError('%s must be between 0 and 127' % key)
-      return conv_val
+      return (True, conv_val)
     if key == 'tune':
       conv_val = int(value)
       if conv_val < -100 or conv_val > 100:
         raise RuntimeError('%s must be between -100 and 100' % key)
-      return conv_val
+      return (True, conv_val)
     if key == 'offset' or key == 'loop_start' or key == 'loop_end':
-      return int(value)
+      return (True, int(value))
     if key == 'loop_crossfade' or key == 'ampeg_attack' or key == 'ampeg_hold' or key == 'ampeg_decay' or key == 'ampeg_sustain' or key == 'ampeg_release':
-      return float(value)
+      return (True, float(value))
     if key == 'loop_mode':
       if value != 'no_loop' and value != 'loop_continuous':
         raise RuntimeError('loop_mode must be either "no_loop" or "loop_continuous"')
-      return value
+      return (True, value)
 
     # just return it as-is if we don't know what it is
-    return value
+    return (False, value)
 
   def parse_fields(self):
     field_dict = {}
     fields = ''.join(self.data).split()
     for field in fields:
       key,val = field.split('=')
-      field_dict[key] = self.convert_and_validate(key,val)
+      field_dict[key] = self.convert_and_validate(key,val)[1]
 
     return field_dict
 
@@ -144,8 +155,31 @@ class SFZParser(object):
 
     return SFZ(self.regions)
 
+class JMZParser(SFZParser):
+  def __init__(self, file):
+    super(JMZParser, self).__init__(file)
+    self.defaults = JMZ_DEFAULTS
+
+  def convert_and_validate(self, key, value):
+    results = super(JMZParser, self).convert_and_validate(key, value)
+    # if success it was a valid SFZ attr
+    if results[0]:
+      return results
+    # now try JMZ tests
+    if key == 'jm_amp':
+      return (True, float(value))
+
+    # just return it as-is if we don't know what it is
+    return (False, value)
+
 def parse_sfz(path):
-  sfzp = SFZParser(open(path))
-  sfz = sfzp.parse()
-  sfzp.close()
+  sp = SFZParser(open(path))
+  sfz = sp.parse()
+  sp.close()
   return sfz
+
+def parse_jmz(path):
+  jp = JMZParser(open(path))
+  jmz = jp.parse()
+  jp.close()
+  return jmz
