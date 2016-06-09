@@ -46,7 +46,7 @@ class JMZ(SFZ):
   def __init__(self, regions=[]):
     super(JMZ, self).__init__(regions)
     self.defaults = JMZ_DEFAULTS
-    self.write_order = ['jm_name', 'jm_amp', 'pitch_keycenter', 'lokey', 'hikey', 'lovel', 'hivel', 'tune', 'offset', 'loop_start', 'loop_end', 'loop_mode', 'loop_crossfade', 'ampeg_attack', 'ampeg_hold', 'ampeg_decay', 'ampeg_sustain', 'ampeg_release', 'sample']
+    self.write_order = ['jm_name', 'jm_amp'] + self.write_order
 
 class SFZParser(object):
   def __init__(self, file):

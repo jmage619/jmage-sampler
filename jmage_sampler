@@ -118,7 +118,7 @@ class LGPanel(jmage.ui.GridPanel):
     row = win.GetParent()
     row_index = self.Index(row)
     zone = ZONE_LIST[row_index]
-    zone.name = win.GetValue()
+    jm.zone_set_name(zone, win.GetValue())
     ZONE_LIST[row_index] = zone
 
 class RGPanel(jmage.ui.GridPanel):
@@ -537,10 +537,17 @@ class MyFrame(wx.Frame):
       path = dlg.GetPath()
       print path
 
-      sfz = jmage.util.SFZ()
+      # probably want to handle case where not sfz or jmz
+      if path.endswith('.sfz'):
+        patch = jmage.util.SFZ()
+      elif path.endswith('.jmz'):
+        patch = jmage.util.JMZ()
 
       for zone in ZONE_LIST:
         region = {}
+        if path.endswith('.jmz'):
+          region['jm_name'] = zone.name
+          region['jm_amp'] = zone.amp
         region['sample'] = os.path.basename(zone.path)
         region['lokey'] = zone.low_key
         region['hikey'] = zone.high_key
@@ -562,27 +569,40 @@ class MyFrame(wx.Frame):
         region['ampeg_decay'] = float(zone.decay) / SAMPLE_RATE
         region['ampeg_sustain'] = zone.sustain * 100.
         region['ampeg_release'] = float(zone.release) / SAMPLE_RATE
-        sfz.add_region(region)
+        patch.add_region(region)
 
-      #sfz.write(sys.stdout)
+      #patch.write(sys.stdout)
       f = open(path, 'w')
-      sfz.write(f)
+      patch.write(f)
       f.close()
 
     dlg.Destroy()
+
+  def NameZone(self, zone):
+    jm.zone_set_name(zone, "Zone %i" % self.zone_name_index)
+    self.zone_name_index += 1
 
   def OnLoad(self, e):
     dlg = wx.FileDialog(self, "Open a FUCKING patch already!!", os.getcwd(), style=wx.OPEN)
     if dlg.ShowModal() == wx.ID_OK:
       path = dlg.GetPath()
-      sfz = jmage.util.parse_sfz(path)
-      #print sfz.regions
-      sfz_dir = os.path.dirname(path)
+      # probably want to handle case where not sfz or jmz
+      if path.endswith('.sfz'):
+        patch = jmage.util.parse_sfz(path)
+      elif path.endswith('.jmz'):
+        patch = jmage.util.parse_jmz(path)
+      #print patch.regions
+      patch_dir = os.path.dirname(path)
 
       t = time.time()
-      for region in sfz.regions:
-        wav_path = os.path.join(sfz_dir, region['sample'])
+      for region in patch.regions:
+        wav_path = os.path.join(patch_dir, region['sample'])
         zone = new_zone_from_file(wav_path)
+        if path.endswith('.jmz'):
+          jm.zone_set_name(zone, region['jm_name']) 
+          zone.amp = region['jm_amp']
+        else:
+          self.NameZone(zone)
         # these should really be already validated and converted inside parse
         zone.low_key = region['lokey']
         zone.high_key = region['hikey']
@@ -604,16 +624,10 @@ class MyFrame(wx.Frame):
         zone.decay = int(SAMPLE_RATE * region['ampeg_decay'])
         zone.sustain = region['ampeg_sustain'] / 100.
         zone.release = int(SAMPLE_RATE * region['ampeg_release'])
-        self.AddZone(zone)
-      print "time to load sfz: %f\n" % (time.time() - t)
+        self.zone_grid.Append(zone)
+      print "time to load patch: %f\n" % (time.time() - t)
 
     dlg.Destroy()
-
-  def AddZone(self, zone):
-    jm.zone_set_name(zone, "Zone %i" % self.zone_name_index)
-    self.zone_name_index += 1
-
-    self.zone_grid.Append(zone)
 
   def OnZoneAdd(self, e):
     dlg = wx.FileDialog(self, "Open a FUCKING WAV already!!", os.getcwd(), style=wx.OPEN)
@@ -621,8 +635,8 @@ class MyFrame(wx.Frame):
       path = dlg.GetPath()
 
       zone = new_zone_from_file(path)
-
-      self.AddZone(zone)
+      self.NameZone(zone)
+      self.zone_grid.Append(zone)
 
     dlg.Destroy()
 
