@@ -123,13 +123,18 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
   if (event_count > 0)
     jack_midi_event_get(&event, midi_buf, cur_event);
 
+  // loop over frames in this callback window
   jack_nframes_t n;
   for (n = 0; n < nframes; n++) {
     if (cur_event < event_count) {
+      // procces next midi event if it applies to current time (frame)
       while (n == event.time) {
+        // process note on
         if ((event.buffer[0] & 0xf0) == 0x90) {
+          // if sustain on and note is already playing, release old one first
           if (jms->sustain_on) {
             for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+              // doesn't apply to one shot
               if (!sg_el->sg->one_shot && sg_el->sg->pitch == event.buffer[1])
                 sg_el->sg->set_release();
             }
@@ -140,15 +145,18 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
           // this allows for demoing zone changes in thread safe way in *almost* real time
           // we can safely assume this mutex will be unlocked in a real take
           jms->zones->lock();
+          // pick out zones midi event matches against and add sound gens to queue
           for (it = jms->zones->begin(); it != jms->zones->end(); ++it) {
             if (jm_zone_contains(&*it, event.buffer[1], event.buffer[2])) {
               printf("sg num: %li\n", jms->sound_gens.size());
+              // oops we hit polyphony, remove oldest sound gen in the queue to make room
               if (jms->sound_gens.size() >= POLYPHONY) {
                 printf("hit poly lim!\n");
                 jms->sound_gens.get_tail_ptr()->sg->release_resources();
                 jms->sound_gens.remove_last();
               }
 
+              // create sound gen
               AmpEnvGenerator* ag;
               jms->amp_gen_pool.pop(ag);
               Playhead* ph;
@@ -159,33 +167,43 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
               ag->pre_process(nframes - n);
               printf("pre process finish\n");
 
+              // add sound gen to queue
               jms->sound_gens.add(ag);
               printf("event: note on;  note: %i; vel: %i\n", event.buffer[1], event.buffer[2]);
             }
           }
           jms->zones->unlock();
         }
+        // process note off
         else if ((event.buffer[0] & 0xf0) == 0x80) {
           printf("event: note off; note: %i\n", event.buffer[1]);
+          // find all sound gens assigned to this pitch
           for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
             if (sg_el->sg->pitch == event.buffer[1]) {
+              // note off does not apply to one shot
               if (!sg_el->sg->one_shot) {
+                // if sustaining, just mark for removal later
                 if (jms->sustain_on) {
                   sg_el->sg->note_off = true;
                 }
+                // not sustaining, remove immediately
                 else
                   sg_el->sg->set_release();
               }
             }
           }
         }
+        // process sustain pedal
         else if ((event.buffer[0] & 0xf0) == 0xb0 && event.buffer[1] == 0x40) {
+          // >= 64 turns on sustain
           if (event.buffer[2] >= 64) {
             jms->sustain_on = true;
             printf("sustain on\n");
           }
+          // < 64 turns ustain off
           else {
             for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+              // turn off all sound gens marked with previous note off
               if (sg_el->sg->note_off == true)
                 sg_el->sg->set_release();
             }
@@ -194,9 +212,11 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
             printf("sustain off\n");
           }
         }
+        // just print messages we don't currently handle
         else if (event.buffer[0] != 0xfe)
           printf("event: 0x%x\n", event.buffer[0]);
 
+        // get next midi event or break if none left
         cur_event++;
         if (cur_event == event_count)
           break;
@@ -204,6 +224,7 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
       }
     }
 
+    // loop sound gens and fill audio buffer at current time (frame) position
     for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
       float values[2];
       sg_el->sg->get_values(values);
