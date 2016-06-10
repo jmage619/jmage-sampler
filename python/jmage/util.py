@@ -87,8 +87,8 @@ class SFZParser(object):
     if key == 'loop_crossfade' or key == 'ampeg_attack' or key == 'ampeg_hold' or key == 'ampeg_decay' or key == 'ampeg_sustain' or key == 'ampeg_release':
       return (True, float(value))
     if key == 'loop_mode':
-      if value != 'no_loop' and value != 'loop_continuous':
-        raise RuntimeError('loop_mode must be either "no_loop" or "loop_continuous"')
+      if value != 'no_loop' and value != 'loop_continuous' and value != 'one_shot':
+        raise RuntimeError('loop_mode must be "no_loop", "loop_continuous", or "one_shot"')
       return (True, value)
 
     # just return it as-is if we don't know what it is

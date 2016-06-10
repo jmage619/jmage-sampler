@@ -22,6 +22,12 @@ typedef struct {
   int has_loop;
 } jm_wave;
 
+typedef enum {
+  LOOP_OFF,
+  LOOP_CONTINUOUS,
+  LOOP_ONE_SHOT
+} loop_mode;
+
 typedef struct {
   float* wave;
   int num_channels;
@@ -41,7 +47,7 @@ typedef struct {
   float sustain;
   int release;
   double pitch_corr;
-  int loop_on;
+  loop_mode mode;
   int crossfade;
   // some meta info only used by ui
   char name[PATH_MAX];

@@ -35,7 +35,6 @@ from ctypes import c_size_t
 INT16_MAX = 2**16 / 2 - 1
 PATH_MAX = 4096
 SAMPLE_RATE = 44100
-MT_VOLUME = 0
 VOL_STEPS  = 17
 NOTE_MIN = 0
 NOTE_MAX = 127
@@ -170,6 +169,7 @@ class RGPanel(jmage.ui.GridPanel):
     header.Add(st)
 
     st = wx.StaticText(header, label="Loop")
+    st.SetSize((12 * self.char_width, -1))
     header.Add(st)
 
     st = wx.StaticText(header, label="CF")
@@ -266,9 +266,9 @@ class RGPanel(jmage.ui.GridPanel):
     row.Add(tc)
 
     # loop
-    cb = wx.CheckBox(row)
-    row.Add(cb)
-    self.Bind(wx.EVT_CHECKBOX, self.OnControlEvent, cb)
+    choice = wx.Choice(row, choices=['off', 'on', 'one shot'])
+    row.Add(choice)
+    self.Bind(wx.EVT_CHOICE, self.OnControlEvent, choice)
 
     # cf
     tc = jmage.ui.DragBox(row, min=0, max=1000,
@@ -345,7 +345,7 @@ class RGPanel(jmage.ui.GridPanel):
     windows[9].max = wav_end
     windows[9].ChangeValue(float(zone.right) / SAMPLE_RATE)
     # loop
-    windows[10].SetValue(zone.loop_on)
+    windows[10].Select(zone.mode)
     # cf
     windows[11].ChangeValue(int(float(zone.crossfade) / SAMPLE_RATE * 1000))
     # attack
@@ -401,7 +401,7 @@ class RGPanel(jmage.ui.GridPanel):
       zone.right = int(SAMPLE_RATE * win.GetValue())
     # loop
     elif col_index == 10:
-      zone.loop_on = int(win.GetValue())
+      zone.mode = win.GetSelection()
     # cf
     elif col_index == 11:
       zone.crossfade = int(SAMPLE_RATE * win.GetValue() / 1000.)
@@ -512,7 +512,7 @@ class MyFrame(wx.Frame):
   def OnVolScroll(self, e):
     level = e.GetEventObject().GetValue()
     msg = jm.msg()
-    msg.type = MT_VOLUME
+    msg.type = jm.MT_VOLUME
     msg.data.i = level
     SAMPLER.send_msg(msg)
 
@@ -524,7 +524,7 @@ class MyFrame(wx.Frame):
       level = int(val)
       if level >= 0 and level < VOL_STEPS:
         msg = jm.msg()
-        msg.type = MT_VOLUME
+        msg.type = jm.MT_VOLUME
         msg.data.i = level
         SAMPLER.send_msg(msg)
         self.slider.SetValue(level)
@@ -557,10 +557,12 @@ class MyFrame(wx.Frame):
         # 0.05 epsilon to prevent truncation error
         region['tune'] = int(zone.pitch_corr * 100. + 0.05)
         region['offset'] = zone.start
-        if zone.loop_on:
+        if zone.mode == jm.LOOP_OFF:
+          region['loop_mode'] = 'no_loop'
+        elif zone.mode == jm.LOOP_CONTINUOUS:
           region['loop_mode'] = 'loop_continuous'
         else:
-          region['loop_mode'] = 'no_loop'
+          region['loop_mode'] = 'one_shot'
         region['loop_start'] = zone.left
         region['loop_end'] = zone.right
         region['loop_crossfade'] = float(zone.crossfade) / SAMPLE_RATE
@@ -612,8 +614,13 @@ class MyFrame(wx.Frame):
         zone.pitch_corr = region['tune'] / 100.
         zone.start = region['offset']
         # loop_mode, start, and end do not have defaults, may be defined inside wav
-        if 'loop_mode' in region and region['loop_mode'] == 'loop_continuous':
-          zone.loop_on = 1
+        if 'loop_mode' in region:
+          if region['loop_mode'] == 'loop_continuous':
+            zone.mode = jm.LOOP_CONTINUOUS
+          elif region['loop_mode'] == 'no_loop':
+            zone.mode = jm.LOOP_OFF
+          elif region['loop_mode'] == 'one_shot':
+            zone.mode = jm.LOOP_ONE_SHOT
         if 'loop_start' in region:
           zone.left = region['loop_start']
         if 'loop_end' in region:
@@ -672,8 +679,9 @@ def new_zone_from_file(path):
   zone.wave_length = wav.length
   zone.left = wav.left
   zone.right = wav.right
-  zone.loop_on = wav.has_loop
-  print "new zone loop on?", zone.loop_on
+  print "new zone loop on?", wav.has_loop
+  if wav.has_loop:
+    zone.mode = jm.LOOP_CONTINUOUS
 
   return zone
 
@@ -684,7 +692,7 @@ if __name__ == '__main__':
   level = VOL_STEPS - 1
 
   msg = jm.msg()
-  msg.type = MT_VOLUME
+  msg.type = jm.MT_VOLUME
   
   msg.data.i = level
   SAMPLER.send_msg(msg)

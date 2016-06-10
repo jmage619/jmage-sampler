@@ -14,6 +14,10 @@ from ctypes import Union
 
 PATH_MAX = 4096
 
+LOOP_OFF = 0
+LOOP_CONTINUOUS = 1
+LOOP_ONE_SHOT = 2
+
 class key_zone(Structure):
   _fields_ = [('wave', POINTER(c_float)),
     ('num_channels', c_int),
@@ -33,7 +37,7 @@ class key_zone(Structure):
     ('sustain', c_float),
     ('release', c_int),
     ('pitch_corr', c_double),
-    ('loop_on', c_int),
+    ('mode', c_int),
     ('crossfade', c_int),
     ('name', c_char * PATH_MAX),
     ('path', c_char * PATH_MAX)
@@ -112,6 +116,8 @@ class _Sampler(Structure):
 
 class msg_data(Union):
   _fields_ = [('i', c_int)]
+
+MT_VOLUME = 0
 
 class msg(Structure):
   _fields_ = [('type', c_int), ('data', msg_data)]

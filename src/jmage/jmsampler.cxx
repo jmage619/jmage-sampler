@@ -130,7 +130,7 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
         if ((event.buffer[0] & 0xf0) == 0x90) {
           if (jms->sustain_on) {
             for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
-              if (sg_el->sg->pitch == event.buffer[1])
+              if (!sg_el->sg->one_shot && sg_el->sg->pitch == event.buffer[1])
                 sg_el->sg->set_release();
             }
           }
@@ -169,11 +169,13 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
           printf("event: note off; note: %i\n", event.buffer[1]);
           for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
             if (sg_el->sg->pitch == event.buffer[1]) {
-              if (jms->sustain_on) {
-                sg_el->sg->note_off = true;
+              if (!sg_el->sg->one_shot) {
+                if (jms->sustain_on) {
+                  sg_el->sg->note_off = true;
+                }
+                else
+                  sg_el->sg->set_release();
               }
-              else
-                sg_el->sg->set_release();
             }
           }
         }

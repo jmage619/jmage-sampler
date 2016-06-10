@@ -40,9 +40,10 @@ class AudioStream {
 class SoundGenerator {
   public:
     bool note_off;
+    bool one_shot;
     int pitch;
     virtual ~SoundGenerator(){}
-    void init(int pitch){note_off = false; this->pitch = pitch;}
+    void init(int pitch){note_off = false; one_shot = false; this->pitch = pitch;}
     virtual void pre_process(jack_nframes_t nframes){}
     virtual void inc() = 0;
     virtual void get_values(float values[]) = 0;

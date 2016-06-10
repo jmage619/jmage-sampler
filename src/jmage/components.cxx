@@ -14,7 +14,10 @@
 #define VELOCITY_BOOST 1.2f
 
 void AudioStream::init(const jm_key_zone& zone) {
-  loop_on = zone.loop_on;
+  if (zone.mode == LOOP_CONTINUOUS)
+    loop_on = true;
+  else
+    loop_on = false;
   crossfading = false;
   cf_timer = 0;
   wave = zone.wave;
@@ -219,6 +222,8 @@ void AmpEnvGenerator::init(SoundGenerator* sg, const jm_key_zone& zone, int pitc
   hold = zone.hold;
   decay = zone.decay;
   sustain = zone.sustain;
+  if (zone.mode == LOOP_ONE_SHOT)
+    one_shot = true;
   release = zone.release;
   timer = 0;
   env_rel_val = zone.sustain;
