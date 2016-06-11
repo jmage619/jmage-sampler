@@ -42,8 +42,14 @@ class SoundGenerator {
     bool note_off;
     bool one_shot;
     int pitch;
+    int off_group;
     virtual ~SoundGenerator(){}
-    void init(int pitch){note_off = false; one_shot = false; this->pitch = pitch;}
+    void init(const jm_key_zone& zone, int pitch) {
+      note_off = false;
+      one_shot = (zone.mode == LOOP_ONE_SHOT) ? true : false;
+      off_group = zone.off_group;
+      this->pitch = pitch;
+    }
     virtual void pre_process(jack_nframes_t nframes){}
     virtual void inc() = 0;
     virtual void get_values(float values[]) = 0;

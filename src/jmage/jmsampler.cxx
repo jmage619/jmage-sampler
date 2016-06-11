@@ -156,6 +156,14 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
                 jms->sound_gens.remove_last();
               }
 
+              // shut off any sound gens that are in this off group
+              if (it->group > 0) {
+                for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+                  if (sg_el->sg->off_group == it->group)
+                    sg_el->sg->set_release();
+                }
+              }
+
               // create sound gen
               AmpEnvGenerator* ag;
               jms->amp_gen_pool.pop(ag);

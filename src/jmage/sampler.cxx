@@ -69,6 +69,8 @@ void jm_init_key_zone(jm_key_zone* zone) {
   zone->release = 0;
   zone->pitch_corr = 0.0;
   zone->mode = LOOP_OFF;
+  zone->group = 0;
+  zone->off_group = 0;
   zone->crossfade = 0;
 }
 

@@ -48,6 +48,8 @@ typedef struct {
   int release;
   double pitch_corr;
   loop_mode mode;
+  int group;
+  int off_group;
   int crossfade;
   // some meta info only used by ui
   char name[PATH_MAX];
