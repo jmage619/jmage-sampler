@@ -2,6 +2,7 @@ import sys
 
 
 SFZ_DEFAULTS = {
+  'volume': 0.0,
   'lokey': 0,
   'hikey': 127,
   'lovel': 0,
@@ -24,12 +25,12 @@ SFZ_DEFAULTS = {
 }
 
 JMZ_DEFAULTS = dict(SFZ_DEFAULTS)
-JMZ_DEFAULTS['jm_amp'] = 1.0
+#JMZ_DEFAULTS['jm_amp'] = 1.0
 
 class SFZ(object):
   def __init__(self, regions=[]):
     self.defaults = SFZ_DEFAULTS
-    self.write_order = ['pitch_keycenter', 'lokey', 'hikey', 'lovel', 'hivel', 'tune', 'offset', 'loop_start', 'loop_end', 'loop_mode', 'loop_crossfade', 'ampeg_attack', 'ampeg_hold', 'ampeg_decay', 'ampeg_sustain', 'ampeg_release', 'sample']
+    self.write_order = ['volume', 'pitch_keycenter', 'lokey', 'hikey', 'lovel', 'hivel', 'tune', 'offset', 'loop_start', 'loop_end', 'loop_mode', 'loop_crossfade', 'ampeg_attack', 'ampeg_hold', 'ampeg_decay', 'ampeg_sustain', 'ampeg_release', 'sample']
     self.regions = regions
 
   def add_region(self, region):
@@ -48,7 +49,8 @@ class JMZ(SFZ):
   def __init__(self, regions=[]):
     super(JMZ, self).__init__(regions)
     self.defaults = JMZ_DEFAULTS
-    self.write_order = ['jm_name', 'jm_amp'] + self.write_order
+    #self.write_order = ['jm_name', 'jm_amp'] + self.write_order
+    self.write_order = ['jm_name'] + self.write_order
 
 class SFZParser(object):
   def __init__(self, file):
@@ -86,7 +88,7 @@ class SFZParser(object):
       return (True, conv_val)
     if key == 'offset' or key == 'loop_start' or key == 'loop_end' or key == 'group' or key == 'off_group':
       return (True, int(value))
-    if key == 'loop_crossfade' or key == 'ampeg_attack' or key == 'ampeg_hold' or key == 'ampeg_decay' or key == 'ampeg_sustain' or key == 'ampeg_release':
+    if key == 'volume' or key == 'loop_crossfade' or key == 'ampeg_attack' or key == 'ampeg_hold' or key == 'ampeg_decay' or key == 'ampeg_sustain' or key == 'ampeg_release':
       return (True, float(value))
     if key == 'loop_mode':
       if value != 'no_loop' and value != 'loop_continuous' and value != 'one_shot':
@@ -154,7 +156,7 @@ class JMZParser(SFZParser):
     super(JMZParser, self).__init__(file)
     self.defaults = JMZ_DEFAULTS
 
-  def convert_and_validate(self, key, value):
+  '''def convert_and_validate(self, key, value):
     results = super(JMZParser, self).convert_and_validate(key, value)
     # if success it was a valid SFZ attr
     if results[0]:
@@ -165,6 +167,7 @@ class JMZParser(SFZParser):
 
     # just return it as-is if we don't know what it is
     return (False, value)
+  '''
 
 def parse_sfz(path):
   sp = SFZParser(open(path))

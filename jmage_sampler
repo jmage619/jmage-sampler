@@ -11,6 +11,7 @@ import wx
 import jmage.interface as jm
 import jmage.ui
 import jmage.util
+import math
 
 import ctypes
 #from time import sleep
@@ -128,8 +129,8 @@ class RGPanel(jmage.ui.GridPanel):
 
   def CreateHeader(self):
     header = self.NewHeader()
-    st = wx.StaticText(header, label="Amp")
-    st.SetSize((5 * self.char_width, -1))
+    st = wx.StaticText(header, label="Vol (db)")
+    st.SetSize((7 * self.char_width, -1))
     header.Add(st)
 
     st = wx.StaticText(header, label="Origin")
@@ -217,9 +218,9 @@ class RGPanel(jmage.ui.GridPanel):
   def CreateRow(self):
     row = self.NewRow()
 
-    # amp
-    tc = jmage.ui.DragBox(row, min=0.0, max=1.0,
-      fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
+    # vol
+    tc = jmage.ui.DragBox(row, steps=151, min=-144, max=6,
+      callback=self.ControlCallback, style=wx.TE_RIGHT)
     tc.SetFont(self.font)
     row.Add(tc)
 
@@ -358,8 +359,8 @@ class RGPanel(jmage.ui.GridPanel):
 
   def UpdateRow(self, i, zone):
     windows = self.rows[i].GetWindows()
-    # amp
-    windows[0].ChangeValue(zone.amp)
+    # vol
+    windows[0].ChangeValue(20. * math.log(zone.amp, 10.))
     # origin
     windows[1].Select(zone.origin)
     # lower
@@ -426,9 +427,9 @@ class RGPanel(jmage.ui.GridPanel):
 
     col_index = row.Index(win)
 
-    # amp
+    # vol
     if col_index == 0:
-      zone.amp = win.GetValue()
+      zone.amp = 10.**(win.GetValue() / 20.)
     # origin
     elif col_index == 1:
       zone.origin = win.GetSelection()
@@ -617,7 +618,7 @@ class MyFrame(wx.Frame):
         region = {}
         if path.endswith('.jmz'):
           region['jm_name'] = zone.name
-          region['jm_amp'] = zone.amp
+        region['volume'] = 20. * math.log(zone.amp, 10.)
         region['sample'] = os.path.basename(zone.path)
         region['lokey'] = zone.low_key
         region['hikey'] = zone.high_key
@@ -672,10 +673,10 @@ class MyFrame(wx.Frame):
         zone = new_zone_from_file(wav_path)
         if path.endswith('.jmz'):
           jm.zone_set_name(zone, region['jm_name']) 
-          zone.amp = region['jm_amp']
         else:
           self.NameZone(zone)
         # these should really be already validated and converted inside parse
+        zone.amp = 10.**(region['volume'] / 20.)
         zone.low_key = region['lokey']
         zone.high_key = region['hikey']
         zone.origin = region['pitch_keycenter']
