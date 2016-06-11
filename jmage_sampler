@@ -176,6 +176,14 @@ class RGPanel(jmage.ui.GridPanel):
     st.SetSize((4 * self.char_width, -1))
     header.Add(st)
 
+    st = wx.StaticText(header, label="Group")
+    st.SetSize((8 * self.char_width, -1))
+    header.Add(st)
+
+    st = wx.StaticText(header, label="Off-Group")
+    st.SetSize((9 * self.char_width, -1))
+    header.Add(st)
+
     st = wx.StaticText(header, label="Attack")
     #st.SetSize((5 * self.char_width, -1))
     header.Add(st)
@@ -276,6 +284,21 @@ class RGPanel(jmage.ui.GridPanel):
     tc.SetFont(self.font)
     row.Add(tc)
 
+    choice_arr = ['none']
+
+    for i in range(1,17):
+      choice_arr.append("%s" % i)
+
+    # group
+    choice = wx.Choice(row, choices=choice_arr)
+    row.Add(choice)
+    self.Bind(wx.EVT_CHOICE, self.OnControlEvent, choice)
+
+    # off group
+    choice = wx.Choice(row, choices=choice_arr)
+    row.Add(choice)
+    self.Bind(wx.EVT_CHOICE, self.OnControlEvent, choice)
+
     # attack
     tc = jmage.ui.DragBox(row, min=0.0, max=2.0,
       fmt="%.2f", callback=self.ControlCallback, style=wx.TE_RIGHT)
@@ -348,18 +371,22 @@ class RGPanel(jmage.ui.GridPanel):
     windows[10].Select(zone.mode)
     # cf
     windows[11].ChangeValue(int(float(zone.crossfade) / SAMPLE_RATE * 1000))
+    # group
+    windows[12].Select(zone.group)
+    # off group
+    windows[13].Select(zone.off_group)
     # attack
-    windows[12].ChangeValue(float(zone.attack) / SAMPLE_RATE)
+    windows[14].ChangeValue(float(zone.attack) / SAMPLE_RATE)
     # hold
-    windows[13].ChangeValue(float(zone.hold) / SAMPLE_RATE)
+    windows[15].ChangeValue(float(zone.hold) / SAMPLE_RATE)
     # decay
-    windows[14].ChangeValue(float(zone.decay) / SAMPLE_RATE)
+    windows[16].ChangeValue(float(zone.decay) / SAMPLE_RATE)
     # sustain
-    windows[15].ChangeValue(zone.sustain)
+    windows[17].ChangeValue(zone.sustain)
     # release
-    windows[16].ChangeValue(float(zone.release) / SAMPLE_RATE)
+    windows[18].ChangeValue(float(zone.release) / SAMPLE_RATE)
     # path
-    windows[17].SetLabel(zone.path)
+    windows[19].SetLabel(zone.path)
 
   def ControlCallback(self, win):
     #print "callback called"
@@ -405,20 +432,26 @@ class RGPanel(jmage.ui.GridPanel):
     # cf
     elif col_index == 11:
       zone.crossfade = int(SAMPLE_RATE * win.GetValue() / 1000.)
-    # attack
+    # group
     elif col_index == 12:
+      zone.group = win.GetSelection()
+    # off group
+    elif col_index == 13:
+      zone.off_group = win.GetSelection()
+    # attack
+    elif col_index == 14:
       zone.attack = int(SAMPLE_RATE * win.GetValue())
     # hold
-    elif col_index == 13:
+    elif col_index == 15:
       zone.hold = int(SAMPLE_RATE * win.GetValue())
     # decay
-    elif col_index == 14:
+    elif col_index == 16:
       zone.decay = int(SAMPLE_RATE * win.GetValue())
     # sustain
-    if col_index == 15:
+    if col_index == 17:
       zone.sustain = win.GetValue()
     # release
-    elif col_index == 16:
+    elif col_index == 18:
       zone.release = int(SAMPLE_RATE * win.GetValue())
 
     ZONE_LIST[row_index] = zone

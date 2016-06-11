@@ -14,6 +14,8 @@ SFZ_DEFAULTS = {
   # ideal prio would be: sfz default -> wav -> sfz override
   # current sampler zone creation doesn't allow this
   'loop_crossfade': 0.0,
+  'group': 0,
+  'off_group': 0,
   'ampeg_attack': 0.0, 
   'ampeg_hold': 0.0,
   'ampeg_decay': 0.0,
@@ -82,7 +84,7 @@ class SFZParser(object):
       if conv_val < -100 or conv_val > 100:
         raise RuntimeError('%s must be between -100 and 100' % key)
       return (True, conv_val)
-    if key == 'offset' or key == 'loop_start' or key == 'loop_end':
+    if key == 'offset' or key == 'loop_start' or key == 'loop_end' or key == 'group' or key == 'off_group':
       return (True, int(value))
     if key == 'loop_crossfade' or key == 'ampeg_attack' or key == 'ampeg_hold' or key == 'ampeg_decay' or key == 'ampeg_sustain' or key == 'ampeg_release':
       return (True, float(value))

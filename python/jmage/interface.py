@@ -38,6 +38,8 @@ class key_zone(Structure):
     ('release', c_int),
     ('pitch_corr', c_double),
     ('mode', c_int),
+    ('group', c_int),
+    ('off_group', c_int),
     ('crossfade', c_int),
     ('name', c_char * PATH_MAX),
     ('path', c_char * PATH_MAX)
