@@ -180,7 +180,7 @@ class RGPanel(jmage.ui.GridPanel):
     st.SetSize((8 * self.char_width, -1))
     header.Add(st)
 
-    st = wx.StaticText(header, label="Off-Group")
+    st = wx.StaticText(header, label="Off_Group")
     st.SetSize((9 * self.char_width, -1))
     header.Add(st)
 
@@ -202,6 +202,10 @@ class RGPanel(jmage.ui.GridPanel):
 
     st = wx.StaticText(header, label="Release")
     #st.SetSize((5 * self.char_width, -1))
+    header.Add(st)
+
+    st = wx.StaticText(header, label="20s_Tail")
+    st.SetSize((7 * self.char_width, -1))
     header.Add(st)
 
     st = wx.StaticText(header, label="Path")
@@ -331,11 +335,26 @@ class RGPanel(jmage.ui.GridPanel):
     tc.SetFont(self.font)
     row.Add(tc)
 
+    # tail
+    cb = wx.CheckBox(row)
+    row.Add(cb)
+    self.Bind(wx.EVT_CHECKBOX, self.OnControlEvent, cb)
+
     # path
     st = wx.StaticText(row)
     row.Add(st)
 
     return row
+
+  def SetLongTail(self, row, on=True):
+    windows = row.GetWindows()
+    if on == True:
+      # increase decay and release
+      windows[16].max = 20.0
+      windows[18].max = 20.0
+    else:
+      windows[16].max = 2.0
+      windows[18].max = 2.0
 
   def UpdateRow(self, i, zone):
     windows = self.rows[i].GetWindows()
@@ -379,14 +398,25 @@ class RGPanel(jmage.ui.GridPanel):
     windows[14].ChangeValue(float(zone.attack) / SAMPLE_RATE)
     # hold
     windows[15].ChangeValue(float(zone.hold) / SAMPLE_RATE)
+
+    # ensure long tail is set before setting decay and release
+    if zone.long_tail:
+      self.SetLongTail(self.rows[i])
+    else:
+      self.SetLongTail(self.rows[i], False)
+
     # decay
     windows[16].ChangeValue(float(zone.decay) / SAMPLE_RATE)
     # sustain
     windows[17].ChangeValue(zone.sustain)
     # release
     windows[18].ChangeValue(float(zone.release) / SAMPLE_RATE)
+    # tail
+    windows[19].SetValue(zone.long_tail)
+
+
     # path
-    windows[19].SetLabel(zone.path)
+    windows[20].SetLabel(zone.path)
 
   def ControlCallback(self, win):
     #print "callback called"
@@ -453,6 +483,13 @@ class RGPanel(jmage.ui.GridPanel):
     # release
     elif col_index == 18:
       zone.release = int(SAMPLE_RATE * win.GetValue())
+    # tail
+    elif col_index == 19:
+      zone.long_tail = win.GetValue()
+      if zone.long_tail:
+        self.SetLongTail(row)
+      else:
+        self.SetLongTail(row, False)
 
     ZONE_LIST[row_index] = zone
 
@@ -664,6 +701,11 @@ class MyFrame(wx.Frame):
         zone.decay = int(SAMPLE_RATE * region['ampeg_decay'])
         zone.sustain = region['ampeg_sustain'] / 100.
         zone.release = int(SAMPLE_RATE * region['ampeg_release'])
+
+        # default to long tail on if patch has long decay or release
+        if zone.decay >= 20.0 or zone.release >= 20.0:
+          zone.long_tail = True
+
         self.zone_grid.Append(zone)
       print "time to load patch: %f\n" % (time.time() - t)
 

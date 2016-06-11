@@ -67,6 +67,7 @@ void jm_init_key_zone(jm_key_zone* zone) {
   zone->decay = 0;
   zone->sustain = 1.0;
   zone->release = 0;
+  zone->long_tail = 0;
   zone->pitch_corr = 0.0;
   zone->mode = LOOP_OFF;
   zone->group = 0;

@@ -36,6 +36,7 @@ class key_zone(Structure):
     ('decay', c_int),
     ('sustain', c_float),
     ('release', c_int),
+    ('long_tail', c_int),
     ('pitch_corr', c_double),
     ('mode', c_int),
     ('group', c_int),

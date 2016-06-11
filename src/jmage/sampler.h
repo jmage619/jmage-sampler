@@ -46,6 +46,7 @@ typedef struct {
   int decay;
   float sustain;
   int release;
+  int long_tail;
   double pitch_corr;
   loop_mode mode;
   int group;
