@@ -11,7 +11,8 @@
 
 #define MAX_VELOCITY 127
 // boost for controllers that don't reach 127 easily
-#define VELOCITY_BOOST 1.2f
+//#define VELOCITY_BOOST 1.2f
+#define VELOCITY_BOOST 1.0f
 
 void AudioStream::init(const jm_key_zone& zone) {
   loop_on = (zone.mode == LOOP_CONTINUOUS) ? true : false;

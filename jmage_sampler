@@ -704,7 +704,7 @@ class MyFrame(wx.Frame):
         zone.release = int(SAMPLE_RATE * region['ampeg_release'])
 
         # default to long tail on if patch has long decay or release
-        if zone.decay >= 20.0 or zone.release >= 20.0:
+        if zone.decay >= 20.0 * SAMPLE_RATE or zone.release >= 20.0 * SAMPLE_RATE:
           zone.long_tail = True
 
         self.zone_grid.Append(zone)
