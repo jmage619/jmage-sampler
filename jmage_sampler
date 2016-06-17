@@ -548,15 +548,19 @@ class MyFrame(wx.Frame):
     # to load patches
     button = wx.Button(self.panel1, -1, "save")
     self.Bind(wx.EVT_BUTTON, self.OnSave, button)
-    hbox1.Add(button, flag=wx.ALIGN_CENTER)
+    hbox1.Add(button, flag=wx.ALIGN_CENTER | wx.RIGHT, border=10)
     button = wx.Button(self.panel1, -1, "load")
     self.Bind(wx.EVT_BUTTON, self.OnLoad, button)
     hbox1.Add(button, flag=wx.ALIGN_CENTER)
 
-    vbox.Add(hbox1, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border=10)
+    vbox.Add(hbox1, flag=wx.LEFT | wx.RIGHT | wx.TOP, border=10)
 
     # create zone grid
-    self.zone_grid = jmage.ui.Grid(self.panel1, style=wx.TAB_TRAVERSAL)
+
+    # use output box to set row height, add 7 pixel border
+    row_height = self.output.GetSize().height + 7
+
+    self.zone_grid = jmage.ui.Grid(self.panel1, row_height=row_height, style=wx.TAB_TRAVERSAL)
     grid_panel = LGPanel(self.font, self.char_width, self.zone_grid)
     self.zone_grid.Add(grid_panel)
     grid_panel = RGPanel(self.font, self.char_width, self.zone_grid)

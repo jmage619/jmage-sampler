@@ -221,13 +221,14 @@ class StretchRow(wx.PyPanel):
 
 class Grid(wx.Panel):
   def __init__(self, *args, **kwargs):
-    super(Grid, self).__init__(*args, **kwargs)
+    # just default to something reasonable
+    self.row_height = kwargs.pop('row_height', 31)
+    style = kwargs.pop('style', 0)
+    style = style | wx.HSCROLL | wx.VSCROLL
+    super(Grid, self).__init__(*args, style=style, **kwargs)
     self.cur_pos = 0
     self.panels = []
     self.hbox = wx.BoxSizer(wx.HORIZONTAL)
-    #self.row_height = -1
-    # just hardcode until we get it right
-    self.row_height = 31
     self.num_vis_rows = 0
     self.scroll_x = 0
     #self.scroll_y = 0
@@ -240,7 +241,7 @@ class Grid(wx.Panel):
 
   def Add(self, panel):
     self.panels.append(panel)
-    self.hbox.Add(panel)
+    self.hbox.Add(panel, flag=wx.EXPAND)
     # call layout here?
 
   def AddHeader(self):
@@ -303,7 +304,6 @@ class Grid(wx.Panel):
 
     # no matter what virtual size increases causing scroll pos to move up
     self.scroll_y_maxed = False
-    self.hbox.Layout()
     self.UpdateScrollbars()
 
   # i is an index into data
