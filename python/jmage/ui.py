@@ -304,6 +304,8 @@ class Grid(wx.Panel):
 
     # no matter what virtual size increases causing scroll pos to move up
     self.scroll_y_maxed = False
+    # not needed?
+    #self.hbox.Layout()
     self.UpdateScrollbars()
 
   # i is an index into data

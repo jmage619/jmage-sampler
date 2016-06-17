@@ -519,7 +519,7 @@ class MyFrame(wx.Frame):
     # create Volume label
     vbox = wx.BoxSizer(wx.VERTICAL)
     st1 = wx.StaticText(self.panel1, label='Volume:')
-    vbox.Add(st1, flag=wx.LEFT | wx.RIGHT | wx.TOP, border=10)
+    vbox.Add(st1, flag=wx.LEFT | wx.TOP, border=10)
 
     # horizontal sizer to contain volume control
     hbox1 = wx.BoxSizer(wx.HORIZONTAL)
@@ -553,7 +553,7 @@ class MyFrame(wx.Frame):
     self.Bind(wx.EVT_BUTTON, self.OnLoad, button)
     hbox1.Add(button, flag=wx.ALIGN_CENTER)
 
-    vbox.Add(hbox1, flag=wx.LEFT | wx.RIGHT | wx.TOP, border=10)
+    vbox.Add(hbox1, flag=wx.LEFT | wx.TOP, border=10)
 
     # create zone grid
 
@@ -568,7 +568,7 @@ class MyFrame(wx.Frame):
     self.zone_grid.AddHeader()
     self.zone_grid.RegisterData(ZONE_LIST)
 
-    vbox.Add(self.zone_grid, flag=wx.LEFT | wx.RIGHT | wx.TOP | wx.EXPAND, border=10, proportion=1)
+    vbox.Add(self.zone_grid, flag=wx.EXPAND | wx.LEFT | wx.TOP, border=10, proportion=1)
     self.panel1.SetSizer(vbox)
 
     self.panel2 = wx.Panel(sp)
