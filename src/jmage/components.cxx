@@ -126,7 +126,9 @@ Playhead::Playhead(JMStack<Playhead*>* playhead_pool, jack_nframes_t pitch_buf_s
   pitch_buf = new float[pitch_buf_size * 2];
   int error;
   // have to always make it stereo since they are allocated in advance
-  resampler = src_new(SRC_SINC_FASTEST, 2, &error);
+  //resampler = src_new(SRC_SINC_FASTEST, 2, &error);
+  //resampler = src_new(SRC_ZERO_ORDER_HOLD, 2, &error);
+  resampler = src_new(SRC_LINEAR, 2, &error);
 }
 
 Playhead::~Playhead() {
