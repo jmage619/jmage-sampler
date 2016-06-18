@@ -173,10 +173,17 @@ void Playhead::pre_process(jack_nframes_t nframes) {
     data.input_frames = num_read - in_offset;
     data.data_out = pitch_buf + 2 * out_offset;
     data.output_frames = nframes - out_offset;
-    src_process(resampler, &data);
 
+    src_process(resampler, &data);
     out_offset += data.output_frames_gen;
     in_offset += data.input_frames_used;
+
+    /* replace above 3 lines with this to compare pitch shift against pass through
+    int to_read = data.input_frames < data.output_frames ? data.input_frames : data.output_frames;
+    memcpy(data.data_out, data.data_in, 2 * to_read * sizeof(float));
+    out_offset += to_read;
+    in_offset += to_read;
+    */
 
     if (in_offset >= num_read) {
       num_read = as.read(in_buf, PH_BUF_SIZE / 2);
