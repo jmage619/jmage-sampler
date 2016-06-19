@@ -666,6 +666,12 @@ class MyFrame(wx.Frame):
     else:
       dlg = wx.FileDialog(self, "Open a FUCKING patch already!!", os.path.dirname(self.last_file), os.path.basename(self.last_file), style=wx.OPEN)
     if dlg.ShowModal() == wx.ID_OK:
+      # wiping out previous settings without any kind of validation for now
+      for i in range(len(ZONE_LIST)):
+        self.zone_grid.Remove(0)
+
+      self.zone_name_index = 1
+
       path = dlg.GetPath()
       self.last_file = path
       # probably want to handle case where not sfz or jmz
