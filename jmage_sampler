@@ -546,6 +546,7 @@ class MyFrame(wx.Frame):
     hbox1.Add(self.slider, flag=wx.ALIGN_CENTER | wx.RIGHT, border=10)
     
     # to load patches
+    self.last_file = None
     button = wx.Button(self.panel1, -1, "save")
     self.Bind(wx.EVT_BUTTON, self.OnSave, button)
     hbox1.Add(button, flag=wx.ALIGN_CENTER | wx.RIGHT, border=10)
@@ -660,9 +661,13 @@ class MyFrame(wx.Frame):
     self.zone_name_index += 1
 
   def OnLoad(self, e):
-    dlg = wx.FileDialog(self, "Open a FUCKING patch already!!", os.getcwd(), style=wx.OPEN)
+    if self.last_file is None:
+      dlg = wx.FileDialog(self, "Open a FUCKING patch already!!", os.getcwd(), style=wx.OPEN)
+    else:
+      dlg = wx.FileDialog(self, "Open a FUCKING patch already!!", os.path.dirname(self.last_file), os.path.basename(self.last_file), style=wx.OPEN)
     if dlg.ShowModal() == wx.ID_OK:
       path = dlg.GetPath()
+      self.last_file = path
       # probably want to handle case where not sfz or jmz
       if path.endswith('.sfz'):
         patch = jmage.util.parse_sfz(path)
