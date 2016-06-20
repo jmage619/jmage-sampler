@@ -121,6 +121,7 @@ class msg_data(Union):
   _fields_ = [('i', c_int)]
 
 MT_VOLUME = 0
+MT_CHANNEL = 1
 
 class msg(Structure):
   _fields_ = [('type', c_int), ('data', msg_data)]

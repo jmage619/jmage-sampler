@@ -57,7 +57,10 @@ typedef struct {
   char path[PATH_MAX];
 } jm_key_zone;
 
-typedef enum {MT_VOLUME} msg_type;
+typedef enum {
+MT_VOLUME,
+MT_CHANNEL
+} msg_type;
 
 typedef struct {
   msg_type type;

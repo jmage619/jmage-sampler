@@ -29,6 +29,7 @@ class JMSampler {
     // volume control; should amp really be a member?
     float amp[VOL_STEPS];
     int level;
+    int channel;
 
     JMZoneList* zones;
 

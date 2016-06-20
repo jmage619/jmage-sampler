@@ -516,13 +516,28 @@ class MyFrame(wx.Frame):
     sp = wx.SplitterWindow(self, style=wx.SP_LIVE_UPDATE)
     self.panel1 = wx.Panel(sp)
 
-    # create Volume label
     vbox = wx.BoxSizer(wx.VERTICAL)
-    st1 = wx.StaticText(self.panel1, label='Volume:')
-    vbox.Add(st1, flag=wx.LEFT | wx.TOP, border=10)
+
+    # horizontal sizer to contain save and load
+    hbox = wx.BoxSizer(wx.HORIZONTAL)
+
+    # to load patches
+    self.last_file = None
+    button = wx.Button(self.panel1, -1, "save")
+    self.Bind(wx.EVT_BUTTON, self.OnSave, button)
+    hbox.Add(button, flag=wx.ALIGN_CENTER | wx.RIGHT, border=10)
+    button = wx.Button(self.panel1, -1, "load")
+    self.Bind(wx.EVT_BUTTON, self.OnLoad, button)
+    hbox.Add(button, flag=wx.ALIGN_CENTER)
+
+    vbox.Add(hbox, flag=wx.LEFT | wx.TOP, border=10)
 
     # horizontal sizer to contain volume control
-    hbox1 = wx.BoxSizer(wx.HORIZONTAL)
+    hbox = wx.BoxSizer(wx.HORIZONTAL)
+
+    # volume label
+    st = wx.StaticText(self.panel1, label='Vol:')
+    hbox.Add(st, flag=wx.ALIGN_CENTER | wx.RIGHT, border=10)
 
     # set font and extract char width to use in Volume output box
     self.font = wx.Font(10, wx.TELETYPE, wx.NORMAL, wx.NORMAL)
@@ -537,25 +552,25 @@ class MyFrame(wx.Frame):
     self.output.SetValue(str(VOL_STEPS - 1))
     self.output.SetFont(self.font)
     self.Bind(wx.EVT_TEXT_ENTER, self.OnVolUpdate, self.output)
-    hbox1.Add(self.output, flag=wx.ALIGN_CENTER | wx.RIGHT, border=10)
+    hbox.Add(self.output, flag=wx.ALIGN_CENTER | wx.RIGHT, border=10)
 
     # create Volume slider
     self.slider = wx.Slider(self.panel1, -1, VOL_STEPS - 1, 0, VOL_STEPS - 1, size=(200, -1),
       style=wx.SL_HORIZONTAL)
     self.Bind(wx.EVT_SCROLL, self.OnVolScroll, self.slider)
-    hbox1.Add(self.slider, flag=wx.ALIGN_CENTER | wx.RIGHT, border=10)
+    hbox.Add(self.slider, flag=wx.ALIGN_CENTER | wx.RIGHT, border=10)
     
-    # to load patches
-    self.last_file = None
-    button = wx.Button(self.panel1, -1, "save")
-    self.Bind(wx.EVT_BUTTON, self.OnSave, button)
-    hbox1.Add(button, flag=wx.ALIGN_CENTER | wx.RIGHT, border=10)
-    button = wx.Button(self.panel1, -1, "load")
-    self.Bind(wx.EVT_BUTTON, self.OnLoad, button)
-    hbox1.Add(button, flag=wx.ALIGN_CENTER)
+    # channel label
+    st = wx.StaticText(self.panel1, label='Chan:')
+    hbox.Add(st, flag=wx.ALIGN_CENTER | wx.RIGHT, border=10)
 
-    vbox.Add(hbox1, flag=wx.LEFT | wx.TOP, border=10)
+    # channel select
+    choices = [str(i) for i in range(1,17)]
+    choice = wx.Choice(self.panel1, choices=choices)
+    hbox.Add(choice, flag=wx.ALIGN_CENTER | wx.RIGHT, border=10)
+    self.Bind(wx.EVT_CHOICE, self.OnChanUpdate, choice)
 
+    vbox.Add(hbox, flag=wx.LEFT | wx.TOP, border=10)
     # create zone grid
 
     # use output box to set row height, add 7 pixel border
@@ -606,6 +621,13 @@ class MyFrame(wx.Frame):
         self.slider.SetValue(level)
     except ValueError:
       pass
+
+  def OnChanUpdate(self, e):
+    val = e.GetEventObject().GetSelection()
+    msg = jm.msg()
+    msg.type = jm.MT_CHANNEL
+    msg.data.i = val
+    SAMPLER.send_msg(msg)
 
   def OnSave(self, e):
     dlg = wx.FileDialog(self, "Save a FUCKING patch already!!", os.getcwd(), style=wx.SAVE)

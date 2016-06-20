@@ -27,6 +27,7 @@ JMSampler::JMSampler(JMZoneList* zones):
     msg_q_in(MSG_Q_SIZE),
     msg_q_out(MSG_Q_SIZE),
     level(VOL_STEPS - 1),
+    channel(0),
     zones(zones),
     sustain_on(false),
     sound_gens(POLYPHONY),
@@ -104,8 +105,15 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
   // handle any UI messages
   jm_msg msg;
   while (jms->msg_q_in.remove(msg)) {
-    if (msg.type == MT_VOLUME) {
-      jms->level = msg.data.i;
+    switch (msg.type) {
+      case MT_VOLUME:
+        jms->level = msg.data.i;
+        break;
+      case MT_CHANNEL:
+        jms->channel = msg.data.i;
+        break;
+      default:
+        break;
     }
   }
 
@@ -129,100 +137,103 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
     if (cur_event < event_count) {
       // procces next midi event if it applies to current time (frame)
       while (n == event.time) {
-        // process note on
-        if ((event.buffer[0] & 0xf0) == 0x90) {
-          // if sustain on and note is already playing, release old one first
-          if (jms->sustain_on) {
-            for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
-              // doesn't apply to one shot
-              if (!sg_el->sg->one_shot && sg_el->sg->pitch == event.buffer[1])
-                sg_el->sg->set_release();
-            }
-          }
-          std::vector<jm_key_zone>::iterator it;
-          // yes, using mutex here violates the laws of real time ..BUT..
-          // we don't expect a musician to tweak zones during an actual take!
-          // this allows for demoing zone changes in thread safe way in *almost* real time
-          // we can safely assume this mutex will be unlocked in a real take
-          jms->zones->lock();
-          // pick out zones midi event matches against and add sound gens to queue
-          for (it = jms->zones->begin(); it != jms->zones->end(); ++it) {
-            if (jm_zone_contains(&*it, event.buffer[1], event.buffer[2])) {
-              printf("sg num: %li\n", jms->sound_gens.size());
-              // oops we hit polyphony, remove oldest sound gen in the queue to make room
-              if (jms->sound_gens.size() >= POLYPHONY) {
-                printf("hit poly lim!\n");
-                jms->sound_gens.get_tail_ptr()->sg->release_resources();
-                jms->sound_gens.remove_last();
-              }
-
-              // shut off any sound gens that are in this off group
-              if (it->group > 0) {
-                for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
-                  if (sg_el->sg->off_group == it->group)
-                    sg_el->sg->set_release();
-                }
-              }
-
-              // create sound gen
-              AmpEnvGenerator* ag;
-              jms->amp_gen_pool.pop(ag);
-              Playhead* ph;
-              jms->playhead_pool.pop(ph);
-              ph->init(*it, event.buffer[1]);
-              ag->init(ph, *it, event.buffer[1], event.buffer[2]);
-              printf("pre process start\n");
-              ag->pre_process(nframes - n);
-              printf("pre process finish\n");
-
-              // add sound gen to queue
-              jms->sound_gens.add(ag);
-              printf("event: note on;  note: %i; vel: %i\n", event.buffer[1], event.buffer[2]);
-            }
-          }
-          jms->zones->unlock();
-        }
-        // process note off
-        else if ((event.buffer[0] & 0xf0) == 0x80) {
-          printf("event: note off; note: %i\n", event.buffer[1]);
-          // find all sound gens assigned to this pitch
-          for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
-            if (sg_el->sg->pitch == event.buffer[1]) {
-              // note off does not apply to one shot
-              if (!sg_el->sg->one_shot) {
-                // if sustaining, just mark for removal later
-                if (jms->sustain_on) {
-                  sg_el->sg->note_off = true;
-                }
-                // not sustaining, remove immediately
-                else
+        // only consider events from current channel
+        if ((event.buffer[0] & 0x0f) == jms->channel) {
+          // process note on
+          if ((event.buffer[0] & 0xf0) == 0x90) {
+            // if sustain on and note is already playing, release old one first
+            if (jms->sustain_on) {
+              for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+                // doesn't apply to one shot
+                if (!sg_el->sg->one_shot && sg_el->sg->pitch == event.buffer[1])
                   sg_el->sg->set_release();
               }
             }
-          }
-        }
-        // process sustain pedal
-        else if ((event.buffer[0] & 0xf0) == 0xb0 && event.buffer[1] == 0x40) {
-          // >= 64 turns on sustain
-          if (event.buffer[2] >= 64) {
-            jms->sustain_on = true;
-            printf("sustain on\n");
-          }
-          // < 64 turns ustain off
-          else {
-            for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
-              // turn off all sound gens marked with previous note off
-              if (sg_el->sg->note_off == true)
-                sg_el->sg->set_release();
-            }
+            std::vector<jm_key_zone>::iterator it;
+            // yes, using mutex here violates the laws of real time ..BUT..
+            // we don't expect a musician to tweak zones during an actual take!
+            // this allows for demoing zone changes in thread safe way in *almost* real time
+            // we can safely assume this mutex will be unlocked in a real take
+            jms->zones->lock();
+            // pick out zones midi event matches against and add sound gens to queue
+            for (it = jms->zones->begin(); it != jms->zones->end(); ++it) {
+              if (jm_zone_contains(&*it, event.buffer[1], event.buffer[2])) {
+                printf("sg num: %li\n", jms->sound_gens.size());
+                // oops we hit polyphony, remove oldest sound gen in the queue to make room
+                if (jms->sound_gens.size() >= POLYPHONY) {
+                  printf("hit poly lim!\n");
+                  jms->sound_gens.get_tail_ptr()->sg->release_resources();
+                  jms->sound_gens.remove_last();
+                }
 
-            jms->sustain_on = false;
-            printf("sustain off\n");
+                // shut off any sound gens that are in this off group
+                if (it->group > 0) {
+                  for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+                    if (sg_el->sg->off_group == it->group)
+                      sg_el->sg->set_release();
+                  }
+                }
+
+                // create sound gen
+                AmpEnvGenerator* ag;
+                jms->amp_gen_pool.pop(ag);
+                Playhead* ph;
+                jms->playhead_pool.pop(ph);
+                ph->init(*it, event.buffer[1]);
+                ag->init(ph, *it, event.buffer[1], event.buffer[2]);
+                printf("pre process start\n");
+                ag->pre_process(nframes - n);
+                printf("pre process finish\n");
+
+                // add sound gen to queue
+                jms->sound_gens.add(ag);
+                printf("event: channel: %i; note on;  note: %i; vel: %i\n", event.buffer[0] & 0x0F, event.buffer[1], event.buffer[2]);
+              }
+            }
+            jms->zones->unlock();
           }
+          // process note off
+          else if ((event.buffer[0] & 0xf0) == 0x80) {
+            printf("event: note off; note: %i\n", event.buffer[1]);
+            // find all sound gens assigned to this pitch
+            for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+              if (sg_el->sg->pitch == event.buffer[1]) {
+                // note off does not apply to one shot
+                if (!sg_el->sg->one_shot) {
+                  // if sustaining, just mark for removal later
+                  if (jms->sustain_on) {
+                    sg_el->sg->note_off = true;
+                  }
+                  // not sustaining, remove immediately
+                  else
+                    sg_el->sg->set_release();
+                }
+              }
+            }
+          }
+          // process sustain pedal
+          else if ((event.buffer[0] & 0xf0) == 0xb0 && event.buffer[1] == 0x40) {
+            // >= 64 turns on sustain
+            if (event.buffer[2] >= 64) {
+              jms->sustain_on = true;
+              printf("sustain on\n");
+            }
+            // < 64 turns ustain off
+            else {
+              for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+                // turn off all sound gens marked with previous note off
+                if (sg_el->sg->note_off == true)
+                  sg_el->sg->set_release();
+              }
+
+              jms->sustain_on = false;
+              printf("sustain off\n");
+            }
+          }
+          // just print messages we don't currently handle
+          else if (event.buffer[0] != 0xfe)
+            printf("event: 0x%x\n", event.buffer[0]);
         }
-        // just print messages we don't currently handle
-        else if (event.buffer[0] != 0xfe)
-          printf("event: 0x%x\n", event.buffer[0]);
 
         // get next midi event or break if none left
         cur_event++;
