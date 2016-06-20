@@ -28,10 +28,14 @@ JMZ_DEFAULTS = dict(SFZ_DEFAULTS)
 #JMZ_DEFAULTS['jm_amp'] = 1.0
 
 class SFZ(object):
-  def __init__(self, regions=[]):
+  def __init__(self, regions=None):
+    if regions is None:
+      self.regions = []
+    else:
+      self.regions = regions
+
     self.defaults = SFZ_DEFAULTS
     self.write_order = ['volume', 'pitch_keycenter', 'lokey', 'hikey', 'lovel', 'hivel', 'tune', 'offset', 'loop_start', 'loop_end', 'loop_mode', 'loop_crossfade', 'ampeg_attack', 'ampeg_hold', 'ampeg_decay', 'ampeg_sustain', 'ampeg_release', 'sample']
-    self.regions = regions
 
   def add_region(self, region):
     reg = dict(self.defaults)
@@ -46,7 +50,7 @@ class SFZ(object):
       out.write('\n')
     
 class JMZ(SFZ):
-  def __init__(self, regions=[]):
+  def __init__(self, regions=None):
     super(JMZ, self).__init__(regions)
     self.defaults = JMZ_DEFAULTS
     #self.write_order = ['jm_name', 'jm_amp'] + self.write_order
