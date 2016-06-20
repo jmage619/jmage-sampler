@@ -642,6 +642,8 @@ class MyFrame(wx.Frame):
         region['loop_start'] = zone.left
         region['loop_end'] = zone.right
         region['loop_crossfade'] = float(zone.crossfade) / SAMPLE_RATE
+        region['group'] = zone.group
+        region['off_group'] = zone.off_group
         region['ampeg_attack'] = float(zone.attack) / SAMPLE_RATE
         region['ampeg_hold'] = float(zone.hold) / SAMPLE_RATE
         region['ampeg_decay'] = float(zone.decay) / SAMPLE_RATE
@@ -712,6 +714,8 @@ class MyFrame(wx.Frame):
         if 'loop_end' in region:
           zone.right = region['loop_end']
         zone.crossfade = int(SAMPLE_RATE * region['loop_crossfade'])
+        zone.group = region['group']
+        zone.off_group = region['off_group']
         zone.attack = int(SAMPLE_RATE * region['ampeg_attack'])
         zone.hold = int(SAMPLE_RATE * region['ampeg_hold'])
         zone.decay = int(SAMPLE_RATE * region['ampeg_decay'])
@@ -719,7 +723,7 @@ class MyFrame(wx.Frame):
         zone.release = int(SAMPLE_RATE * region['ampeg_release'])
 
         # default to long tail on if patch has long decay or release
-        if zone.decay >= 20.0 * SAMPLE_RATE or zone.release >= 20.0 * SAMPLE_RATE:
+        if zone.decay >= 2.0 * SAMPLE_RATE or zone.release >= 2.0 * SAMPLE_RATE:
           zone.long_tail = True
 
         self.zone_grid.Append(zone)
