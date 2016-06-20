@@ -309,32 +309,43 @@ class Grid(wx.Panel):
     self.UpdateScrollbars()
 
   # i is an index into data
-  # for now it is also assumed i is also a visible row
   def Remove(self, i):
     self.data.pop(i)
-    # corner case, if elements are still available from top, just rotate
-    if self.cur_pos > 0:
-      for p in self.panels:
-        p.ScrollWindow(0, - self.row_height)
-      # update removed el offset
-      i -= 1
+
+    # case: item is before visible windows
+    if i < self.cur_pos:
       self.cur_pos -= 1
 
-    # corner case, if less data than visible windows, remove one
-    # subtract 1 since num_vis_rows includes header 
-    elif self.cur_pos + self.num_vis_rows - 1 > len(self.data):
-      for p in self.panels:
-        p.GetRow(self.num_vis_rows - 1).Hide()
-      self.num_vis_rows -= 1
+    # case: item is visible
+    elif i >= self.cur_pos and i < self.cur_pos + self.num_vis_rows - 1:
+      # corner case, if elements are still available from top, just rotate
+      if self.cur_pos > 0:
+        for p in self.panels:
+          p.ScrollWindow(0, - self.row_height)
+        # update removed el offset
+        i -= 1
+        self.cur_pos -= 1
 
-      self.scroll_y_maxed = True
+      # corner case, if less data than visible windows, remove one
+      # subtract 1 since num_vis_rows includes header 
+      elif self.cur_pos + self.num_vis_rows - 1 > len(self.data):
+        for p in self.panels:
+          p.GetRow(self.num_vis_rows - 1).Hide()
+        self.num_vis_rows -= 1
 
-    # re align visible elements >= i
-    # subtract 1 since num_vis_rows includes header 
-    for j in range(self.num_vis_rows - 1 - (i - self.cur_pos)):
-      for p in self.panels:
-        # add 1 to row index since first visible row is header
-        p.UpdateRow(i - self.cur_pos + 1 + j, self.data[i + j])
+        self.scroll_y_maxed = True
+
+      # re align visible elements >= i
+      # subtract 1 since num_vis_rows includes header 
+      for j in range(self.num_vis_rows - 1 - (i - self.cur_pos)):
+        for p in self.panels:
+          # add 1 to row index since first visible row is header
+          p.UpdateRow(i - self.cur_pos + 1 + j, self.data[i + j])
+
+    #case: element after visible windows
+    else:
+      if self.cur_pos + self.num_vis_rows - 1 > len(self.data):
+        self.scroll_y_maxed = True
 
     self.UpdateScrollbars()
 
