@@ -134,15 +134,15 @@ class RGPanel(jmage.ui.GridPanel):
     header.Add(st)
 
     st = wx.StaticText(header, label="Origin")
-    st.SetSize((8 * self.char_width, -1))
+    st.SetSize((5 * self.char_width, -1))
     header.Add(st)
 
     st = wx.StaticText(header, label="Lower")
-    st.SetSize((8 * self.char_width, -1))
+    st.SetSize((5 * self.char_width, -1))
     header.Add(st)
 
     st = wx.StaticText(header, label="Upper")
-    st.SetSize((8 * self.char_width, -1))
+    st.SetSize((5 * self.char_width, -1))
     header.Add(st)
 
     st = wx.StaticText(header, label="Lo Vel")
@@ -225,22 +225,22 @@ class RGPanel(jmage.ui.GridPanel):
     row.Add(tc)
 
     # origin
-    cb = jmage.ui.NoteChoice(row)
-    cb.SetFont(self.font)
-    row.Add(cb)
-    self.Bind(wx.EVT_CHOICE, self.OnControlEvent, cb)
+    tc = jmage.ui.DragBox(row, steps=128, min=0, max=127,
+      callback=self.ControlCallback, style=wx.TE_RIGHT)
+    tc.SetFont(self.font)
+    row.Add(tc)
 
     # lower
-    cb = jmage.ui.NoteChoice(row)
-    cb.SetFont(self.font)
-    row.Add(cb)
-    self.Bind(wx.EVT_CHOICE, self.OnControlEvent, cb)
+    tc = jmage.ui.DragBox(row, steps=128, min=0, max=127,
+      callback=self.ControlCallback, style=wx.TE_RIGHT)
+    tc.SetFont(self.font)
+    row.Add(tc)
 
     # upper
-    cb = jmage.ui.NoteChoice(row)
-    cb.SetFont(self.font)
-    row.Add(cb)
-    self.Bind(wx.EVT_CHOICE, self.OnControlEvent, cb)
+    tc = jmage.ui.DragBox(row, steps=128, min=0, max=127,
+      callback=self.ControlCallback, style=wx.TE_RIGHT)
+    tc.SetFont(self.font)
+    row.Add(tc)
 
     # lo vel
     tc = jmage.ui.DragBox(row, steps=128, min=0, max=127,
@@ -362,11 +362,11 @@ class RGPanel(jmage.ui.GridPanel):
     # vol
     windows[0].ChangeValue(20. * math.log(zone.amp, 10.))
     # origin
-    windows[1].Select(zone.origin)
+    windows[1].ChangeValue(zone.origin)
     # lower
-    windows[2].Select(zone.low_key)
+    windows[2].ChangeValue(zone.low_key)
     # upper
-    windows[3].Select(zone.high_key)
+    windows[3].ChangeValue(zone.high_key)
     # lo vel
     windows[4].ChangeValue(zone.low_vel)
     # hi vel
@@ -432,13 +432,13 @@ class RGPanel(jmage.ui.GridPanel):
       zone.amp = 10.**(win.GetValue() / 20.)
     # origin
     elif col_index == 1:
-      zone.origin = win.GetSelection()
+      zone.origin = int(win.GetValue())
     # lower
     elif col_index == 2:
-      zone.low_key = win.GetSelection()
+      zone.low_key = int(win.GetValue())
     # upper
     elif col_index == 3:
-      zone.high_key = win.GetSelection()
+      zone.high_key = int(win.GetValue())
     # lo vel
     elif col_index == 4:
       zone.low_vel = int(win.GetValue())
@@ -803,6 +803,7 @@ def new_zone_from_file(path):
   return zone
 
 if __name__ == '__main__':
+  t = time.time()
   ZONE_LIST = jm.ZoneList()
   SAMPLER = jm.Sampler(ZONE_LIST)
 
@@ -818,6 +819,7 @@ if __name__ == '__main__':
 
   frame = MyFrame(None, size=(490,400))
 
+  print "initialized in %fs" % (time.time() - t)
   app.MainLoop()
   SAMPLER.destroy()
   ZONE_LIST.destroy()
