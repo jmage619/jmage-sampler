@@ -24,18 +24,20 @@ SFZ_DEFAULTS = {
   'ampeg_release': 0.0
 }
 
+SFZ_CONTROL_DEFAULTS = {}
+
 JMZ_DEFAULTS = dict(SFZ_DEFAULTS)
-#JMZ_DEFAULTS['jm_amp'] = 1.0
+JMZ_CONTROL_DEFAULTS = dict(SFZ_CONTROL_DEFAULTS)
+JMZ_CONTROL_DEFAULTS['jm_chan'] = 1
+JMZ_CONTROL_DEFAULTS['jm_vol'] = 16
 
 class SFZ(object):
-  def __init__(self, regions=None):
-    if regions is None:
-      self.regions = []
-    else:
-      self.regions = regions
-
+  def __init__(self):
+    self.regions = []
     self.defaults = SFZ_DEFAULTS
-    self.write_order = ['volume', 'pitch_keycenter', 'lokey', 'hikey', 'lovel', 'hivel', 'tune', 'offset', 'loop_start', 'loop_end', 'loop_mode', 'loop_crossfade', 'group', 'off_group', 'ampeg_attack', 'ampeg_hold', 'ampeg_decay', 'ampeg_sustain', 'ampeg_release', 'sample']
+    self.control = dict(SFZ_CONTROL_DEFAULTS)
+    self.cont_write_order = []
+    self.reg_write_order = ['volume', 'pitch_keycenter', 'lokey', 'hikey', 'lovel', 'hivel', 'tune', 'offset', 'loop_start', 'loop_end', 'loop_mode', 'loop_crossfade', 'group', 'off_group', 'ampeg_attack', 'ampeg_hold', 'ampeg_decay', 'ampeg_sustain', 'ampeg_release', 'sample']
 
   def add_region(self, region):
     reg = dict(self.defaults)
@@ -43,22 +45,29 @@ class SFZ(object):
     self.regions.append(reg)
 
   def write(self, out):
+    out.write('<control>')
+    for k in self.cont_write_order:
+      out.write(" %s=%s" % (k, self.control[k]))
+    out.write('\n')
+
     for reg in self.regions:
       out.write("<region>")
-      for k in self.write_order:
+      for k in self.reg_write_order:
         out.write(" %s=%s" % (k, reg[k]))
       out.write('\n')
     
 class JMZ(SFZ):
-  def __init__(self, regions=None):
-    super(JMZ, self).__init__(regions)
+  def __init__(self):
+    super(JMZ, self).__init__()
     self.defaults = JMZ_DEFAULTS
-    #self.write_order = ['jm_name', 'jm_amp'] + self.write_order
-    self.write_order = ['jm_name'] + self.write_order
+    self.control = dict(JMZ_CONTROL_DEFAULTS)
+    self.cont_write_order = ['jm_vol', 'jm_chan'] + self.cont_write_order
+    self.reg_write_order = ['jm_name'] + self.reg_write_order
 
 class SFZParser(object):
   def __init__(self, file):
-    self.defaults = SFZ_DEFAULTS
+    self.sfz = SFZ()
+    #self.defaults = SFZ_DEFAULTS
     self.valid_sections = set(['group', 'region'])
     self.required_keys = set(['sample'])
     self.file = file
@@ -66,7 +75,7 @@ class SFZParser(object):
     self.data = []
     self.cur_group = {}
     self.cur_section = None
-    self.regions = []
+    #self.regions = []
     self.cur_op = None
     self.cur_group = None
     self.cur_region = None
@@ -108,7 +117,10 @@ class SFZParser(object):
         raise RuntimeError('region missing required key "%s": %s' % (key, region))
 
   def save_prev(self):
-    if self.state == 'group':
+    if self.state == 'control':
+      self.sfz.control[self.cur_op] = self.convert_and_validate(self.cur_op, "".join(self.data))[1]
+      self.data = []
+    elif self.state == 'group':
       self.cur_group[self.cur_op] = self.convert_and_validate(self.cur_op, "".join(self.data))[1]
       self.data = []
     elif self.state == 'region':
@@ -116,7 +128,7 @@ class SFZParser(object):
       self.data = []
 
   def parse(self):
-    self.cur_group = dict(self.defaults)
+    self.cur_group = dict(self.sfz.defaults)
     for line in self.file:
       # strip comment
       line = line.split('//')[0] 
@@ -128,9 +140,11 @@ class SFZParser(object):
             self.save_prev()
             if self.state == 'region':
               self.check_missing(self.cur_region)
-              self.regions.append(self.cur_region)
-          if field[1:-1] == 'group':
-            self.cur_group = dict(self.defaults)
+              self.sfz.regions.append(self.cur_region)
+          if field[1:-1] == 'control':
+            self.state = 'control'
+          elif field[1:-1] == 'group':
+            self.cur_group = dict(self.sfz.defaults)
             self.state = 'group'
           elif field[1:-1] == 'region':
             self.cur_region = dict(self.cur_group)
@@ -151,27 +165,26 @@ class SFZParser(object):
     if len(self.data) > 0 and self.state == 'region':
       self.save_prev()
       self.check_missing(self.cur_region)
-      self.regions.append(self.cur_region)
+      self.sfz.regions.append(self.cur_region)
       
-    return SFZ(self.regions)
+    return self.sfz
 
 class JMZParser(SFZParser):
   def __init__(self, file):
     super(JMZParser, self).__init__(file)
-    self.defaults = JMZ_DEFAULTS
+    self.sfz = JMZ()
 
-  '''def convert_and_validate(self, key, value):
+  def convert_and_validate(self, key, value):
     results = super(JMZParser, self).convert_and_validate(key, value)
     # if success it was a valid SFZ attr
     if results[0]:
       return results
     # now try JMZ tests
-    if key == 'jm_amp':
-      return (True, float(value))
+    if key == 'jm_vol' or key == 'jm_chan':
+      return (True, int(value))
 
     # just return it as-is if we don't know what it is
     return (False, value)
-  '''
 
 def parse_sfz(path):
   sp = SFZParser(open(path))

@@ -616,9 +616,9 @@ class MyFrame(wx.Frame):
 
     # channel select
     choices = [str(i) for i in range(1,17)]
-    choice = wx.Choice(self.panel1, choices=choices)
-    hbox.Add(choice, flag=wx.ALIGN_CENTER | wx.RIGHT, border=10)
-    self.Bind(wx.EVT_CHOICE, self.OnChanUpdate, choice)
+    self.channel = wx.Choice(self.panel1, choices=choices)
+    hbox.Add(self.channel, flag=wx.ALIGN_CENTER | wx.RIGHT, border=10)
+    self.Bind(wx.EVT_CHOICE, self.OnChanUpdate, self.channel)
 
     vbox.Add(hbox, flag=wx.LEFT | wx.TOP, border=10)
     # create zone grid
@@ -690,6 +690,8 @@ class MyFrame(wx.Frame):
         patch = jmage.util.SFZ()
       elif path.endswith('.jmz'):
         patch = jmage.util.JMZ()
+        patch.control['jm_vol'] = self.slider.GetValue()
+        patch.control['jm_chan'] = self.channel.GetSelection() + 1
 
       for zone in ZONE_LIST:
         region = {}
@@ -749,6 +751,24 @@ class MyFrame(wx.Frame):
         patch = jmage.util.parse_sfz(path)
       elif path.endswith('.jmz'):
         patch = jmage.util.parse_jmz(path)
+        # set volume
+        level = patch.control['jm_vol']
+        msg = jm.msg()
+        msg.type = jm.MT_VOLUME
+        msg.data.i = level
+        SAMPLER.send_msg(msg)
+
+        self.output.SetValue(str(level))
+        self.slider.SetValue(level)
+
+        # set channel
+        chan = patch.control['jm_chan'] - 1
+        msg = jm.msg()
+        msg.type = jm.MT_CHANNEL
+        msg.data.i = chan
+        SAMPLER.send_msg(msg)
+        self.channel.SetSelection(chan)
+
       #print patch.regions
       patch_dir = os.path.dirname(path)
 
