@@ -295,6 +295,7 @@ class Grid(wx.Panel):
     self.data.append(data_row)
 
     view_height = self.GetClientSize().height
+    # if visible rows aren't maxed yet, show last and set it to this data
     # ceil ensures we count partially visible windows
     if self.num_vis_rows < math.ceil(view_height / float(self.row_height)):
       for p in self.panels:
@@ -306,6 +307,28 @@ class Grid(wx.Panel):
     self.scroll_y_maxed = False
     # not needed?
     #self.hbox.Layout()
+    self.UpdateScrollbars()
+
+  def Insert(self, i, data_row):
+    self.data.insert(i, data_row)
+
+    view_height = self.GetClientSize().height
+    # if visible rows aren't maxed yet, show another one
+    # ceil ensures we count partially visible windows
+    if self.num_vis_rows < math.ceil(view_height / float(self.row_height)):
+      for p in self.panels:
+        p.GetRow(self.num_vis_rows).Show()
+      self.num_vis_rows += 1
+
+    # re align visible elements >= i
+    # subtract 1 since num_vis_rows includes header 
+    for j in range(self.num_vis_rows - 1 - (i - self.cur_pos)):
+      for p in self.panels:
+        # add 1 to row index since first visible row is header
+        p.UpdateRow(i - self.cur_pos + 1 + j, self.data[i + j])
+
+    # no matter what virtual size increases causing scroll pos to move up
+    self.scroll_y_maxed = False
     self.UpdateScrollbars()
 
   # i is an index into data

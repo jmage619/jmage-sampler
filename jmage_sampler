@@ -42,6 +42,8 @@ NOTE_MAX = 127
 
 OUT_LEN = 4.5
 
+ZONE_NAME_INDEX = 1
+
 class JMSampler(Structure):
   pass
 
@@ -77,6 +79,43 @@ class LGPanel(jmage.ui.GridPanel):
     super(LGPanel, self).__init__(*args, **kwargs)
     self.font = font
     self.char_width = char_width
+    self.id_insert_before = wx.NewId()
+    self.id_insert_after = wx.NewId()
+    self.Bind(wx.EVT_MENU, self.OnInsertBefore, id=self.id_insert_before)
+    self.Bind(wx.EVT_MENU, self.OnInsertAfter, id=self.id_insert_after)
+    self.right_clicked_win = None
+
+  def OnInsertBefore(self, e):
+    row = self.right_clicked_win.GetParent()
+    grid = self.GetParent()
+    index = self.Index(row)
+
+    dlg = wx.FileDialog(self, "Open a FUCKING WAV already!!", os.getcwd(), style=wx.OPEN)
+    if dlg.ShowModal() == wx.ID_OK:
+      path = dlg.GetPath()
+
+      zone = new_zone_from_file(path)
+      # this shit has to be a non-member fun! this is just wacky
+      name_zone(zone)
+      grid.Insert(index, zone)
+
+    dlg.Destroy()
+
+  def OnInsertAfter(self, e):
+    row = self.right_clicked_win.GetParent()
+    grid = self.GetParent()
+    index = self.Index(row) + 1
+
+    dlg = wx.FileDialog(self, "Open a FUCKING WAV already!!", os.getcwd(), style=wx.OPEN)
+    if dlg.ShowModal() == wx.ID_OK:
+      path = dlg.GetPath()
+
+      zone = new_zone_from_file(path)
+      # this shit has to be a non-member fun! this is just wacky
+      name_zone(zone)
+      grid.Insert(index, zone)
+
+    dlg.Destroy()
 
   def CreateHeader(self):
     header = self.NewHeader()
@@ -100,6 +139,7 @@ class LGPanel(jmage.ui.GridPanel):
     tc = wx.TextCtrl(row, style=wx.TE_PROCESS_ENTER)
     row.Add(tc)
     self.Bind(wx.EVT_TEXT_ENTER, self.OnControlEvent, tc)
+    remove_zone_button.Bind(wx.EVT_RIGHT_UP, self.OnRightClick)
 
     return row
 
@@ -120,6 +160,16 @@ class LGPanel(jmage.ui.GridPanel):
     zone = ZONE_LIST[row_index]
     jm.zone_set_name(zone, win.GetValue())
     ZONE_LIST[row_index] = zone
+
+  def OnRightClick(self, e):
+    menu = wx.Menu()
+    menu.Append(self.id_insert_before, "New Zone Before")
+    menu.Append(self.id_insert_after, "New Zone After")
+    win = e.GetEventObject()
+    self.right_clicked_win = win
+    win.PopupMenu(menu)
+    menu.Destroy()
+    e.Skip()
 
 class RGPanel(jmage.ui.GridPanel):
   def __init__(self, font, char_width, *args, **kwargs):
@@ -502,7 +552,7 @@ class MyFrame(wx.Frame):
     super(MyFrame, self).__init__(*args, **kwargs)
 
     # always increment on zone creation
-    self.zone_name_index = 1
+    reset_zone_name()
     self.SetTitle("Ghetto Sampler")
 
     # create menu bar and File menu with exit item
@@ -680,10 +730,6 @@ class MyFrame(wx.Frame):
 
     dlg.Destroy()
 
-  def NameZone(self, zone):
-    jm.zone_set_name(zone, "Zone %i" % self.zone_name_index)
-    self.zone_name_index += 1
-
   def OnLoad(self, e):
     if self.last_file is None:
       dlg = wx.FileDialog(self, "Open a FUCKING patch already!!", os.getcwd(), style=wx.OPEN)
@@ -694,7 +740,7 @@ class MyFrame(wx.Frame):
       for i in range(len(ZONE_LIST)):
         self.zone_grid.Remove(0)
 
-      self.zone_name_index = 1
+      reset_zone_name()
 
       path = dlg.GetPath()
       self.last_file = path
@@ -713,7 +759,7 @@ class MyFrame(wx.Frame):
         if path.endswith('.jmz'):
           jm.zone_set_name(zone, region['jm_name']) 
         else:
-          self.NameZone(zone)
+          name_zone(zone)
         # these should really be already validated and converted inside parse
         zone.amp = 10.**(region['volume'] / 20.)
         zone.low_key = region['lokey']
@@ -759,20 +805,18 @@ class MyFrame(wx.Frame):
       path = dlg.GetPath()
 
       zone = new_zone_from_file(path)
-      self.NameZone(zone)
+      name_zone(zone)
       self.zone_grid.Append(zone)
 
     dlg.Destroy()
 
-  def OnZoneRemove(self, e):
-    win = e.GetEventObject()
-    grid = win.GetParent()
-    index = grid.GetIndex(win)
+def name_zone(zone):
+  global ZONE_NAME_INDEX
+  jm.zone_set_name(zone, "Zone %i" % ZONE_NAME_INDEX)
+  ZONE_NAME_INDEX += 1
 
-    # first index of grid is header
-    zone_index = index[0] - 1
-    lib.jm_remove_zone(SAMPLER, zone_index)
-    grid.RemoveRow(index[0])
+def reset_zone_name():
+  ZONE_NAME_INDEX = 0
 
 def load_wave(path):
   wav = jm_wave()
