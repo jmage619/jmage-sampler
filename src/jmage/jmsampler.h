@@ -1,11 +1,12 @@
 #ifndef JM_JMSAMPLER_H
 #define JM_JMSAMPLER_H
 
+#include <vector>
 #include <pthread.h>
 #include <jack/types.h>
 
 #include "jmage/sampler.h"
-#include "jmage/jmzonelist.h"
+//#include "jmage/jmzonelist.h"
 #include "jmage/collections.h"
 #include "jmage/components.h"
 
@@ -31,7 +32,8 @@ class JMSampler {
     int level;
     int channel;
 
-    JMZoneList* zones;
+    //JMZoneList* zones;
+    std::vector<jm_key_zone> zones;
 
     // state
     bool sustain_on;
@@ -44,7 +46,8 @@ class JMSampler {
     static void init_amp(JMSampler* jms);
 
   public:
-    JMSampler(JMZoneList* zones);
+    //JMSampler(JMZoneList* zones);
+    JMSampler();
     ~JMSampler();
     void send_msg(const jm_msg& msg);
     bool receive_msg(jm_msg& msg);

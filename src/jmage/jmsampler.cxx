@@ -12,9 +12,12 @@
 
 #include "jmage/jmsampler.h"
 #include "jmage/sampler.h"
-#include "jmage/jmzonelist.h"
+//#include "jmage/jmzonelist.h"
 #include "jmage/components.h"
 #include "jmage/collections.h"
+
+// HACK until we figure out where to find this in LV2 instantiate!!
+#define JACK_BUF_SIZE 4096
 
 void JMSampler::init_amp(JMSampler* jms) {
   for (int i = 0; i < VOL_STEPS; i++) {
@@ -23,12 +26,12 @@ void JMSampler::init_amp(JMSampler* jms) {
   jms->amp[0] = 0.0f;
 }
 
-JMSampler::JMSampler(JMZoneList* zones):
+JMSampler::JMSampler():
     msg_q_in(MSG_Q_SIZE),
     msg_q_out(MSG_Q_SIZE),
     level(VOL_STEPS - 1),
     channel(0),
-    zones(zones),
+    //zones(zones),
     sustain_on(false),
     sound_gens(POLYPHONY),
     playhead_pool(POLYPHONY),
@@ -36,8 +39,11 @@ JMSampler::JMSampler(JMZoneList* zones):
   // init amplitude array
   init_amp(this);
 
+  // pre-allocate vector to prevent allocations later in RT thread
+  zones.reserve(100);
+
   // init jack
-  jack_status_t status; 
+  /*jack_status_t status; 
   if ((client = jack_client_open("ghetto_sampler", JackNullOption, &status)) == NULL) {
     throw std::runtime_error("failed to open jack client");
   }
@@ -48,26 +54,29 @@ JMSampler::JMSampler(JMZoneList* zones):
   output_port2 = jack_port_register(client, "out2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 
   jack_buf_size = jack_get_buffer_size(client);
+  */
   for (size_t i = 0; i < POLYPHONY; ++i) {
     amp_gen_pool.push(new AmpEnvGenerator(&amp_gen_pool));
-    playhead_pool.push(new Playhead(&playhead_pool, jack_buf_size));
+    playhead_pool.push(new Playhead(&playhead_pool, JACK_BUF_SIZE));
   }
 
-  if (jack_activate(client)) {
+  /*if (jack_activate(client)) {
     jack_port_unregister(client, input_port);
     jack_port_unregister(client, output_port1);
     jack_port_unregister(client, output_port2);
     jack_client_close(client);
     throw std::runtime_error("cannot activate jack client");
   }
+  */
 }
 
 JMSampler::~JMSampler() {
-  jack_deactivate(client);
+  /*jack_deactivate(client);
   jack_port_unregister(client, input_port);
   jack_port_unregister(client, output_port1);
   jack_port_unregister(client, output_port2);
   jack_client_close(client);
+  */
 
   // clean up whatever is left in sg list
   while (sound_gens.size() > 0) {
@@ -154,9 +163,9 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
             // we don't expect a musician to tweak zones during an actual take!
             // this allows for demoing zone changes in thread safe way in *almost* real time
             // we can safely assume this mutex will be unlocked in a real take
-            jms->zones->lock();
+            //jms->zones->lock();
             // pick out zones midi event matches against and add sound gens to queue
-            for (it = jms->zones->begin(); it != jms->zones->end(); ++it) {
+            for (it = jms->zones.begin(); it != jms->zones.end(); ++it) {
               if (jm_zone_contains(&*it, event.buffer[1], event.buffer[2])) {
                 printf("sg num: %li\n", jms->sound_gens.size());
                 // oops we hit polyphony, remove oldest sound gen in the queue to make room
@@ -190,7 +199,7 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
                 printf("event: channel: %i; note on;  note: %i; vel: %i\n", event.buffer[0] & 0x0F, event.buffer[1], event.buffer[2]);
               }
             }
-            jms->zones->unlock();
+            //jms->zones->unlock();
           }
           // process note off
           else if ((event.buffer[0] & 0xf0) == 0x80) {

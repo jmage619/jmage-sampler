@@ -90,7 +90,7 @@ int jm_zone_contains(jm_key_zone const * zone, int pitch, int velocity) {
   return 0;
 }
 
-// wrappers for JMZoneList
+/*// wrappers for JMZoneList
 JMZoneList* jm_new_zonelist() {
   return new JMZoneList;
 }
@@ -155,6 +155,7 @@ JMSampler* jm_new_sampler(JMZoneList* zones) {
     return NULL;
   }
 }
+*/
 
 void jm_destroy_sampler(JMSampler* jms) {
   delete jms;

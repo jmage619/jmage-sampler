@@ -1,11 +1,13 @@
 @prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
 @prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix urid:  <http://lv2plug.in/ns/ext/urid#> .
 @prefix atom:  <http://lv2plug.in/ns/ext/atom#> .
 
 <http://lv2plug.in/plugins/jm-sampler>
 	a lv2:Plugin;
   doap:name "JMAGE Sampler" ;
   doap:license <http://opensource.org/licenses/isc> ;
+	lv2:requiredFeature urid:map ;
 	lv2:port [
 		a lv2:InputPort ,
 			atom:AtomPort ;
