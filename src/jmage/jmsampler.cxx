@@ -29,13 +29,13 @@ void JMSampler::init_amp(JMSampler* jms) {
 JMSampler::JMSampler():
     msg_q_in(MSG_Q_SIZE),
     msg_q_out(MSG_Q_SIZE),
-    level(VOL_STEPS - 1),
-    channel(0),
     //zones(zones),
-    sustain_on(false),
     sound_gens(POLYPHONY),
     playhead_pool(POLYPHONY),
-    amp_gen_pool(POLYPHONY) {
+    amp_gen_pool(POLYPHONY),
+    level(VOL_STEPS - 1),
+    channel(0),
+    sustain_on(false) {
   // init amplitude array
   init_amp(this);
 
