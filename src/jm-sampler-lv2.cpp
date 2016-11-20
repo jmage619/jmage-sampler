@@ -65,7 +65,7 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
   zone.num_channels = WAV.num_channels;
   zone.wave_length = WAV.length;
   zone.right = WAV.length;
-  zone.mode = LOOP_ONE_SHOT;
+  //zone.mode = LOOP_ONE_SHOT;
 
   plugin->sampler.zones_add(zone);
 
@@ -99,6 +99,8 @@ static void connect_port(LV2_Handle instance, uint32_t port, void* data) {
   }
 }
 
+// later most of this opaque logic should be moved to member funs
+// consider everything in common w/ stand alone jack audio callback when we re-implement that version
 static void run(LV2_Handle instance, uint32_t n_samples) {
   jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
 
@@ -125,6 +127,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
           const uint8_t* const msg = (const uint8_t*)(ev + 1);
           // only consider events from current channel
           if ((msg[0] & 0x0f) == plugin->sampler.channel) {
+            // process note on
             if (lv2_midi_message_type(msg) == LV2_MIDI_MSG_NOTE_ON) {
               // if sustain on and note is already playing, release old one first
               if (plugin->sampler.sustain_on) {
@@ -168,18 +171,52 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
                   printf("event: channel: %i; note on;  note: %i; vel: %i\n", msg[0] & 0x0F, msg[1], msg[2]);
                 }
               }
-              //jms->zones->unlock();
             }
-            /*switch (lv2_midi_message_type(msg)) {
-              case LV2_MIDI_MSG_NOTE_ON:
-                  printf("midi note on; note: %i; vel: %i\n", msg[1], msg[2]);
-                break;
-              default:
-                break;
+            // process note off
+            else if (lv2_midi_message_type(msg) == LV2_MIDI_MSG_NOTE_OFF) {
+              printf("event: note off; note: %i\n", msg[1]);
+              // find all sound gens assigned to this pitch
+              for (sg_el = plugin->sampler.sound_gens_head(); sg_el != NULL; sg_el = sg_el->next) {
+                if (sg_el->sg->pitch == msg[1]) {
+                  // note off does not apply to one shot
+                  if (!sg_el->sg->one_shot) {
+                    // if sustaining, just mark for removal later
+                    if (plugin->sampler.sustain_on) {
+                      sg_el->sg->note_off = true;
+                    }
+                    // not sustaining, remove immediately
+                    else
+                      sg_el->sg->set_release();
+                  }
+                }
+              }
             }
-            */
+            // process sustain pedal
+            else if (lv2_midi_message_type(msg) == LV2_MIDI_MSG_CONTROLLER && msg[1] == LV2_MIDI_CTL_SUSTAIN) {
+              // >= 64 turns on sustain
+              if (msg[2] >= 64) {
+                plugin->sampler.sustain_on = true;
+                printf("sustain on\n");
+              }
+              // < 64 turns ustain off
+              else {
+                for (sg_el = plugin->sampler.sound_gens_head(); sg_el != NULL; sg_el = sg_el->next) {
+                  // turn off all sound gens marked with previous note off
+                  if (sg_el->sg->note_off == true)
+                    sg_el->sg->set_release();
+                }
+
+                plugin->sampler.sustain_on = false;
+                printf("sustain off\n");
+              }
+            }
+            // just print messages we don't currently handle
+            else if (lv2_midi_message_type(msg) != LV2_MIDI_MSG_ACTIVE_SENSE)
+              printf("event: 0x%x\n", msg[0]);
           }
         }
+
+        // get next midi event or break if none left
         ev = lv2_atom_sequence_next(ev);
         if (lv2_atom_sequence_is_end(&plugin->control_port->body, plugin->control_port->atom.size, ev))
           break;
