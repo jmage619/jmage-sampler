@@ -1,28 +1,25 @@
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
+#include <cstring>
 
 #include <lv2/lv2plug.in/ns/lv2core/lv2.h>
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
-#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
-#include "lv2/lv2plug.in/ns/ext/atom/util.h"
-#include "lv2/lv2plug.in/ns/ext/midi/midi.h"
+#include <lv2/lv2plug.in/ns/ext/atom/forge.h>
+#include <lv2/lv2plug.in/ns/ext/atom/util.h>
+#include <lv2/lv2plug.in/ns/ext/urid/urid.h>
+#include <lv2/lv2plug.in/ns/ext/midi/midi.h>
 
+#include "uris.h"
 #include "jmage/sampler.h"
 #include "jmage/jmsampler.h"
 #include "jmage/components.h"
-
-#define JM_SAMPLER_URI "http://lv2plug.in/plugins/jm-sampler"
 
 enum {
   SAMPLER_CONTROL = 0,
   SAMPLER_NOTIFY  = 1,
   SAMPLER_OUT_L = 2,
   SAMPLER_OUT_R = 3
-};
-
-struct jm_uris {
-  LV2_URID midi_Event;
 };
 
 struct jm_sampler_plugin {
@@ -36,6 +33,7 @@ struct jm_sampler_plugin {
 };
 
 static jm_wave WAV;
+static bool initialized = false;
 
 static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
     double rate, const char* path, const LV2_Feature* const* features) {
@@ -56,7 +54,7 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
 
   // Map URIS
   plugin->map = map;
-  plugin->uris.midi_Event = map->map(map->handle, LV2_MIDI__MidiEvent);
+  jm_map_uris(plugin->map, &plugin->uris);
 
   jm_parse_wave(&WAV, "/home/jdost/dev/c/jmage-sampler/afx.wav");
   jm_key_zone zone;
@@ -106,6 +104,31 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
 
   memset(plugin->out1, 0, sizeof(uint32_t) * n_samples);
   memset(plugin->out2, 0, sizeof(uint32_t) * n_samples);
+
+  if (!initialized) {
+    LV2_Atom_Forge forge;
+    lv2_atom_forge_init(&forge, plugin->map);
+    // Set up forge to write directly to notify output port.
+    const uint32_t notify_capacity = plugin->notify_port->atom.size;
+    lv2_atom_forge_set_buffer(&forge, reinterpret_cast<uint8_t*>(plugin->notify_port),
+                              notify_capacity);
+
+    LV2_Atom_Forge_Frame seq_frame;
+    lv2_atom_forge_sequence_head(&forge, &seq_frame, 0);
+    lv2_atom_forge_frame_time(&forge, 0);
+    LV2_Atom_Forge_Frame obj_frame;
+    lv2_atom_forge_object(&forge, &obj_frame, 0, plugin->uris.jm_addZone);
+    lv2_atom_forge_key(&forge, plugin->uris.jm_params);
+    LV2_Atom_Forge_Frame tuple_frame;
+    lv2_atom_forge_tuple(&forge, &tuple_frame);
+    lv2_atom_forge_string(&forge, "Fucking zone", strlen("Fucking zone"));
+    lv2_atom_forge_string(&forge, "-10.3", strlen("-10.3"));
+    lv2_atom_forge_pop(&forge, &tuple_frame);
+    lv2_atom_forge_pop(&forge, &obj_frame);
+    lv2_atom_forge_pop(&forge, &seq_frame);
+
+    initialized = true;
+  }
 
   // we used to handle ui messages here
   // but now they will be in the same atom list as midi

@@ -1,7 +1,14 @@
 @prefix lv2:  <http://lv2plug.in/ns/lv2core#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix ui:   <http://lv2plug.in/ns/extensions/ui#> .
+@prefix exui: <http://kxstudio.sf.net/ns/lv2ext/external-ui#> .
 
 <http://lv2plug.in/plugins/jm-sampler>
 	a lv2:Plugin ;
 	lv2:binary <jm-sampler-lv2.so>  ;
+	rdfs:seeAlso <jm-sampler.ttl> .
+
+<http://lv2plug.in/plugins/jm-sampler#ui>
+	a exui:Widget ;
+	ui:binary <jm-sampler-lv2ui.so> ;
 	rdfs:seeAlso <jm-sampler.ttl> .
