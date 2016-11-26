@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
+#include <lv2/lv2plug.in/ns/ext/atom/forge.h>
 #include <lv2/lv2plug.in/ns/ext/atom/util.h>
 #include <lv2/lv2plug.in/ns/extensions/ui/ui.h>
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
@@ -24,6 +25,7 @@ typedef struct {
   jm_uris uris;
   LV2UI_Write_Function write;
   LV2UI_Controller controller;
+  LV2_Atom_Forge forge;
   // use raw fd for messages from ui
   // because we need non-blocking io
   int fdin; 
@@ -61,9 +63,34 @@ static void run(LV2_External_UI_Widget* widget) {
     char* new_line;
     while ((new_line = strchr(ui->buf, '\n')) != NULL) {
       *new_line = '\0';
-      //fprintf(stderr, "here's the value: %s\n", ui->buf);
-      float val = atof(ui->buf);
-      ui->write(ui->controller, 0, sizeof(float), 0, &val);
+      //fprintf(stderr, "UI: ui stdout message: %s\n", ui->buf);
+      if (!strncmp(ui->buf, "update_zone:", 12)) {
+        char* p = ui->buf + 12; 
+        char* end = strchr(p, ',');
+        *end = '\0';
+        int index = atoi(p);
+        p = end + 1;
+        if (!strncmp(p, "amp,", 4)) {
+          float val = atof(p + 4);
+          //ui->write(ui->controller, 0, sizeof(float), 0, &val);
+          uint8_t buf[128];
+          lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
+          LV2_Atom_Forge_Frame obj_frame;
+          LV2_Atom* obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_updateZone);
+          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
+          LV2_Atom_Forge_Frame tuple_frame;
+          lv2_atom_forge_tuple(&ui->forge, &tuple_frame);
+          lv2_atom_forge_int(&ui->forge, index);
+          lv2_atom_forge_int(&ui->forge, JM_ZONE_AMP);
+          lv2_atom_forge_float(&ui->forge, val);
+          lv2_atom_forge_pop(&ui->forge, &tuple_frame);
+          lv2_atom_forge_pop(&ui->forge, &obj_frame);
+
+          ui->write(ui->controller, 0, lv2_atom_total_size(obj),
+                    ui->uris.atom_eventTransfer,
+                    obj);
+        }
+      }
 
       // shift left to prepare next value
       strmov(ui->buf, new_line + 1);
@@ -77,7 +104,7 @@ static void run(LV2_External_UI_Widget* widget) {
 static void show(LV2_External_UI_Widget* widget) {
   char time_str[9];
   set_time_str(time_str);
-  fprintf(stderr, "%s show called\n", time_str); 
+  fprintf(stderr, "%s UI: show called\n", time_str); 
   jm_sampler_ui* ui = (jm_sampler_ui*) widget;
   fprintf(ui->fout, "show:1\n");
   fflush(ui->fout);
@@ -86,7 +113,7 @@ static void show(LV2_External_UI_Widget* widget) {
 static void hide(LV2_External_UI_Widget* widget) {
   char time_str[9];
   set_time_str(time_str);
-  fprintf(stderr, "%s hide called\n", time_str); 
+  fprintf(stderr, "%s UI: hide called\n", time_str); 
   jm_sampler_ui* ui = (jm_sampler_ui*) widget;
   fprintf(ui->fout, "show:0\n");
   fflush(ui->fout);
@@ -125,7 +152,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor* descriptor,
 
   char time_str[9];
   set_time_str(time_str);
-  fprintf(stderr, "%s sampler instantiate called\n", time_str);
+  fprintf(stderr, "%s UI: ui instantiate called\n", time_str);
 
   int from_child_pipe[2];
   int to_child_pipe[2];
@@ -161,8 +188,21 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor* descriptor,
   ui->pid = pid;
   ui->tot_read = 0;
 
+  uint8_t buf[128];
+
+  lv2_atom_forge_init(&ui->forge, ui->map);
+
+  lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
+  LV2_Atom_Forge_Frame obj_frame;
+  LV2_Atom* obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_getZones);
+  lv2_atom_forge_pop(&ui->forge, &obj_frame);
+
+	ui->write(ui->controller, 0, lv2_atom_total_size(obj),
+	          ui->uris.atom_eventTransfer,
+	          obj);
+
   set_time_str(time_str);
-  fprintf(stderr, "%s sampler instantiated\n", time_str);
+  fprintf(stderr, "%s UI: ui instantiated\n", time_str);
 
   return ui;
 }
@@ -171,13 +211,13 @@ static void cleanup(LV2UI_Handle handle) {
   jm_sampler_ui* ui = (jm_sampler_ui*) handle;
   char time_str[9];
   set_time_str(time_str);
-  fprintf(stderr, "%s closing sampler\n", time_str);
+  fprintf(stderr, "UI: %s cleanup called\n", time_str);
 
   fclose(ui->fout);
   waitpid(ui->pid, NULL, 0);
 
   set_time_str(time_str);
-  fprintf(stderr, "%s sampler closed\n", time_str);
+  fprintf(stderr, "UI: %s ui closed\n", time_str);
   free(handle);
 }
 
@@ -189,6 +229,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
   if (format == ui->uris.atom_eventTransfer && (atom->type == ui->uris.atom_Blank || atom->type == ui->uris.atom_Object)) {
     const LV2_Atom_Object* obj = (const LV2_Atom_Object*) atom;
     if (obj->body.otype == ui->uris.jm_addZone) {
+      fprintf(stderr, "UI: received add zone!!\n");
       LV2_Atom* params = NULL;
 
       lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
@@ -202,10 +243,9 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       sprintf(p, "%s,", (char*)(a + 1));
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
-      sprintf(p, "%s\n", (char*)(a + 1));
+      sprintf(p, "%f\n", ((LV2_Atom_Float*) a)->body);
       fprintf(ui->fout, outstr);
       fflush(ui->fout);
-      //fprintf(ui->fout, "show:1\n");
     }
   }
 }

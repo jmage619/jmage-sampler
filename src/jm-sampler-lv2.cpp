@@ -29,11 +29,11 @@ struct jm_sampler_plugin {
   float* out2;
   LV2_URID_Map* map;
   jm_uris uris;
+  LV2_Atom_Forge forge;
   JMSampler sampler;
 };
 
 static jm_wave WAV;
-static bool initialized = false;
 
 static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
     double rate, const char* path, const LV2_Feature* const* features) {
@@ -55,6 +55,7 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
   // Map URIS
   plugin->map = map;
   jm_map_uris(plugin->map, &plugin->uris);
+  lv2_atom_forge_init(&plugin->forge, plugin->map);
 
   jm_parse_wave(&WAV, "/home/jdost/dev/c/jmage-sampler/afx.wav");
   jm_key_zone zone;
@@ -63,8 +64,18 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
   zone.num_channels = WAV.num_channels;
   zone.wave_length = WAV.length;
   zone.right = WAV.length;
+  strcpy(zone.name, "Zone 1");
+  zone.amp = -0.921;
   //zone.mode = LOOP_ONE_SHOT;
+  plugin->sampler.zones_add(zone);
 
+  jm_init_key_zone(&zone);
+  zone.wave = WAV.wave;
+  zone.num_channels = WAV.num_channels;
+  zone.wave_length = WAV.length;
+  zone.right = WAV.length;
+  strcpy(zone.name, "Zone 2");
+  zone.amp = -0.01;
   plugin->sampler.zones_add(zone);
 
   printf("sampler instantiated.\n");
@@ -97,6 +108,19 @@ static void connect_port(LV2_Handle instance, uint32_t port, void* data) {
   }
 }
 
+static void send_add_zone(jm_sampler_plugin* plugin, const jm_key_zone* zone) {
+  lv2_atom_forge_frame_time(&plugin->forge, 0);
+  LV2_Atom_Forge_Frame obj_frame;
+  lv2_atom_forge_object(&plugin->forge, &obj_frame, 0, plugin->uris.jm_addZone);
+  lv2_atom_forge_key(&plugin->forge, plugin->uris.jm_params);
+  LV2_Atom_Forge_Frame tuple_frame;
+  lv2_atom_forge_tuple(&plugin->forge, &tuple_frame);
+  lv2_atom_forge_string(&plugin->forge, zone->name, strlen(zone->name));
+  lv2_atom_forge_float(&plugin->forge, zone->amp);
+  lv2_atom_forge_pop(&plugin->forge, &tuple_frame);
+  lv2_atom_forge_pop(&plugin->forge, &obj_frame);
+}
+
 // later most of this opaque logic should be moved to member funs
 // consider everything in common w/ stand alone jack audio callback when we re-implement that version
 static void run(LV2_Handle instance, uint32_t n_samples) {
@@ -105,33 +129,49 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
   memset(plugin->out1, 0, sizeof(uint32_t) * n_samples);
   memset(plugin->out2, 0, sizeof(uint32_t) * n_samples);
 
-  if (!initialized) {
-    LV2_Atom_Forge forge;
-    lv2_atom_forge_init(&forge, plugin->map);
-    // Set up forge to write directly to notify output port.
-    const uint32_t notify_capacity = plugin->notify_port->atom.size;
-    lv2_atom_forge_set_buffer(&forge, reinterpret_cast<uint8_t*>(plugin->notify_port),
-                              notify_capacity);
+  // Set up forge to write directly to notify output port.
+  const uint32_t notify_capacity = plugin->notify_port->atom.size;
+  lv2_atom_forge_set_buffer(&plugin->forge, reinterpret_cast<uint8_t*>(plugin->notify_port),
+    notify_capacity);
 
-    LV2_Atom_Forge_Frame seq_frame;
-    lv2_atom_forge_sequence_head(&forge, &seq_frame, 0);
-    lv2_atom_forge_frame_time(&forge, 0);
-    LV2_Atom_Forge_Frame obj_frame;
-    lv2_atom_forge_object(&forge, &obj_frame, 0, plugin->uris.jm_addZone);
-    lv2_atom_forge_key(&forge, plugin->uris.jm_params);
-    LV2_Atom_Forge_Frame tuple_frame;
-    lv2_atom_forge_tuple(&forge, &tuple_frame);
-    lv2_atom_forge_string(&forge, "Fucking zone", strlen("Fucking zone"));
-    lv2_atom_forge_string(&forge, "-10.3", strlen("-10.3"));
-    lv2_atom_forge_pop(&forge, &tuple_frame);
-    lv2_atom_forge_pop(&forge, &obj_frame);
-    lv2_atom_forge_pop(&forge, &seq_frame);
-
-    initialized = true;
-  }
+  LV2_Atom_Forge_Frame seq_frame;
+  lv2_atom_forge_sequence_head(&plugin->forge, &seq_frame, 0);
 
   // we used to handle ui messages here
   // but now they will be in the same atom list as midi
+
+  // must loop all atoms to find UI messages; not sure if qtractor bug
+  // but they all occur at frame == n_samples (outside the range!)
+  LV2_ATOM_SEQUENCE_FOREACH(plugin->control_port, ev) {
+    if (ev->body.type == plugin->uris.atom_Object) {
+      const LV2_Atom_Object* obj = (const LV2_Atom_Object*)&ev->body;
+      if (obj->body.otype == plugin->uris.jm_getZones) {
+        //fprintf(stderr, "SAMPLER: get zones received!!\n");
+        std::vector<jm_key_zone>::iterator it;
+        for (it = plugin->sampler.zones_begin(); it != plugin->sampler.zones_end(); ++it) {
+          send_add_zone(plugin, &*it);
+        }
+      }
+      else if (obj->body.otype == plugin->uris.jm_updateZone) {
+        //fprintf(stderr, "SAMPLER: update zone received!!\n");
+        LV2_Atom* params = NULL;
+
+        lv2_atom_object_get(obj, plugin->uris.jm_params, &params, 0);
+        LV2_Atom* a = lv2_atom_tuple_begin(reinterpret_cast<LV2_Atom_Tuple*>(params));
+        int index = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+        a = lv2_atom_tuple_next(a);
+        int param = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+        a = lv2_atom_tuple_next(a);
+        switch (param) {
+          case JM_ZONE_AMP:
+            float amp = reinterpret_cast<LV2_Atom_Float*>(a)->body;
+            fprintf(stderr, "amp change: index: %i; val: %f\n", index, amp);
+            // change zone for real here!
+            break;
+        }
+      }
+    }
+  }
 
   // pitch existing playheads
   sg_list_el* sg_el;
@@ -238,7 +278,6 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
               printf("event: 0x%x\n", msg[0]);
           }
         }
-
         // get next midi event or break if none left
         ev = lv2_atom_sequence_next(ev);
         if (lv2_atom_sequence_is_end(&plugin->control_port->body, plugin->control_port->atom.size, ev))
@@ -259,6 +298,8 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
       }
     }
   }
+
+  lv2_atom_forge_pop(&plugin->forge, &seq_frame);
 }
 
 static const LV2_Descriptor descriptor = {

@@ -1,0 +1,61 @@
+#ifndef JM_SAMPLER_UI
+#define JM_SAMPLER_UI
+
+#include <QWidget>
+#include <QThread>
+#include <QAbstractTableModel>
+#include <QString>
+
+#define NUM_ZONE_ATTRS 2
+
+// don't forget whenever we add an item to increase size in NUM_ZONE_ATTRS 
+struct zone {
+  QString name;
+  QString volume;
+};
+
+Q_DECLARE_METATYPE(zone)
+
+class ZoneTableModel: public QAbstractTableModel {
+  Q_OBJECT
+
+  private:
+    std::vector<zone*> zones;
+  public:
+    ~ZoneTableModel();
+    int rowCount(const QModelIndex& parent = QModelIndex()) const;
+    int columnCount(const QModelIndex& parent = QModelIndex()) const;
+    Qt::ItemFlags flags(const QModelIndex &index) const;
+    bool insertRows(int row, int count, const QModelIndex &parent = QModelIndex());
+    bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex());
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
+};
+
+class InputThread: public QThread {
+  Q_OBJECT
+
+  public:
+    void run();
+  signals:
+    //void receivedValue(int val);
+    void receivedShow();
+    void receivedHide();
+    void receivedAddZone(const zone& z);
+};
+
+class SamplerUI: public QWidget {
+  Q_OBJECT
+
+  private:
+    ZoneTableModel zone_model;
+
+  public:
+    SamplerUI();
+
+  public slots:
+    void showAndRaise();
+    void addNewZone(const zone& z);
+};
+
+#endif
