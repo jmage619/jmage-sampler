@@ -8,11 +8,6 @@
 
 #include "jm-sampler-ui.h"
 
-ZoneTableModel::~ZoneTableModel() {
-  for (std::vector<zone*>::iterator it = zones.begin(); it != zones.end(); ++it)
-    delete *it;
-}
-
 int ZoneTableModel::rowCount(const QModelIndex& parent) const {
   if (parent.isValid())
     return 0;
@@ -38,15 +33,8 @@ Qt::ItemFlags ZoneTableModel::flags(const QModelIndex &index) const {
 bool ZoneTableModel::insertRows(int row, int count, const QModelIndex&) {
   beginInsertRows(QModelIndex(), row, row + count - 1);
 
-  std::vector<zone*>::iterator first = zones.begin() + row;
-  zones.insert(first, count, NULL);
-
-  // get the iterator again since insert invalidates it
-  first = zones.begin() + row;
-
-  for (std::vector<zone*>::iterator it = first; it < first + count; ++it) {
-    *it = new zone;
-  }
+  std::vector<zone>::iterator first = zones.begin() + row;
+  zones.insert(first, count, zone());
 
   endInsertRows();
   return true;
@@ -55,10 +43,7 @@ bool ZoneTableModel::insertRows(int row, int count, const QModelIndex&) {
 bool ZoneTableModel::removeRows(int row, int count, const QModelIndex&) {
   beginRemoveRows(QModelIndex(), row, row + count - 1);
 
-  std::vector<zone*>::iterator first = zones.begin() + row;
-
-  for (std::vector<zone*>::iterator it = first; it < first + count; ++it)
-    delete *it;
+  std::vector<zone>::iterator first = zones.begin() + row;
 
   zones.erase(first, first + count);
 
@@ -79,10 +64,10 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
   if (role == Qt::DisplayRole || role == Qt::EditRole) {
     switch (index.column()) {
       case 0:
-        return zones[index.row()]->name;
+        return zones[index.row()].name;
         break;
       case 1:
-        return zones[index.row()]->volume;
+        return zones[index.row()].volume;
         break;
     }
   }
@@ -94,10 +79,10 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
   if (index.isValid() && role == Qt::EditRole) {
     switch (index.column()) {
       case 0:
-        zones[index.row()]->name = value.toString();
+        zones[index.row()].name = value.toString();
         break;
       case 1:
-        zones[index.row()]->volume = value.toString();
+        zones[index.row()].volume = value.toString();
         std::cout << "update_zone:" << index.row() << ",amp," << value.toString().toStdString() << std::endl;
         break;
     }

@@ -20,9 +20,8 @@ class ZoneTableModel: public QAbstractTableModel {
   Q_OBJECT
 
   private:
-    std::vector<zone*> zones;
+    std::vector<zone> zones;
   public:
-    ~ZoneTableModel();
     int rowCount(const QModelIndex& parent = QModelIndex()) const;
     int columnCount(const QModelIndex& parent = QModelIndex()) const;
     Qt::ItemFlags flags(const QModelIndex &index) const;
