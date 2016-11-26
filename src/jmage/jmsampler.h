@@ -60,6 +60,7 @@ class JMSampler {
     std::vector<jm_key_zone>::iterator zones_begin(){return zones.begin();}
     std::vector<jm_key_zone>::iterator zones_end(){return zones.end();}
     std::vector<jm_key_zone>::size_type zones_size(){return zones.size();}
+    jm_key_zone& zones_at(int i) {return zones.at(i);}
     void zones_add(jm_key_zone zone){zones.push_back(zone);}
     void send_msg(const jm_msg& msg);
     bool receive_msg(jm_msg& msg);

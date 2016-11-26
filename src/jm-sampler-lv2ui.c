@@ -229,7 +229,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
   if (format == ui->uris.atom_eventTransfer && (atom->type == ui->uris.atom_Blank || atom->type == ui->uris.atom_Object)) {
     const LV2_Atom_Object* obj = (const LV2_Atom_Object*) atom;
     if (obj->body.otype == ui->uris.jm_addZone) {
-      fprintf(stderr, "UI: received add zone!!\n");
+      //fprintf(stderr, "UI: received add zone!!\n");
       LV2_Atom* params = NULL;
 
       lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);

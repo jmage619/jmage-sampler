@@ -165,8 +165,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         switch (param) {
           case JM_ZONE_AMP:
             float amp = reinterpret_cast<LV2_Atom_Float*>(a)->body;
-            fprintf(stderr, "amp change: index: %i; val: %f\n", index, amp);
-            // change zone for real here!
+            plugin->sampler.zones_at(index).amp = amp;
             break;
         }
       }
