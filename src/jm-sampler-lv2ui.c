@@ -63,34 +63,38 @@ static void run(LV2_External_UI_Widget* widget) {
     char* new_line;
     while ((new_line = strchr(ui->buf, '\n')) != NULL) {
       *new_line = '\0';
+      uint8_t buf[128];
+      lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
+      LV2_Atom_Forge_Frame obj_frame;
       //fprintf(stderr, "UI: ui stdout message: %s\n", ui->buf);
+      LV2_Atom* obj;
       if (!strncmp(ui->buf, "update_zone:", 12)) {
-        char* p = ui->buf + 12; 
-        char* end = strchr(p, ',');
-        *end = '\0';
+        obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_updateZone);
+        lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
+        LV2_Atom_Forge_Frame tuple_frame;
+        lv2_atom_forge_tuple(&ui->forge, &tuple_frame);
+        char* params = ui->buf + 12; 
+        char* p = strtok(params, ",");
         int index = atoi(p);
-        p = end + 1;
-        if (!strncmp(p, "amp,", 4)) {
-          float val = atof(p + 4);
-          //ui->write(ui->controller, 0, sizeof(float), 0, &val);
-          uint8_t buf[128];
-          lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
-          LV2_Atom_Forge_Frame obj_frame;
-          LV2_Atom* obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_updateZone);
-          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
-          LV2_Atom_Forge_Frame tuple_frame;
-          lv2_atom_forge_tuple(&ui->forge, &tuple_frame);
-          lv2_atom_forge_int(&ui->forge, index);
-          lv2_atom_forge_int(&ui->forge, JM_ZONE_AMP);
-          lv2_atom_forge_float(&ui->forge, val);
-          lv2_atom_forge_pop(&ui->forge, &tuple_frame);
-          lv2_atom_forge_pop(&ui->forge, &obj_frame);
-
-          ui->write(ui->controller, 0, lv2_atom_total_size(obj),
-                    ui->uris.atom_eventTransfer,
-                    obj);
+        lv2_atom_forge_int(&ui->forge, index);
+        p = strtok(NULL, ",");
+        int type = atoi(p);
+        switch (type) {
+          case JM_ZONE_AMP:
+            p = strtok(NULL, ",");
+            float val = atof(p);
+            //ui->write(ui->controller, 0, sizeof(float), 0, &val);
+            lv2_atom_forge_int(&ui->forge, JM_ZONE_AMP);
+            lv2_atom_forge_float(&ui->forge, val);
+            break;
         }
+        lv2_atom_forge_pop(&ui->forge, &tuple_frame);
+        lv2_atom_forge_pop(&ui->forge, &obj_frame);
+
       }
+      ui->write(ui->controller, 0, lv2_atom_total_size(obj),
+                ui->uris.atom_eventTransfer,
+                obj);
 
       // shift left to prepare next value
       strmov(ui->buf, new_line + 1);

@@ -63,11 +63,11 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
 
   if (role == Qt::DisplayRole || role == Qt::EditRole) {
     switch (index.column()) {
-      case 0:
+      case JM_ZONE_NAME:
         return zones[index.row()].name;
         break;
-      case 1:
-        return zones[index.row()].volume;
+      case JM_ZONE_AMP:
+        return zones[index.row()].amp;
         break;
     }
   }
@@ -78,12 +78,12 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
 bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, int role) {
   if (index.isValid() && role == Qt::EditRole) {
     switch (index.column()) {
-      case 0:
+      case JM_ZONE_NAME:
         zones[index.row()].name = value.toString();
         break;
-      case 1:
-        zones[index.row()].volume = value.toString();
-        std::cout << "update_zone:" << index.row() << ",amp," << value.toString().toStdString() << std::endl;
+      case JM_ZONE_AMP:
+        zones[index.row()].amp = value.toString();
+        std::cout << "update_zone:" << index.row() << "," << JM_ZONE_AMP << "," << value.toString().toStdString() << std::endl;
         break;
     }
     emit dataChanged(index, index);
@@ -112,7 +112,7 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.name = QString(field.c_str());
       std::getline(sin, field, ',');
-      z.volume = QString(field.c_str());
+      z.amp = QString(field.c_str());
 
       emit receivedAddZone(z);
     }
@@ -164,5 +164,5 @@ void SamplerUI::addNewZone(const zone& z) {
   // but in addNewZone case, zone change came from plugin! redundant
   zone_model.setData(index, z.name, Qt::EditRole);
   index = zone_model.index(i, 1);
-  zone_model.setData(index, z.volume, Qt::EditRole);
+  zone_model.setData(index, z.amp, Qt::EditRole);
 }

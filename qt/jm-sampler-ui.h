@@ -8,10 +8,15 @@
 
 #define NUM_ZONE_ATTRS 2
 
+enum zone_params {
+  JM_ZONE_NAME,
+  JM_ZONE_AMP
+};
+
 // don't forget whenever we add an item to increase size in NUM_ZONE_ATTRS 
 struct zone {
   QString name;
-  QString volume;
+  QString amp;
 };
 
 Q_DECLARE_METATYPE(zone)
