@@ -64,6 +64,11 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
   p = strtok(NULL, ",");
   int type = atoi(p);
   switch (type) {
+    case JM_ZONE_NAME:
+      p = strtok(NULL, ",");
+      lv2_atom_forge_int(&ui->forge, JM_ZONE_NAME);
+      lv2_atom_forge_string(&ui->forge, p, strlen(p));
+      break;
     case JM_ZONE_AMP:
       p = strtok(NULL, ",");
       float val = atof(p);

@@ -163,6 +163,9 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         int param = reinterpret_cast<LV2_Atom_Int*>(a)->body;
         a = lv2_atom_tuple_next(a);
         switch (param) {
+          case JM_ZONE_NAME:
+            strcpy(plugin->sampler.zones_at(index).name, (char*)(a + 1));
+            break;
           case JM_ZONE_AMP:
             float amp = reinterpret_cast<LV2_Atom_Float*>(a)->body;
             plugin->sampler.zones_at(index).amp = amp;

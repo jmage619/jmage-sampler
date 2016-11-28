@@ -77,15 +77,19 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
     
 bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, int role) {
   if (index.isValid() && role == Qt::EditRole) {
+    std::cout << "update_zone:" << index.row() << ",";
     switch (index.column()) {
       case JM_ZONE_NAME:
         zones[index.row()].name = value.toString();
+        std::cout << JM_ZONE_NAME << "," << value.toString().toStdString();
         break;
       case JM_ZONE_AMP:
         zones[index.row()].amp = value.toString();
-        std::cout << "update_zone:" << index.row() << "," << JM_ZONE_AMP << "," << value.toString().toStdString() << std::endl;
+        std::cout << JM_ZONE_AMP << "," << value.toString().toStdString();
         break;
     }
+    std::cout << std::endl;
+
     emit dataChanged(index, index);
     return true;
   }
