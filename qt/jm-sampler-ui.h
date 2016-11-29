@@ -6,17 +6,19 @@
 #include <QAbstractTableModel>
 #include <QString>
 
-#define NUM_ZONE_ATTRS 2
+#define NUM_ZONE_ATTRS 3
 
 enum zone_params {
   JM_ZONE_NAME,
-  JM_ZONE_AMP
+  JM_ZONE_AMP,
+  JM_ZONE_ORIGIN
 };
 
 // don't forget whenever we add an item to increase size in NUM_ZONE_ATTRS 
 struct zone {
   QString name;
   QString amp;
+  QString origin;
 };
 
 Q_DECLARE_METATYPE(zone)

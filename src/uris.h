@@ -14,7 +14,8 @@
 
 enum zone_params {
   JM_ZONE_NAME,
-  JM_ZONE_AMP
+  JM_ZONE_AMP,
+  JM_ZONE_ORIGIN
 };
 
 typedef struct {

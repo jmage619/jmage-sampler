@@ -66,6 +66,7 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
   zone.right = WAV.length;
   strcpy(zone.name, "Zone 1");
   zone.amp = -0.921;
+  zone.origin = 5;
   //zone.mode = LOOP_ONE_SHOT;
   plugin->sampler.zones_add(zone);
 
@@ -76,6 +77,7 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
   zone.right = WAV.length;
   strcpy(zone.name, "Zone 2");
   zone.amp = -0.01;
+  zone.origin = 3;
   plugin->sampler.zones_add(zone);
 
   printf("sampler instantiated.\n");
@@ -117,6 +119,7 @@ static void send_add_zone(jm_sampler_plugin* plugin, const jm_key_zone* zone) {
   lv2_atom_forge_tuple(&plugin->forge, &tuple_frame);
   lv2_atom_forge_string(&plugin->forge, zone->name, strlen(zone->name));
   lv2_atom_forge_float(&plugin->forge, zone->amp);
+  lv2_atom_forge_int(&plugin->forge, zone->origin);
   lv2_atom_forge_pop(&plugin->forge, &tuple_frame);
   lv2_atom_forge_pop(&plugin->forge, &obj_frame);
 }
@@ -167,8 +170,10 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
             strcpy(plugin->sampler.zones_at(index).name, (char*)(a + 1));
             break;
           case JM_ZONE_AMP:
-            float amp = reinterpret_cast<LV2_Atom_Float*>(a)->body;
-            plugin->sampler.zones_at(index).amp = amp;
+            plugin->sampler.zones_at(index).amp = reinterpret_cast<LV2_Atom_Float*>(a)->body;
+            break;
+          case JM_ZONE_ORIGIN:
+            plugin->sampler.zones_at(index).origin = reinterpret_cast<LV2_Atom_Int*>(a)->body;
             break;
         }
       }

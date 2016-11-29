@@ -69,6 +69,9 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
       case JM_ZONE_AMP:
         return zones[index.row()].amp;
         break;
+      case JM_ZONE_ORIGIN:
+        return zones[index.row()].origin;
+        break;
     }
   }
 
@@ -86,6 +89,10 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
       case JM_ZONE_AMP:
         zones[index.row()].amp = value.toString();
         std::cout << JM_ZONE_AMP << "," << value.toString().toStdString();
+        break;
+      case JM_ZONE_ORIGIN:
+        zones[index.row()].origin = value.toString();
+        std::cout << JM_ZONE_ORIGIN << "," << value.toString().toStdString();
         break;
     }
     std::cout << std::endl;
@@ -122,6 +129,8 @@ void InputThread::run() {
       z.name = QString(field.c_str());
       std::getline(sin, field, ',');
       z.amp = QString(field.c_str());
+      std::getline(sin, field, ',');
+      z.origin = QString(field.c_str());
 
       emit receivedAddZone(z);
     }
