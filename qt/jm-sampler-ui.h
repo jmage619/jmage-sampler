@@ -34,6 +34,7 @@ class ZoneTableModel: public QAbstractTableModel {
     bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex());
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
+    void setZone(int row, const zone& z);
 };
 
 class InputThread: public QThread {

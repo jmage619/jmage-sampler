@@ -96,6 +96,11 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
   return false;
 }
 
+void ZoneTableModel::setZone(int row, const zone& z) {
+  zones[row] = z;
+  emit dataChanged(index(row, 0), index(row, NUM_ZONE_ATTRS - 1));
+}
+
 void InputThread::run() {
   //char input[256];
   std::string input;
@@ -162,11 +167,5 @@ void SamplerUI::showAndRaise() {
 void SamplerUI::addNewZone(const zone& z) {
   int i = zone_model.rowCount();
   zone_model.insertRows(i, 1);
-  QModelIndex index = zone_model.index(i, 0);
-  // setData commands here are dumb
-  // because they write update_zone message
-  // but in addNewZone case, zone change came from plugin! redundant
-  zone_model.setData(index, z.name, Qt::EditRole);
-  index = zone_model.index(i, 1);
-  zone_model.setData(index, z.amp, Qt::EditRole);
+  zone_model.setZone(i, z);
 }
