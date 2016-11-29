@@ -51,6 +51,26 @@ bool ZoneTableModel::removeRows(int row, int count, const QModelIndex&) {
   return true;
 }
 
+QVariant ZoneTableModel::headerData(int section, Qt::Orientation orientation, int role) const {
+  if (orientation == Qt::Horizontal) {
+    if (role == Qt::DisplayRole) {
+      switch (section) {
+        case JM_ZONE_NAME:
+          return "Name";
+        case JM_ZONE_AMP:
+          return "Vol (db)";
+        case JM_ZONE_ORIGIN:
+          return "Origin";
+        default:
+          return section;
+      }
+    }
+    return QVariant();
+  }
+  else
+    return QAbstractItemModel::headerData(section, orientation, role);
+}
+
 QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
   if (!index.isValid())
     return QVariant();
@@ -65,13 +85,10 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
     switch (index.column()) {
       case JM_ZONE_NAME:
         return zones[index.row()].name;
-        break;
       case JM_ZONE_AMP:
         return zones[index.row()].amp;
-        break;
       case JM_ZONE_ORIGIN:
         return zones[index.row()].origin;
-        break;
     }
   }
 
