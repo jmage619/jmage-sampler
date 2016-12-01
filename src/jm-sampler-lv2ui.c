@@ -63,20 +63,19 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
   lv2_atom_forge_int(&ui->forge, index);
   p = strtok(NULL, ",");
   int type = atoi(p);
+  lv2_atom_forge_int(&ui->forge, type);
+  p = strtok(NULL, ",");
+
   switch (type) {
     case JM_ZONE_NAME:
-      p = strtok(NULL, ",");
-      lv2_atom_forge_int(&ui->forge, JM_ZONE_NAME);
       lv2_atom_forge_string(&ui->forge, p, strlen(p));
       break;
     case JM_ZONE_AMP:
-      p = strtok(NULL, ",");
-      lv2_atom_forge_int(&ui->forge, JM_ZONE_AMP);
       lv2_atom_forge_float(&ui->forge, atof(p));
       break;
     case JM_ZONE_ORIGIN:
-      p = strtok(NULL, ",");
-      lv2_atom_forge_int(&ui->forge, JM_ZONE_ORIGIN);
+    case JM_ZONE_LOW_KEY:
+    case JM_ZONE_HIGH_KEY:
       lv2_atom_forge_int(&ui->forge, atoi(p));
       break;
   }
@@ -260,6 +259,12 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
       sprintf(p, "%f,", ((LV2_Atom_Float*) a)->body);
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
       sprintf(p, "%i\n", ((LV2_Atom_Int*) a)->body);

@@ -61,6 +61,10 @@ QVariant ZoneTableModel::headerData(int section, Qt::Orientation orientation, in
           return "Vol (db)";
         case JM_ZONE_ORIGIN:
           return "Origin";
+        case JM_ZONE_LOW_KEY:
+          return "Lower";
+        case JM_ZONE_HIGH_KEY:
+          return "Upper";
         default:
           return section;
       }
@@ -89,6 +93,10 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
         return zones[index.row()].amp;
       case JM_ZONE_ORIGIN:
         return zones[index.row()].origin;
+      case JM_ZONE_LOW_KEY:
+        return zones[index.row()].low_key;
+      case JM_ZONE_HIGH_KEY:
+        return zones[index.row()].high_key;
     }
   }
 
@@ -110,6 +118,14 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
       case JM_ZONE_ORIGIN:
         zones[index.row()].origin = value.toString();
         std::cout << JM_ZONE_ORIGIN << "," << value.toString().toStdString();
+        break;
+      case JM_ZONE_LOW_KEY:
+        zones[index.row()].low_key = value.toString();
+        std::cout << JM_ZONE_LOW_KEY << "," << value.toString().toStdString();
+        break;
+      case JM_ZONE_HIGH_KEY:
+        zones[index.row()].high_key = value.toString();
+        std::cout << JM_ZONE_HIGH_KEY << "," << value.toString().toStdString();
         break;
     }
     std::cout << std::endl;
@@ -148,6 +164,10 @@ void InputThread::run() {
       z.amp = QString(field.c_str());
       std::getline(sin, field, ',');
       z.origin = QString(field.c_str());
+      std::getline(sin, field, ',');
+      z.low_key = QString(field.c_str());
+      std::getline(sin, field, ',');
+      z.high_key = QString(field.c_str());
 
       emit receivedAddZone(z);
     }
