@@ -76,7 +76,12 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
     case JM_ZONE_ORIGIN:
     case JM_ZONE_LOW_KEY:
     case JM_ZONE_HIGH_KEY:
+    case JM_ZONE_LOW_VEL:
+    case JM_ZONE_HIGH_VEL:
       lv2_atom_forge_int(&ui->forge, atoi(p));
+      break;
+    case JM_ZONE_PITCH:
+      lv2_atom_forge_double(&ui->forge, atof(p));
       break;
   }
   lv2_atom_forge_pop(&ui->forge, &tuple_frame);
@@ -253,21 +258,38 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       memset(outstr, 0, 256);
       char* p = outstr;
       sprintf(p, "add_zone:");
+      // name
       p += strlen(p);
       LV2_Atom* a = lv2_atom_tuple_begin((LV2_Atom_Tuple*) params);
       sprintf(p, "%s,", (char*)(a + 1));
+      // amp
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
       sprintf(p, "%f,", ((LV2_Atom_Float*) a)->body);
+      // origin
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
       sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
+      // low key
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
       sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
+      // high key
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i\n", ((LV2_Atom_Int*) a)->body);
+      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
+      // low vel
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
+      // high vel
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
+      // pitch
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%f\n", ((LV2_Atom_Double*) a)->body);
       fprintf(ui->fout, outstr);
       fflush(ui->fout);
     }

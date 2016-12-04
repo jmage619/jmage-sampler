@@ -122,6 +122,9 @@ static void send_add_zone(jm_sampler_plugin* plugin, const jm_key_zone* zone) {
   lv2_atom_forge_int(&plugin->forge, zone->origin);
   lv2_atom_forge_int(&plugin->forge, zone->low_key);
   lv2_atom_forge_int(&plugin->forge, zone->high_key);
+  lv2_atom_forge_int(&plugin->forge, zone->low_vel);
+  lv2_atom_forge_int(&plugin->forge, zone->high_vel);
+  lv2_atom_forge_double(&plugin->forge, zone->pitch_corr);
   lv2_atom_forge_pop(&plugin->forge, &tuple_frame);
   lv2_atom_forge_pop(&plugin->forge, &obj_frame);
 }
@@ -182,6 +185,15 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
             break;
           case JM_ZONE_HIGH_KEY:
             plugin->sampler.zones_at(index).high_key = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+            break;
+          case JM_ZONE_LOW_VEL:
+            plugin->sampler.zones_at(index).low_vel = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+            break;
+          case JM_ZONE_HIGH_VEL:
+            plugin->sampler.zones_at(index).high_vel = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+            break;
+          case JM_ZONE_PITCH:
+            plugin->sampler.zones_at(index).pitch_corr = reinterpret_cast<LV2_Atom_Double*>(a)->body;
             break;
         }
       }

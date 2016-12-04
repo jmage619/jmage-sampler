@@ -65,6 +65,12 @@ QVariant ZoneTableModel::headerData(int section, Qt::Orientation orientation, in
           return "Lower";
         case JM_ZONE_HIGH_KEY:
           return "Upper";
+        case JM_ZONE_LOW_VEL:
+          return "Lo Vel";
+        case JM_ZONE_HIGH_VEL:
+          return "Hi Vel";
+        case JM_ZONE_PITCH:
+          return "Pitch";
         default:
           return section;
       }
@@ -97,6 +103,12 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
         return zones[index.row()].low_key;
       case JM_ZONE_HIGH_KEY:
         return zones[index.row()].high_key;
+      case JM_ZONE_LOW_VEL:
+        return zones[index.row()].low_vel;
+      case JM_ZONE_HIGH_VEL:
+        return zones[index.row()].high_vel;
+      case JM_ZONE_PITCH:
+        return zones[index.row()].pitch;
     }
   }
 
@@ -105,27 +117,39 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
     
 bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, int role) {
   if (index.isValid() && role == Qt::EditRole) {
-    std::cout << "update_zone:" << index.row() << ",";
+    std::cout << "update_zone:" << index.row() << "," << index.column() << ",";
     switch (index.column()) {
       case JM_ZONE_NAME:
         zones[index.row()].name = value.toString();
-        std::cout << JM_ZONE_NAME << "," << value.toString().toStdString();
+        std::cout << value.toString().toStdString();
         break;
       case JM_ZONE_AMP:
         zones[index.row()].amp = value.toString();
-        std::cout << JM_ZONE_AMP << "," << value.toString().toStdString();
+        std::cout << value.toString().toStdString();
         break;
       case JM_ZONE_ORIGIN:
         zones[index.row()].origin = value.toString();
-        std::cout << JM_ZONE_ORIGIN << "," << value.toString().toStdString();
+        std::cout << value.toString().toStdString();
         break;
       case JM_ZONE_LOW_KEY:
         zones[index.row()].low_key = value.toString();
-        std::cout << JM_ZONE_LOW_KEY << "," << value.toString().toStdString();
+        std::cout << value.toString().toStdString();
         break;
       case JM_ZONE_HIGH_KEY:
         zones[index.row()].high_key = value.toString();
-        std::cout << JM_ZONE_HIGH_KEY << "," << value.toString().toStdString();
+        std::cout << value.toString().toStdString();
+        break;
+      case JM_ZONE_LOW_VEL:
+        zones[index.row()].low_vel = value.toString();
+        std::cout << value.toString().toStdString();
+        break;
+      case JM_ZONE_HIGH_VEL:
+        zones[index.row()].high_vel = value.toString();
+        std::cout << value.toString().toStdString();
+        break;
+      case JM_ZONE_PITCH:
+        zones[index.row()].pitch = value.toString();
+        std::cout << value.toString().toStdString();
         break;
     }
     std::cout << std::endl;
@@ -168,6 +192,12 @@ void InputThread::run() {
       z.low_key = QString(field.c_str());
       std::getline(sin, field, ',');
       z.high_key = QString(field.c_str());
+      std::getline(sin, field, ',');
+      z.low_vel = QString(field.c_str());
+      std::getline(sin, field, ',');
+      z.high_vel = QString(field.c_str());
+      std::getline(sin, field, ',');
+      z.pitch = QString(field.c_str());
 
       emit receivedAddZone(z);
     }

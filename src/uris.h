@@ -17,7 +17,10 @@ enum zone_params {
   JM_ZONE_AMP,
   JM_ZONE_ORIGIN,
   JM_ZONE_LOW_KEY,
-  JM_ZONE_HIGH_KEY
+  JM_ZONE_HIGH_KEY,
+  JM_ZONE_LOW_VEL,
+  JM_ZONE_HIGH_VEL,
+  JM_ZONE_PITCH
 };
 
 typedef struct {
