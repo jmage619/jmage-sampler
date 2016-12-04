@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
 #include <lv2/lv2plug.in/ns/ext/atom/forge.h>
@@ -72,7 +73,7 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
       lv2_atom_forge_string(&ui->forge, p, strlen(p));
       break;
     case JM_ZONE_AMP:
-      lv2_atom_forge_float(&ui->forge, atof(p));
+      lv2_atom_forge_float(&ui->forge, pow(10., atof(p) / 20.));
       break;
     case JM_ZONE_ORIGIN:
     case JM_ZONE_LOW_KEY:
@@ -271,7 +272,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       // amp
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
-      sprintf(p, "%f,", ((LV2_Atom_Float*) a)->body);
+      sprintf(p, "%f,", 20. * log10(((LV2_Atom_Float*) a)->body));
       // origin
       p += strlen(p);
       a = lv2_atom_tuple_next(a);

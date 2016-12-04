@@ -65,7 +65,7 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
   zone.wave_length = WAV.length;
   zone.right = WAV.length;
   strcpy(zone.name, "Zone 1");
-  zone.amp = -0.921;
+  zone.amp = 0.921;
   zone.origin = 5;
   //zone.mode = LOOP_ONE_SHOT;
   plugin->sampler.zones_add(zone);
@@ -76,7 +76,7 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
   zone.wave_length = WAV.length;
   zone.right = WAV.length;
   strcpy(zone.name, "Zone 2");
-  zone.amp = -0.01;
+  zone.amp = 0.2;
   zone.origin = 3;
   plugin->sampler.zones_add(zone);
 
