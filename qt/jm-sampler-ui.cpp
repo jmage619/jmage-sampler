@@ -71,6 +71,12 @@ QVariant ZoneTableModel::headerData(int section, Qt::Orientation orientation, in
           return "Hi Vel";
         case JM_ZONE_PITCH:
           return "Pitch";
+        case JM_ZONE_START:
+          return "Start";
+        case JM_ZONE_LEFT:
+          return "Left";
+        case JM_ZONE_RIGHT:
+          return "Right";
         default:
           return section;
       }
@@ -109,6 +115,12 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
         return zones[index.row()].high_vel;
       case JM_ZONE_PITCH:
         return zones[index.row()].pitch;
+      case JM_ZONE_START:
+        return zones[index.row()].start;
+      case JM_ZONE_LEFT:
+        return zones[index.row()].left;
+      case JM_ZONE_RIGHT:
+        return zones[index.row()].right;
     }
   }
 
@@ -149,6 +161,18 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         break;
       case JM_ZONE_PITCH:
         zones[index.row()].pitch = value.toString();
+        std::cout << value.toString().toStdString();
+        break;
+      case JM_ZONE_START:
+        zones[index.row()].start = value.toString();
+        std::cout << value.toString().toStdString();
+        break;
+      case JM_ZONE_LEFT:
+        zones[index.row()].left = value.toString();
+        std::cout << value.toString().toStdString();
+        break;
+      case JM_ZONE_RIGHT:
+        zones[index.row()].right = value.toString();
         std::cout << value.toString().toStdString();
         break;
     }
@@ -198,6 +222,12 @@ void InputThread::run() {
       z.high_vel = QString(field.c_str());
       std::getline(sin, field, ',');
       z.pitch = QString(field.c_str());
+      std::getline(sin, field, ',');
+      z.start = QString(field.c_str());
+      std::getline(sin, field, ',');
+      z.left = QString(field.c_str());
+      std::getline(sin, field, ',');
+      z.right = QString(field.c_str());
 
       emit receivedAddZone(z);
     }

@@ -6,7 +6,7 @@
 #include <QAbstractTableModel>
 #include <QString>
 
-#define NUM_ZONE_ATTRS 8
+#define NUM_ZONE_ATTRS 11
 
 enum zone_params {
   JM_ZONE_NAME,
@@ -16,7 +16,10 @@ enum zone_params {
   JM_ZONE_HIGH_KEY,
   JM_ZONE_LOW_VEL,
   JM_ZONE_HIGH_VEL,
-  JM_ZONE_PITCH
+  JM_ZONE_PITCH,
+  JM_ZONE_START,
+  JM_ZONE_LEFT,
+  JM_ZONE_RIGHT
 };
 
 // don't forget whenever we add an item to increase size in NUM_ZONE_ATTRS 
@@ -29,6 +32,9 @@ struct zone {
   QString low_vel;
   QString high_vel;
   QString pitch;
+  QString start;
+  QString left;
+  QString right;
 };
 
 Q_DECLARE_METATYPE(zone)

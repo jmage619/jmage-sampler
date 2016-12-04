@@ -125,8 +125,57 @@ static void send_add_zone(jm_sampler_plugin* plugin, const jm_key_zone* zone) {
   lv2_atom_forge_int(&plugin->forge, zone->low_vel);
   lv2_atom_forge_int(&plugin->forge, zone->high_vel);
   lv2_atom_forge_double(&plugin->forge, zone->pitch_corr);
+  lv2_atom_forge_int(&plugin->forge, zone->start);
+  lv2_atom_forge_int(&plugin->forge, zone->left);
+  lv2_atom_forge_int(&plugin->forge, zone->right);
   lv2_atom_forge_pop(&plugin->forge, &tuple_frame);
   lv2_atom_forge_pop(&plugin->forge, &obj_frame);
+}
+
+static void update_zone(jm_sampler_plugin* plugin, const LV2_Atom_Object* obj) {
+  LV2_Atom* params = NULL;
+
+  lv2_atom_object_get(obj, plugin->uris.jm_params, &params, 0);
+  LV2_Atom* a = lv2_atom_tuple_begin(reinterpret_cast<LV2_Atom_Tuple*>(params));
+  int index = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+  a = lv2_atom_tuple_next(a);
+  int type = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+  a = lv2_atom_tuple_next(a);
+  switch (type) {
+    case JM_ZONE_NAME:
+      strcpy(plugin->sampler.zones_at(index).name, (char*)(a + 1));
+      break;
+    case JM_ZONE_AMP:
+      plugin->sampler.zones_at(index).amp = reinterpret_cast<LV2_Atom_Float*>(a)->body;
+      break;
+    case JM_ZONE_ORIGIN:
+      plugin->sampler.zones_at(index).origin = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      break;
+    case JM_ZONE_LOW_KEY:
+      plugin->sampler.zones_at(index).low_key = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      break;
+    case JM_ZONE_HIGH_KEY:
+      plugin->sampler.zones_at(index).high_key = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      break;
+    case JM_ZONE_LOW_VEL:
+      plugin->sampler.zones_at(index).low_vel = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      break;
+    case JM_ZONE_HIGH_VEL:
+      plugin->sampler.zones_at(index).high_vel = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      break;
+    case JM_ZONE_PITCH:
+      plugin->sampler.zones_at(index).pitch_corr = reinterpret_cast<LV2_Atom_Double*>(a)->body;
+      break;
+    case JM_ZONE_START:
+      plugin->sampler.zones_at(index).start = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      break;
+    case JM_ZONE_LEFT:
+      plugin->sampler.zones_at(index).left = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      break;
+    case JM_ZONE_RIGHT:
+      plugin->sampler.zones_at(index).right = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      break;
+  }
 }
 
 // later most of this opaque logic should be moved to member funs
@@ -162,40 +211,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
       }
       else if (obj->body.otype == plugin->uris.jm_updateZone) {
         //fprintf(stderr, "SAMPLER: update zone received!!\n");
-        LV2_Atom* params = NULL;
-
-        lv2_atom_object_get(obj, plugin->uris.jm_params, &params, 0);
-        LV2_Atom* a = lv2_atom_tuple_begin(reinterpret_cast<LV2_Atom_Tuple*>(params));
-        int index = reinterpret_cast<LV2_Atom_Int*>(a)->body;
-        a = lv2_atom_tuple_next(a);
-        int type = reinterpret_cast<LV2_Atom_Int*>(a)->body;
-        a = lv2_atom_tuple_next(a);
-        switch (type) {
-          case JM_ZONE_NAME:
-            strcpy(plugin->sampler.zones_at(index).name, (char*)(a + 1));
-            break;
-          case JM_ZONE_AMP:
-            plugin->sampler.zones_at(index).amp = reinterpret_cast<LV2_Atom_Float*>(a)->body;
-            break;
-          case JM_ZONE_ORIGIN:
-            plugin->sampler.zones_at(index).origin = reinterpret_cast<LV2_Atom_Int*>(a)->body;
-            break;
-          case JM_ZONE_LOW_KEY:
-            plugin->sampler.zones_at(index).low_key = reinterpret_cast<LV2_Atom_Int*>(a)->body;
-            break;
-          case JM_ZONE_HIGH_KEY:
-            plugin->sampler.zones_at(index).high_key = reinterpret_cast<LV2_Atom_Int*>(a)->body;
-            break;
-          case JM_ZONE_LOW_VEL:
-            plugin->sampler.zones_at(index).low_vel = reinterpret_cast<LV2_Atom_Int*>(a)->body;
-            break;
-          case JM_ZONE_HIGH_VEL:
-            plugin->sampler.zones_at(index).high_vel = reinterpret_cast<LV2_Atom_Int*>(a)->body;
-            break;
-          case JM_ZONE_PITCH:
-            plugin->sampler.zones_at(index).pitch_corr = reinterpret_cast<LV2_Atom_Double*>(a)->body;
-            break;
-        }
+        update_zone(plugin, obj);
       }
     }
   }

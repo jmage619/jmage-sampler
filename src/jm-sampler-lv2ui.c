@@ -16,6 +16,7 @@
 #include "uris.h"
 
 #define BUF_SIZE 513
+#define SAMPLE_RATE 44100
 
 #define JM_SAMPLER_UI_URI JM_SAMPLER_URI "#ui"
 
@@ -82,6 +83,11 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
       break;
     case JM_ZONE_PITCH:
       lv2_atom_forge_double(&ui->forge, atof(p));
+      break;
+    case JM_ZONE_START:
+    case JM_ZONE_LEFT:
+    case JM_ZONE_RIGHT:
+      lv2_atom_forge_int(&ui->forge, atof(p) * SAMPLE_RATE);
       break;
   }
   lv2_atom_forge_pop(&ui->forge, &tuple_frame);
@@ -289,7 +295,19 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       // pitch
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
-      sprintf(p, "%f\n", ((LV2_Atom_Double*) a)->body);
+      sprintf(p, "%f,", ((LV2_Atom_Double*) a)->body);
+      // start
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%f,", ((float) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      // left
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%f,", ((float) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      // right
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%f\n", ((float) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
       fprintf(ui->fout, outstr);
       fflush(ui->fout);
     }
