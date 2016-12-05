@@ -70,6 +70,7 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
 
   switch (type) {
     case JM_ZONE_NAME:
+    case JM_ZONE_PATH:
       lv2_atom_forge_string(&ui->forge, p, strlen(p));
       break;
     case JM_ZONE_AMP:
@@ -358,7 +359,11 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       // release
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
-      sprintf(p, "%f\n", ((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      sprintf(p, "%f,", ((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      // path
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%s\n", (char*)(a + 1));
       fprintf(ui->fout, outstr);
       fflush(ui->fout);
     }

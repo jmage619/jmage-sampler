@@ -65,6 +65,7 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
   zone.wave_length = WAV.length;
   zone.right = WAV.length;
   strcpy(zone.name, "Zone 1");
+  strcpy(zone.path, "/home/jdost/dev/c/jmage-sampler/afx.wav");
   zone.amp = 0.921;
   zone.origin = 5;
   //zone.mode = LOOP_ONE_SHOT;
@@ -137,6 +138,7 @@ static void send_add_zone(jm_sampler_plugin* plugin, const jm_key_zone* zone) {
   lv2_atom_forge_int(&plugin->forge, zone->decay);
   lv2_atom_forge_float(&plugin->forge, zone->sustain);
   lv2_atom_forge_int(&plugin->forge, zone->release);
+  lv2_atom_forge_string(&plugin->forge, zone->path, strlen(zone->path));
   lv2_atom_forge_pop(&plugin->forge, &tuple_frame);
   lv2_atom_forge_pop(&plugin->forge, &obj_frame);
 }
@@ -210,6 +212,9 @@ static void update_zone(jm_sampler_plugin* plugin, const LV2_Atom_Object* obj) {
       break;
     case JM_ZONE_RELEASE:
       plugin->sampler.zones_at(index).release = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      break;
+    case JM_ZONE_PATH:
+      strcpy(plugin->sampler.zones_at(index).path, (char*)(a + 1));
       break;
   }
 }

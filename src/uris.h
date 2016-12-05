@@ -32,7 +32,9 @@ enum zone_params {
   JM_ZONE_HOLD,
   JM_ZONE_DECAY,
   JM_ZONE_SUSTAIN,
-  JM_ZONE_RELEASE
+  JM_ZONE_RELEASE,
+  JM_ZONE_LONG_TAIL, // not used but needed as placeholder to not screw up PATH index
+  JM_ZONE_PATH
 };
 
 typedef struct {

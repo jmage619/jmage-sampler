@@ -97,6 +97,8 @@ QVariant ZoneTableModel::headerData(int section, Qt::Orientation orientation, in
           return "Release";
         case JM_ZONE_LONG_TAIL:
           return "20s Tail";
+        case JM_ZONE_PATH:
+          return "Path";
         default:
           return section;
       }
@@ -165,6 +167,8 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
         return zones[index.row()].sustain;
       case JM_ZONE_RELEASE:
         return zones[index.row()].release;
+      case JM_ZONE_PATH:
+        return zones[index.row()].path;
     }
   }
 
@@ -271,6 +275,10 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         zones[index.row()].release = value.toString();
         std::cout << value.toString().toStdString();
         break;
+      case JM_ZONE_PATH:
+        zones[index.row()].path = value.toString();
+        std::cout << value.toString().toStdString();
+        break;
     }
     std::cout << std::endl;
 
@@ -357,6 +365,9 @@ void InputThread::run() {
       z.release = field.c_str();
 
       z.long_tail = atof(z.decay.toStdString().c_str()) > 2.0 || atof(z.release.toStdString().c_str()) > 2.0 ? Qt::Checked: Qt::Unchecked;
+
+      std::getline(sin, field, ',');
+      z.path = field.c_str();
 
       emit receivedAddZone(z);
     }
