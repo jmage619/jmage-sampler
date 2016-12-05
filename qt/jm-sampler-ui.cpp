@@ -77,6 +77,8 @@ QVariant ZoneTableModel::headerData(int section, Qt::Orientation orientation, in
           return "Left";
         case JM_ZONE_RIGHT:
           return "Right";
+        case JM_ZONE_LOOP_MODE:
+          return "Loop";
         default:
           return section;
       }
@@ -121,6 +123,8 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
         return zones[index.row()].left;
       case JM_ZONE_RIGHT:
         return zones[index.row()].right;
+      case JM_ZONE_LOOP_MODE:
+        return zones[index.row()].loop_mode;
     }
   }
 
@@ -175,6 +179,15 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         zones[index.row()].right = value.toString();
         std::cout << value.toString().toStdString();
         break;
+      case JM_ZONE_LOOP_MODE:
+        zones[index.row()].loop_mode = value.toString();
+        if (!value.toString().compare("off"))
+          std::cout << LOOP_OFF;
+        else if (!value.toString().compare("on"))
+          std::cout << LOOP_CONTINUOUS;
+        else if (!value.toString().compare("one shot"))
+          std::cout << LOOP_ONE_SHOT;
+        break;
     }
     std::cout << std::endl;
 
@@ -228,6 +241,19 @@ void InputThread::run() {
       z.left = QString(field.c_str());
       std::getline(sin, field, ',');
       z.right = QString(field.c_str());
+
+      std::getline(sin, field, ',');
+      switch(atoi(field.c_str())) {
+        case LOOP_OFF:
+          z.loop_mode = "off";
+          break;
+        case LOOP_CONTINUOUS:
+          z.loop_mode = "on";
+          break;
+        case LOOP_ONE_SHOT:
+          z.loop_mode = "one shot";
+          break;
+      }
 
       emit receivedAddZone(z);
     }

@@ -23,7 +23,8 @@ enum zone_params {
   JM_ZONE_PITCH,
   JM_ZONE_START,
   JM_ZONE_LEFT,
-  JM_ZONE_RIGHT
+  JM_ZONE_RIGHT,
+  JM_ZONE_LOOP_MODE
 };
 
 typedef struct {

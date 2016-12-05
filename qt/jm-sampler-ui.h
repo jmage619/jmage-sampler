@@ -6,7 +6,7 @@
 #include <QAbstractTableModel>
 #include <QString>
 
-#define NUM_ZONE_ATTRS 11
+#define NUM_ZONE_ATTRS 12
 
 enum zone_params {
   JM_ZONE_NAME,
@@ -19,7 +19,14 @@ enum zone_params {
   JM_ZONE_PITCH,
   JM_ZONE_START,
   JM_ZONE_LEFT,
-  JM_ZONE_RIGHT
+  JM_ZONE_RIGHT,
+  JM_ZONE_LOOP_MODE
+};
+
+enum loop_mode {
+  LOOP_OFF,
+  LOOP_CONTINUOUS,
+  LOOP_ONE_SHOT
 };
 
 // don't forget whenever we add an item to increase size in NUM_ZONE_ATTRS 
@@ -35,6 +42,7 @@ struct zone {
   QString start;
   QString left;
   QString right;
+  QString loop_mode;
 };
 
 Q_DECLARE_METATYPE(zone)

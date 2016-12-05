@@ -80,6 +80,7 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
     case JM_ZONE_HIGH_KEY:
     case JM_ZONE_LOW_VEL:
     case JM_ZONE_HIGH_VEL:
+    case JM_ZONE_LOOP_MODE:
       lv2_atom_forge_int(&ui->forge, atoi(p));
       break;
     case JM_ZONE_PITCH:
@@ -308,7 +309,11 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       // right
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
-      sprintf(p, "%f\n", ((float) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      sprintf(p, "%f,", ((float) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      // loop mode
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%i\n", ((LV2_Atom_Int*) a)->body);
       fprintf(ui->fout, outstr);
       fflush(ui->fout);
     }

@@ -128,6 +128,7 @@ static void send_add_zone(jm_sampler_plugin* plugin, const jm_key_zone* zone) {
   lv2_atom_forge_int(&plugin->forge, zone->start);
   lv2_atom_forge_int(&plugin->forge, zone->left);
   lv2_atom_forge_int(&plugin->forge, zone->right);
+  lv2_atom_forge_int(&plugin->forge, zone->mode);
   lv2_atom_forge_pop(&plugin->forge, &tuple_frame);
   lv2_atom_forge_pop(&plugin->forge, &obj_frame);
 }
@@ -174,6 +175,9 @@ static void update_zone(jm_sampler_plugin* plugin, const LV2_Atom_Object* obj) {
       break;
     case JM_ZONE_RIGHT:
       plugin->sampler.zones_at(index).right = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      break;
+    case JM_ZONE_LOOP_MODE:
+      plugin->sampler.zones_at(index).mode = (loop_mode) reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
   }
 }
