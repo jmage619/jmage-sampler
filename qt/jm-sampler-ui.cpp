@@ -85,6 +85,16 @@ QVariant ZoneTableModel::headerData(int section, Qt::Orientation orientation, in
           return "Group";
         case JM_ZONE_OFF_GROUP:
           return "Off Group";
+        case JM_ZONE_ATTACK:
+          return "Attack";
+        case JM_ZONE_HOLD:
+          return "Hold";
+        case JM_ZONE_DECAY:
+          return "Decay";
+        case JM_ZONE_SUSTAIN:
+          return "Sustain";
+        case JM_ZONE_RELEASE:
+          return "Release";
         default:
           return section;
       }
@@ -137,6 +147,16 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
         return zones[index.row()].group;
       case JM_ZONE_OFF_GROUP:
         return zones[index.row()].off_group;
+      case JM_ZONE_ATTACK:
+        return zones[index.row()].attack;
+      case JM_ZONE_HOLD:
+        return zones[index.row()].hold;
+      case JM_ZONE_DECAY:
+        return zones[index.row()].decay;
+      case JM_ZONE_SUSTAIN:
+        return zones[index.row()].sustain;
+      case JM_ZONE_RELEASE:
+        return zones[index.row()].release;
     }
   }
 
@@ -212,6 +232,26 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         zones[index.row()].off_group = value.toString();
         std::cout << value.toString().toStdString();
         break;
+      case JM_ZONE_ATTACK:
+        zones[index.row()].attack = value.toString();
+        std::cout << value.toString().toStdString();
+        break;
+      case JM_ZONE_HOLD:
+        zones[index.row()].hold = value.toString();
+        std::cout << value.toString().toStdString();
+        break;
+      case JM_ZONE_DECAY:
+        zones[index.row()].decay = value.toString();
+        std::cout << value.toString().toStdString();
+        break;
+      case JM_ZONE_SUSTAIN:
+        zones[index.row()].sustain = value.toString();
+        std::cout << value.toString().toStdString();
+        break;
+      case JM_ZONE_RELEASE:
+        zones[index.row()].release = value.toString();
+        std::cout << value.toString().toStdString();
+        break;
     }
     std::cout << std::endl;
 
@@ -244,27 +284,27 @@ void InputThread::run() {
       std::istringstream sin(input.substr(9));
       std::string field;
       std::getline(sin, field, ',');
-      z.name = QString(field.c_str());
+      z.name = field.c_str();
       std::getline(sin, field, ',');
-      z.amp = QString(field.c_str());
+      z.amp = field.c_str();
       std::getline(sin, field, ',');
-      z.origin = QString(field.c_str());
+      z.origin = field.c_str();
       std::getline(sin, field, ',');
-      z.low_key = QString(field.c_str());
+      z.low_key = field.c_str();
       std::getline(sin, field, ',');
-      z.high_key = QString(field.c_str());
+      z.high_key = field.c_str();
       std::getline(sin, field, ',');
-      z.low_vel = QString(field.c_str());
+      z.low_vel = field.c_str();
       std::getline(sin, field, ',');
-      z.high_vel = QString(field.c_str());
+      z.high_vel = field.c_str();
       std::getline(sin, field, ',');
-      z.pitch = QString(field.c_str());
+      z.pitch = field.c_str();
       std::getline(sin, field, ',');
-      z.start = QString(field.c_str());
+      z.start = field.c_str();
       std::getline(sin, field, ',');
-      z.left = QString(field.c_str());
+      z.left = field.c_str();
       std::getline(sin, field, ',');
-      z.right = QString(field.c_str());
+      z.right = field.c_str();
 
       // loop mode
       std::getline(sin, field, ',');
@@ -281,11 +321,21 @@ void InputThread::run() {
       }
 
       std::getline(sin, field, ',');
-      z.crossfade = QString(field.c_str());
+      z.crossfade = field.c_str();
       std::getline(sin, field, ',');
-      z.group = QString(field.c_str());
+      z.group = field.c_str();
       std::getline(sin, field, ',');
-      z.off_group = QString(field.c_str());
+      z.off_group = field.c_str();
+      std::getline(sin, field, ',');
+      z.attack = field.c_str();
+      std::getline(sin, field, ',');
+      z.hold = field.c_str();
+      std::getline(sin, field, ',');
+      z.decay = field.c_str();
+      std::getline(sin, field, ',');
+      z.sustain = field.c_str();
+      std::getline(sin, field, ',');
+      z.release = field.c_str();
 
       emit receivedAddZone(z);
     }

@@ -91,10 +91,17 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
     case JM_ZONE_START:
     case JM_ZONE_LEFT:
     case JM_ZONE_RIGHT:
+    case JM_ZONE_ATTACK:
+    case JM_ZONE_HOLD:
+    case JM_ZONE_DECAY:
+    case JM_ZONE_RELEASE:
       lv2_atom_forge_int(&ui->forge, atof(p) * SAMPLE_RATE);
       break;
     case JM_ZONE_CROSSFADE:
       lv2_atom_forge_int(&ui->forge, atof(p) * SAMPLE_RATE / 1000.);
+      break;
+    case JM_ZONE_SUSTAIN:
+      lv2_atom_forge_float(&ui->forge, atof(p));
       break;
   }
   lv2_atom_forge_pop(&ui->forge, &tuple_frame);
@@ -331,7 +338,27 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       // off group
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i\n", ((LV2_Atom_Int*) a)->body);
+      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
+      // attack
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%f,", ((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      // hold
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%f,", ((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      // decay
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%f,", ((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      // sustain
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%f,", ((LV2_Atom_Float*) a)->body);
+      // release
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%f\n", ((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
       fprintf(ui->fout, outstr);
       fflush(ui->fout);
     }

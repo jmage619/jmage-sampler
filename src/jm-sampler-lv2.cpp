@@ -132,6 +132,11 @@ static void send_add_zone(jm_sampler_plugin* plugin, const jm_key_zone* zone) {
   lv2_atom_forge_int(&plugin->forge, zone->crossfade);
   lv2_atom_forge_int(&plugin->forge, zone->group);
   lv2_atom_forge_int(&plugin->forge, zone->off_group);
+  lv2_atom_forge_int(&plugin->forge, zone->attack);
+  lv2_atom_forge_int(&plugin->forge, zone->hold);
+  lv2_atom_forge_int(&plugin->forge, zone->decay);
+  lv2_atom_forge_float(&plugin->forge, zone->sustain);
+  lv2_atom_forge_int(&plugin->forge, zone->release);
   lv2_atom_forge_pop(&plugin->forge, &tuple_frame);
   lv2_atom_forge_pop(&plugin->forge, &obj_frame);
 }
@@ -190,6 +195,21 @@ static void update_zone(jm_sampler_plugin* plugin, const LV2_Atom_Object* obj) {
       break;
     case JM_ZONE_OFF_GROUP:
       plugin->sampler.zones_at(index).off_group = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      break;
+    case JM_ZONE_ATTACK:
+      plugin->sampler.zones_at(index).attack = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      break;
+    case JM_ZONE_HOLD:
+      plugin->sampler.zones_at(index).hold = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      break;
+    case JM_ZONE_DECAY:
+      plugin->sampler.zones_at(index).decay = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      break;
+    case JM_ZONE_SUSTAIN:
+      plugin->sampler.zones_at(index).sustain = reinterpret_cast<LV2_Atom_Float*>(a)->body;
+      break;
+    case JM_ZONE_RELEASE:
+      plugin->sampler.zones_at(index).release = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
   }
 }
