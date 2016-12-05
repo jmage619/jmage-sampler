@@ -27,7 +27,7 @@ Qt::ItemFlags ZoneTableModel::flags(const QModelIndex &index) const {
   if (!index.isValid())
     return Qt::ItemIsEnabled;
 
-  return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
+  return QAbstractItemModel::flags(index) | (index.column() == JM_ZONE_LONG_TAIL ? Qt::ItemIsUserCheckable: Qt::ItemIsEditable);
 }
 
 bool ZoneTableModel::insertRows(int row, int count, const QModelIndex&) {
@@ -95,6 +95,8 @@ QVariant ZoneTableModel::headerData(int section, Qt::Orientation orientation, in
           return "Sustain";
         case JM_ZONE_RELEASE:
           return "Release";
+        case JM_ZONE_LONG_TAIL:
+          return "20s Tail";
         default:
           return section;
       }
@@ -115,7 +117,13 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
   if (index.column() >= NUM_ZONE_ATTRS)
     return QVariant();
 
-  if (role == Qt::DisplayRole || role == Qt::EditRole) {
+  if (role == Qt::CheckStateRole) {
+    switch (index.column()) {
+      case JM_ZONE_LONG_TAIL:
+        return zones[index.row()].long_tail;
+    }
+  }
+  else if (role == Qt::DisplayRole || role == Qt::EditRole) {
     switch (index.column()) {
       case JM_ZONE_NAME:
         return zones[index.row()].name;
@@ -164,7 +172,18 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
 }
     
 bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, int role) {
-  if (index.isValid() && role == Qt::EditRole) {
+  if (index.isValid() && role == Qt::CheckStateRole) {
+    switch (index.column()) {
+      // long tail special case; used for UI only, don't send a message out
+      case JM_ZONE_LONG_TAIL:
+        zones[index.row()].long_tail = value.toInt();
+        // we will likely want to modify decay and release max times here
+        break;
+    }
+    emit dataChanged(index, index);
+    return true;
+  }
+  else if (index.isValid() && role == Qt::EditRole) {
     std::cout << "update_zone:" << index.row() << "," << index.column() << ",";
     switch (index.column()) {
       case JM_ZONE_NAME:
@@ -336,6 +355,8 @@ void InputThread::run() {
       z.sustain = field.c_str();
       std::getline(sin, field, ',');
       z.release = field.c_str();
+
+      z.long_tail = atof(z.decay.toStdString().c_str()) > 2.0 || atof(z.release.toStdString().c_str()) > 2.0 ? Qt::Checked: Qt::Unchecked;
 
       emit receivedAddZone(z);
     }
