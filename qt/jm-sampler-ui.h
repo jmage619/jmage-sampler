@@ -6,7 +6,7 @@
 #include <QAbstractTableModel>
 #include <QString>
 
-#define NUM_ZONE_ATTRS 12
+#define NUM_ZONE_ATTRS 15
 
 enum zone_params {
   JM_ZONE_NAME,
@@ -20,7 +20,10 @@ enum zone_params {
   JM_ZONE_START,
   JM_ZONE_LEFT,
   JM_ZONE_RIGHT,
-  JM_ZONE_LOOP_MODE
+  JM_ZONE_LOOP_MODE,
+  JM_ZONE_CROSSFADE,
+  JM_ZONE_GROUP,
+  JM_ZONE_OFF_GROUP
 };
 
 enum loop_mode {
@@ -43,6 +46,9 @@ struct zone {
   QString left;
   QString right;
   QString loop_mode;
+  QString crossfade;
+  QString group;
+  QString off_group;
 };
 
 Q_DECLARE_METATYPE(zone)

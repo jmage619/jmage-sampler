@@ -79,6 +79,12 @@ QVariant ZoneTableModel::headerData(int section, Qt::Orientation orientation, in
           return "Right";
         case JM_ZONE_LOOP_MODE:
           return "Loop";
+        case JM_ZONE_CROSSFADE:
+          return "CF";
+        case JM_ZONE_GROUP:
+          return "Group";
+        case JM_ZONE_OFF_GROUP:
+          return "Off Group";
         default:
           return section;
       }
@@ -125,6 +131,12 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
         return zones[index.row()].right;
       case JM_ZONE_LOOP_MODE:
         return zones[index.row()].loop_mode;
+      case JM_ZONE_CROSSFADE:
+        return zones[index.row()].crossfade;
+      case JM_ZONE_GROUP:
+        return zones[index.row()].group;
+      case JM_ZONE_OFF_GROUP:
+        return zones[index.row()].off_group;
     }
   }
 
@@ -181,12 +193,24 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         break;
       case JM_ZONE_LOOP_MODE:
         zones[index.row()].loop_mode = value.toString();
-        if (!value.toString().compare("off"))
+        if (value.toString() == "off")
           std::cout << LOOP_OFF;
-        else if (!value.toString().compare("on"))
+        else if (value.toString() == "on")
           std::cout << LOOP_CONTINUOUS;
-        else if (!value.toString().compare("one shot"))
+        else if (value.toString() == "one shot")
           std::cout << LOOP_ONE_SHOT;
+        break;
+      case JM_ZONE_CROSSFADE:
+        zones[index.row()].crossfade = value.toString();
+        std::cout << value.toString().toStdString();
+        break;
+      case JM_ZONE_GROUP:
+        zones[index.row()].group = value.toString();
+        std::cout << value.toString().toStdString();
+        break;
+      case JM_ZONE_OFF_GROUP:
+        zones[index.row()].off_group = value.toString();
+        std::cout << value.toString().toStdString();
         break;
     }
     std::cout << std::endl;
@@ -211,9 +235,9 @@ void InputThread::run() {
     if (std::cin.eof())
       break;
 
-    if (!input.compare("show:1"))
+    if (input == "show:1")
       emit receivedShow();
-    else if (!input.compare("show:0"))
+    else if (input == "show:0")
       emit receivedHide();
     else if (!input.compare(0, 9, "add_zone:")) {
       zone z;
@@ -242,6 +266,7 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.right = QString(field.c_str());
 
+      // loop mode
       std::getline(sin, field, ',');
       switch(atoi(field.c_str())) {
         case LOOP_OFF:
@@ -254,6 +279,13 @@ void InputThread::run() {
           z.loop_mode = "one shot";
           break;
       }
+
+      std::getline(sin, field, ',');
+      z.crossfade = QString(field.c_str());
+      std::getline(sin, field, ',');
+      z.group = QString(field.c_str());
+      std::getline(sin, field, ',');
+      z.off_group = QString(field.c_str());
 
       emit receivedAddZone(z);
     }

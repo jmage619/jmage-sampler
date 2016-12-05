@@ -24,7 +24,10 @@ enum zone_params {
   JM_ZONE_START,
   JM_ZONE_LEFT,
   JM_ZONE_RIGHT,
-  JM_ZONE_LOOP_MODE
+  JM_ZONE_LOOP_MODE,
+  JM_ZONE_CROSSFADE,
+  JM_ZONE_GROUP,
+  JM_ZONE_OFF_GROUP
 };
 
 typedef struct {

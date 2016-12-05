@@ -81,6 +81,8 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
     case JM_ZONE_LOW_VEL:
     case JM_ZONE_HIGH_VEL:
     case JM_ZONE_LOOP_MODE:
+    case JM_ZONE_GROUP:
+    case JM_ZONE_OFF_GROUP:
       lv2_atom_forge_int(&ui->forge, atoi(p));
       break;
     case JM_ZONE_PITCH:
@@ -90,6 +92,9 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
     case JM_ZONE_LEFT:
     case JM_ZONE_RIGHT:
       lv2_atom_forge_int(&ui->forge, atof(p) * SAMPLE_RATE);
+      break;
+    case JM_ZONE_CROSSFADE:
+      lv2_atom_forge_int(&ui->forge, atof(p) * SAMPLE_RATE / 1000.);
       break;
   }
   lv2_atom_forge_pop(&ui->forge, &tuple_frame);
@@ -301,16 +306,29 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       // start
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
-      sprintf(p, "%f,", ((float) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      sprintf(p, "%f,", ((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
       // left
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
-      sprintf(p, "%f,", ((float) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      sprintf(p, "%f,", ((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
       // right
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
-      sprintf(p, "%f,", ((float) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      sprintf(p, "%f,", ((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
       // loop mode
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
+      // crossfade
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      // 0.5 epsilon to prevent truncation error
+      sprintf(p, "%i,", (int) (((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE * 1000. + 0.5));
+      // group
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
+      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
+      // off group
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
       sprintf(p, "%i\n", ((LV2_Atom_Int*) a)->body);
