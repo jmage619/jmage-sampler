@@ -3,8 +3,11 @@
 
 #include <QWidget>
 #include <QThread>
+#include <QTableView>
+#include <QStyledItemDelegate>
 #include <QAbstractTableModel>
-#include <QString>
+
+class QString;
 
 #define NUM_ZONE_ATTRS 22
 
@@ -67,6 +70,30 @@ struct zone {
 
 Q_DECLARE_METATYPE(zone)
 
+class ZoneTableView: public QTableView {
+  Q_OBJECT
+
+  protected:
+    void mousePressEvent(QMouseEvent *event);
+};
+
+class ZoneTableDelegate: public QStyledItemDelegate {
+  Q_OBJECT
+
+  public:
+    QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option,
+        const QModelIndex& index) const;
+    void updateEditorGeometry(QWidget* editor,
+        const QStyleOptionViewItem& option, const QModelIndex& index) const;
+    void setEditorData(QWidget* editor, const QModelIndex& index) const;
+    void setModelData(QWidget* editor, QAbstractItemModel* model,
+        const QModelIndex& index) const;
+
+  public slots:
+    void updateData();
+    void forceClose();
+};
+
 class ZoneTableModel: public QAbstractTableModel {
   Q_OBJECT
 
@@ -101,6 +128,7 @@ class SamplerUI: public QWidget {
 
   private:
     ZoneTableModel zone_model;
+    ZoneTableDelegate delegate;
 
   public:
     SamplerUI();

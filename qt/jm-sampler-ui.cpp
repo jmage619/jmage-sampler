@@ -7,6 +7,110 @@
 #include <unistd.h>
 
 #include "jm-sampler-ui.h"
+#include "components.h"
+
+/************
+*
+* ZoneTableView
+*
+**/
+
+void ZoneTableView::mousePressEvent(QMouseEvent *event) {
+  if (event->button() == Qt::LeftButton) {
+      QModelIndex index = indexAt(event->pos());
+      if (index.isValid())
+        edit(index);
+  }
+  QTableView::mousePressEvent(event);
+}
+
+/************
+*
+* ZoneTableDelegate
+*
+**/
+
+QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option,
+    const QModelIndex& index) const {
+
+  switch (index.column()) {
+    case JM_ZONE_AMP: {
+      DragBox* dbox = new DragBox(parent);
+
+      // update model immediately on text change
+      connect(dbox, &DragBox::textChanged, this, &ZoneTableDelegate::updateData);
+      // force editor close when release dragbox
+      connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
+
+      //std::cout << "editor created\n";
+      return dbox;
+    }
+    default:
+      return QStyledItemDelegate::createEditor(parent, option, index);
+  }
+}
+
+void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
+    const QStyleOptionViewItem& option, const QModelIndex& index) const {
+  switch (index.column()) {
+    case JM_ZONE_AMP:
+      editor->setGeometry(option.rect);
+      break;
+    default:
+      QStyledItemDelegate::updateEditorGeometry(editor, option, index);
+  }
+
+  //std::cout << "menu popup and editor geometry updated\n";
+}
+
+void ZoneTableDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
+  switch (index.column()) {
+    case JM_ZONE_AMP: {
+      DragBox* dbox = static_cast<DragBox*>(editor);
+
+      QString val = index.model()->data(index, Qt::EditRole).toString();
+
+      dbox->setText(val);
+      break;
+    }
+    default:
+      QStyledItemDelegate::setEditorData(editor, index);
+  }
+  //std::cout << "editor updated\n";
+}
+
+void ZoneTableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model,
+    const QModelIndex& index) const {
+
+  switch (index.column()) {
+    case JM_ZONE_AMP: {
+      DragBox* dbox = static_cast<DragBox*>(editor);
+
+      model->setData(index, dbox->text(), Qt::EditRole);
+      break;
+    }
+    default:
+      QStyledItemDelegate::setModelData(editor, model, index);
+  }
+  //std::cout << "model updated\n";
+}
+
+void ZoneTableDelegate::updateData() {
+  QWidget* editor = static_cast<QWidget*>(sender());
+  emit commitData(editor);
+}
+
+void ZoneTableDelegate::forceClose() {
+  QWidget* editor = static_cast<QWidget*>(sender());
+  emit closeEditor(editor);
+  //std::cout << "menu action triggered; commit and close\n";
+}
+
+/************
+*
+* ZoneTableModel
+*
+**/
 
 int ZoneTableModel::rowCount(const QModelIndex& parent) const {
   if (parent.isValid())
@@ -377,8 +481,9 @@ void InputThread::run() {
 SamplerUI::SamplerUI() {
   QVBoxLayout* v_layout = new QVBoxLayout;
 
-  QTableView* view = new QTableView;
+  ZoneTableView* view = new ZoneTableView;
   view->setModel(&zone_model);
+  view->setItemDelegate(&delegate);
 
   v_layout->addWidget(view);
 
