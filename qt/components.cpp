@@ -22,15 +22,17 @@ void DragBox::mouseReleaseEvent(QMouseEvent*) {
 }
 
 void DragBox::mouseMoveEvent(QMouseEvent* e) {
-  int val = text().toInt();
+  double val = text().toDouble();
   // update displayed value on mouse move
   //printf("dbox moved; old pos: %i\n", prev_y);
-  setText(QString::number(val + prev_y - e->pos().y()));
+  setText(QString::number(val + scale * (prev_y - e->pos().y())));
   prev_y = e->pos().y();
   //printf("dbox moved; new pos: %i\n", prev_y);
 }
 
-DragBox::DragBox(QWidget* parent): QLineEdit(parent) {
+DragBox::DragBox(double min, double max, int steps, QWidget* parent):
+    QLineEdit(parent),
+    scale((max - min) / (steps - 1)) {
   setMouseTracking(false);
   setText("0");
 }

@@ -35,7 +35,7 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
 
   switch (index.column()) {
     case JM_ZONE_AMP: {
-      DragBox* dbox = new DragBox(parent);
+      DragBox* dbox = new DragBox(0.0, 100.0, 101, parent);
 
       // update model immediately on text change
       connect(dbox, &DragBox::textChanged, this, &ZoneTableDelegate::updateData);

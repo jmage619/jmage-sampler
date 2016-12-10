@@ -11,6 +11,7 @@ class DragBox: public QLineEdit {
   private:
     //int val;
     int prev_y;
+    double scale;
 
   signals:
     void released(const QString& text);
@@ -21,7 +22,7 @@ class DragBox: public QLineEdit {
     void mouseReleaseEvent(QMouseEvent* e);
     void mouseMoveEvent(QMouseEvent* e);
   public:
-    DragBox(QWidget* parent = Q_NULLPTR);
+    DragBox(double min = 0.0, double max = 100.0, int steps = 101, QWidget* parent = Q_NULLPTR);
 };
 
 #endif
