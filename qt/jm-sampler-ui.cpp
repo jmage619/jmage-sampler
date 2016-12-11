@@ -24,6 +24,10 @@ void ZoneTableView::mousePressEvent(QMouseEvent *event) {
   QTableView::mousePressEvent(event);
 }
 
+void ZoneTableView::currentChanged(const QModelIndex &current, const QModelIndex &previous) {
+  printf("current change: %i; prev: %i\n", current.column(), previous.column());
+  QTableView::currentChanged(current, previous);
+}
 /************
 *
 * ZoneTableDelegate
@@ -54,7 +58,7 @@ void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
     const QStyleOptionViewItem& option, const QModelIndex& index) const {
   switch (index.column()) {
     case JM_ZONE_AMP:
-      editor->setGeometry(option.rect);
+      static_cast<DragBox*>(editor)->setGeometry(option.rect); // have to cast because setGeometry isn't virtual
       break;
     default:
       QStyledItemDelegate::updateEditorGeometry(editor, option, index);

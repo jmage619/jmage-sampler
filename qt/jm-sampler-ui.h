@@ -75,6 +75,7 @@ class ZoneTableView: public QTableView {
 
   protected:
     void mousePressEvent(QMouseEvent *event);
+    void currentChanged(const QModelIndex &current, const QModelIndex &previous);
 };
 
 class ZoneTableDelegate: public QStyledItemDelegate {
