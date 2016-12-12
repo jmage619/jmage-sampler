@@ -24,10 +24,6 @@ void ZoneTableView::mousePressEvent(QMouseEvent *event) {
   QTableView::mousePressEvent(event);
 }
 
-void ZoneTableView::currentChanged(const QModelIndex &current, const QModelIndex &previous) {
-  printf("current change: %i; prev: %i\n", current.column(), previous.column());
-  QTableView::currentChanged(current, previous);
-}
 /************
 *
 * ZoneTableDelegate
@@ -39,10 +35,10 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
 
   switch (index.column()) {
     case JM_ZONE_AMP: {
-      DragBox* dbox = new DragBox(0.0, 100.0, 101, parent);
+      DragBox* dbox = new DragBox(151, -144, 6, parent);
 
       // update model immediately on text change
-      connect(dbox, &DragBox::textChanged, this, &ZoneTableDelegate::updateData);
+      connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       // force editor close when release dragbox
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
 
@@ -68,13 +64,14 @@ void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
 }
 
 void ZoneTableDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
+  //std::cout << "begin editor update\n";
   switch (index.column()) {
     case JM_ZONE_AMP: {
       DragBox* dbox = static_cast<DragBox*>(editor);
 
-      QString val = index.model()->data(index, Qt::EditRole).toString();
+      double val = index.model()->data(index, Qt::EditRole).toDouble();
 
-      dbox->setText(val);
+      dbox->setValue(val);
       break;
     }
     default:
@@ -85,12 +82,13 @@ void ZoneTableDelegate::setEditorData(QWidget* editor, const QModelIndex& index)
 
 void ZoneTableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model,
     const QModelIndex& index) const {
+  //std::cout << "begin model update\n";
 
   switch (index.column()) {
     case JM_ZONE_AMP: {
       DragBox* dbox = static_cast<DragBox*>(editor);
 
-      model->setData(index, dbox->text(), Qt::EditRole);
+      model->setData(index, dbox->value(), Qt::EditRole);
       break;
     }
     default:
@@ -303,7 +301,7 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << value.toString().toStdString();
         break;
       case JM_ZONE_AMP:
-        zones[index.row()].amp = value.toString();
+        zones[index.row()].amp = value.toDouble();
         std::cout << value.toString().toStdString();
         break;
       case JM_ZONE_ORIGIN:
@@ -421,7 +419,7 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.name = field.c_str();
       std::getline(sin, field, ',');
-      z.amp = field.c_str();
+      z.amp = atof(field.c_str());
       std::getline(sin, field, ',');
       z.origin = field.c_str();
       std::getline(sin, field, ',');

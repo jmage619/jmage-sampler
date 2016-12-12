@@ -10,13 +10,16 @@ class DragBox: public QWidget {
 
   private:
     //int val;
-    QLineEdit* out;
+    int index;
     int prev_y;
-    double scale;
+    int steps;
+    double min;
+    double max;
+    QLineEdit* out;
 
   signals:
-    void released(const QString& text);
-    void textChanged(const QString& text);
+    void released(double value);
+    void dragged(double value);
 
   /*protected:
     void mousePressEvent(QMouseEvent* e);
@@ -25,11 +28,11 @@ class DragBox: public QWidget {
     void mouseMoveEvent(QMouseEvent* e);
   */
   public:
-    DragBox(double min = 0.0, double max = 100.0, int steps = 101, QWidget* parent = Q_NULLPTR);
+    DragBox(int steps = 101, double min = 0.0, double max = 100.0, QWidget* parent = Q_NULLPTR);
     bool eventFilter(QObject *obj, QEvent *event);
-    QString text() const;
-    void setText(const QString& text);
     void setGeometry(const QRect& rect);
+    void setValue(double val);
+    double value();
 };
 
 #endif

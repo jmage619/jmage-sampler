@@ -4,15 +4,17 @@
 
 #include "components.h"
 
-DragBox::DragBox(double min, double max, int steps, QWidget* parent):
+DragBox::DragBox(int steps, double min, double max, QWidget* parent):
     QWidget(parent),
-    scale((max - min) / (steps - 1)) {
+    index(0),
+    steps(steps),
+    min(min),
+    max(max) {
   out = new QLineEdit(this);
   out->setMouseTracking(false);
   out->setFocusPolicy(Qt::NoFocus); // super important, qlineedit focus change confuses qtableview
   out->setText("0");
   out->installEventFilter(this);
-  connect(out, &QLineEdit::textChanged, this, &DragBox::textChanged);
 }
 
 bool DragBox::eventFilter(QObject* obj, QEvent* event) {
@@ -28,31 +30,49 @@ bool DragBox::eventFilter(QObject* obj, QEvent* event) {
       return true;
     case QEvent::MouseButtonRelease:
       //printf("dbox released\n");
-      emit released(text_box->text());
+      emit released(value());
       return true;
     case QEvent::MouseMove: {
       mouse_event = static_cast<QMouseEvent*>(event);
-      double val = text_box->text().toDouble();
-      // update displayed value on mouse move
-      //printf("dbox moved; old pos: %i\n", prev_y);
-      text_box->setText(QString::number(val + scale * (prev_y - mouse_event->pos().y())));
+      // update value on mouse move
+      int prev_index = index;
+      index += prev_y - mouse_event->pos().y();
+
+      if (index < 0)
+        index = 0;
+      else if (index >= steps)
+        index = steps - 1;
+
       prev_y = mouse_event->pos().y();
-      //printf("dbox moved; new pos: %i\n", prev_y);
+
+      if (index != prev_index) {
+        text_box->setText(QString::number(value()));
+        emit dragged(value());
+      }
       return true;
     }
     default:
       return QObject::eventFilter(obj, event);
   }
 }
-QString DragBox::text() const {
-  return out->text();
-}
-
-void DragBox::setText(const QString& text) {
-  out->setText(text);  
-}
 
 void DragBox::setGeometry(const QRect& rect) {
   QWidget::setGeometry(rect);
   out->resize(rect.size());
+}
+
+void DragBox::setValue(double val) {
+  if (val < min)
+    index = 0;
+  else if (val > max)
+    index = steps - 1;
+  // 0.05 is epsilon to deal with truncation errors...might be too big?
+  else
+    index = (steps - 1) * (val - min) / (max - min) + 0.05;
+
+  out->setText(QString::number(value()));
+}
+
+double DragBox::value() {
+  return (max - min) / (steps - 1) * index + min;
 }

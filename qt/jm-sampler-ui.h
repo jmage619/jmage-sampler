@@ -45,7 +45,7 @@ enum loop_mode {
 // don't forget whenever we add an item to increase size in NUM_ZONE_ATTRS 
 struct zone {
   QString name;
-  QString amp;
+  double amp;
   QString origin;
   QString low_key;
   QString high_key;
@@ -75,7 +75,6 @@ class ZoneTableView: public QTableView {
 
   protected:
     void mousePressEvent(QMouseEvent *event);
-    void currentChanged(const QModelIndex &current, const QModelIndex &previous);
 };
 
 class ZoneTableDelegate: public QStyledItemDelegate {
