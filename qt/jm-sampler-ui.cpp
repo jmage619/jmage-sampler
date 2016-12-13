@@ -18,7 +18,7 @@
 void ZoneTableView::mousePressEvent(QMouseEvent *event) {
   if (event->button() == Qt::LeftButton) {
       QModelIndex index = indexAt(event->pos());
-      if (index.isValid())
+      if (index.isValid() && index.flags() & Qt::ItemIsEditable)
         edit(index);
   }
   QTableView::mousePressEvent(event);
@@ -62,6 +62,34 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
+    case JM_ZONE_CROSSFADE:
+      dbox = new DragBox(parent, 0, 1000);
+      connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
+      connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
+      return dbox;
+    case JM_ZONE_ATTACK:
+    case JM_ZONE_HOLD:
+      dbox = new DragBox(parent, 0.0, 2.0);
+      connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
+      connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
+      return dbox;
+    case JM_ZONE_DECAY:
+    case JM_ZONE_RELEASE: {
+      const QAbstractItemModel* model = index.model();
+      QModelIndex i = model->index(index.row(), JM_ZONE_LONG_TAIL);
+      if (i.data(Qt::CheckStateRole).toInt() == Qt::Checked)
+        dbox = new DragBox(parent, 0.0, 20.0);
+      else
+        dbox = new DragBox(parent, 0.0, 2.0);
+      connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
+      connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
+      return dbox;
+    }
+    case JM_ZONE_SUSTAIN:
+      dbox = new DragBox(parent, 0.0, 1.0);
+      connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
+      connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
+      return dbox;
     default:
       return QStyledItemDelegate::createEditor(parent, option, index);
   }
@@ -77,6 +105,12 @@ void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
     case JM_ZONE_START:
     case JM_ZONE_LEFT:
     case JM_ZONE_RIGHT:
+    case JM_ZONE_CROSSFADE:
+    case JM_ZONE_ATTACK:
+    case JM_ZONE_HOLD:
+    case JM_ZONE_DECAY:
+    case JM_ZONE_SUSTAIN:
+    case JM_ZONE_RELEASE:
       static_cast<DragBox*>(editor)->setGeometry(option.rect); // have to cast because setGeometry isn't virtual
       break;
     default:
@@ -96,7 +130,13 @@ void ZoneTableDelegate::setEditorData(QWidget* editor, const QModelIndex& index)
     case JM_ZONE_PITCH:
     case JM_ZONE_START:
     case JM_ZONE_LEFT:
-    case JM_ZONE_RIGHT: {
+    case JM_ZONE_RIGHT:
+    case JM_ZONE_CROSSFADE:
+    case JM_ZONE_ATTACK:
+    case JM_ZONE_HOLD:
+    case JM_ZONE_DECAY:
+    case JM_ZONE_SUSTAIN:
+    case JM_ZONE_RELEASE: {
       DragBox* dbox = static_cast<DragBox*>(editor);
 
       double val = index.model()->data(index, Qt::EditRole).toDouble();
@@ -121,7 +161,13 @@ void ZoneTableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model,
     case JM_ZONE_PITCH:
     case JM_ZONE_START:
     case JM_ZONE_LEFT:
-    case JM_ZONE_RIGHT: {
+    case JM_ZONE_RIGHT:
+    case JM_ZONE_CROSSFADE:
+    case JM_ZONE_ATTACK:
+    case JM_ZONE_HOLD:
+    case JM_ZONE_DECAY:
+    case JM_ZONE_SUSTAIN:
+    case JM_ZONE_RELEASE: {
       DragBox* dbox = static_cast<DragBox*>(editor);
 
       model->setData(index, dbox->value(), Qt::EditRole);
@@ -394,8 +440,8 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
           std::cout << LOOP_ONE_SHOT;
         break;
       case JM_ZONE_CROSSFADE:
-        zones[index.row()].crossfade = value.toString();
-        std::cout << value.toString().toStdString();
+        zones[index.row()].crossfade = value.toDouble();
+        std::cout << value.toInt();
         break;
       case JM_ZONE_GROUP:
         zones[index.row()].group = value.toString();
@@ -406,24 +452,24 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << value.toString().toStdString();
         break;
       case JM_ZONE_ATTACK:
-        zones[index.row()].attack = value.toString();
-        std::cout << value.toString().toStdString();
+        zones[index.row()].attack = value.toDouble();
+        std::cout << value.toDouble();
         break;
       case JM_ZONE_HOLD:
-        zones[index.row()].hold = value.toString();
-        std::cout << value.toString().toStdString();
+        zones[index.row()].hold = value.toDouble();
+        std::cout << value.toDouble();
         break;
       case JM_ZONE_DECAY:
-        zones[index.row()].decay = value.toString();
-        std::cout << value.toString().toStdString();
+        zones[index.row()].decay = value.toDouble();
+        std::cout << value.toDouble();
         break;
       case JM_ZONE_SUSTAIN:
-        zones[index.row()].sustain = value.toString();
-        std::cout << value.toString().toStdString();
+        zones[index.row()].sustain = value.toDouble();
+        std::cout << value.toDouble();
         break;
       case JM_ZONE_RELEASE:
-        zones[index.row()].release = value.toString();
-        std::cout << value.toString().toStdString();
+        zones[index.row()].release = value.toDouble();
+        std::cout << value.toDouble();
         break;
       case JM_ZONE_PATH:
         zones[index.row()].path = value.toString();
@@ -500,23 +546,23 @@ void InputThread::run() {
       }
 
       std::getline(sin, field, ',');
-      z.crossfade = field.c_str();
+      z.crossfade = atof(field.c_str());
       std::getline(sin, field, ',');
       z.group = field.c_str();
       std::getline(sin, field, ',');
       z.off_group = field.c_str();
       std::getline(sin, field, ',');
-      z.attack = field.c_str();
+      z.attack = atof(field.c_str());
       std::getline(sin, field, ',');
-      z.hold = field.c_str();
+      z.hold = atof(field.c_str());
       std::getline(sin, field, ',');
-      z.decay = field.c_str();
+      z.decay = atof(field.c_str());
       std::getline(sin, field, ',');
-      z.sustain = field.c_str();
+      z.sustain = atof(field.c_str());
       std::getline(sin, field, ',');
-      z.release = field.c_str();
+      z.release = atof(field.c_str());
 
-      z.long_tail = atof(z.decay.toStdString().c_str()) > 2.0 || atof(z.release.toStdString().c_str()) > 2.0 ? Qt::Checked: Qt::Unchecked;
+      z.long_tail = z.decay > 2.0 || z.release > 2.0 ? Qt::Checked: Qt::Unchecked;
 
       std::getline(sin, field, ',');
       z.path = field.c_str();
