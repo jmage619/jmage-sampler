@@ -4,12 +4,12 @@
 
 #include "components.h"
 
-DragBox::DragBox(int steps, double min, double max, QWidget* parent):
+DragBox::DragBox(QWidget* parent, double min, double max, int steps):
     QWidget(parent),
     index(0),
-    steps(steps),
     min(min),
-    max(max) {
+    max(max),
+    steps(steps) {
   out = new QLineEdit(this);
   out->setMouseTracking(false);
   out->setFocusPolicy(Qt::NoFocus); // super important, qlineedit focus change confuses qtableview

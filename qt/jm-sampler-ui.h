@@ -52,7 +52,7 @@ struct zone {
   QString high_key;
   double low_vel;
   double high_vel;
-  QString pitch;
+  double pitch;
   QString start;
   QString left;
   QString right;

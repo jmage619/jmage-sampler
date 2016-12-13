@@ -12,9 +12,9 @@ class DragBox: public QWidget {
     //int val;
     int index;
     int prev_y;
-    int steps;
     double min;
     double max;
+    int steps;
     QLineEdit* out;
 
   signals:
@@ -28,7 +28,7 @@ class DragBox: public QWidget {
     void mouseMoveEvent(QMouseEvent* e);
   */
   public:
-    DragBox(int steps = 101, double min = 0.0, double max = 100.0, QWidget* parent = Q_NULLPTR);
+    DragBox(QWidget* parent = Q_NULLPTR, double min = 0.0, double max = 100.0, int steps = 101);
     bool eventFilter(QObject *obj, QEvent *event);
     void setGeometry(const QRect& rect);
     void setValue(double val);
