@@ -377,7 +377,6 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
       // long tail special case; used for UI only, don't send a message out
       case JM_ZONE_LONG_TAIL:
         zones[index.row()].long_tail = value.toInt();
-        // we will likely want to modify decay and release max times here
         break;
     }
     emit dataChanged(index, index);
