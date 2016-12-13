@@ -118,6 +118,7 @@ static void send_add_zone(jm_sampler_plugin* plugin, const jm_key_zone* zone) {
   lv2_atom_forge_key(&plugin->forge, plugin->uris.jm_params);
   LV2_Atom_Forge_Frame tuple_frame;
   lv2_atom_forge_tuple(&plugin->forge, &tuple_frame);
+  lv2_atom_forge_int(&plugin->forge, zone->wave_length);
   lv2_atom_forge_string(&plugin->forge, zone->name, strlen(zone->name));
   lv2_atom_forge_float(&plugin->forge, zone->amp);
   lv2_atom_forge_int(&plugin->forge, zone->origin);

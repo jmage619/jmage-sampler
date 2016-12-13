@@ -44,6 +44,7 @@ enum loop_mode {
 
 // don't forget whenever we add an item to increase size in NUM_ZONE_ATTRS 
 struct zone {
+  double wave_length; // don't count as ZONE_ATTR, not used in ui
   QString name;
   double amp;
   QString origin;
