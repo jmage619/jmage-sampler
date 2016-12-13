@@ -33,10 +33,10 @@ void ZoneTableView::mousePressEvent(QMouseEvent *event) {
 QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option,
     const QModelIndex& index) const {
 
+  DragBox* dbox;
   switch (index.column()) {
-    case JM_ZONE_AMP: {
-      DragBox* dbox = new DragBox(151, -144, 6, parent);
-
+    case JM_ZONE_AMP:
+      dbox = new DragBox(151, -144, 6, parent);
       // update model immediately on text change
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       // force editor close when release dragbox
@@ -44,7 +44,12 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
 
       //std::cout << "editor created\n";
       return dbox;
-    }
+    case JM_ZONE_LOW_VEL:
+    case JM_ZONE_HIGH_VEL:
+      dbox = new DragBox(128, 0, 127, parent);
+      connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
+      connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
+      return dbox;
     default:
       return QStyledItemDelegate::createEditor(parent, option, index);
   }
@@ -54,6 +59,8 @@ void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
     const QStyleOptionViewItem& option, const QModelIndex& index) const {
   switch (index.column()) {
     case JM_ZONE_AMP:
+    case JM_ZONE_LOW_VEL:
+    case JM_ZONE_HIGH_VEL:
       static_cast<DragBox*>(editor)->setGeometry(option.rect); // have to cast because setGeometry isn't virtual
       break;
     default:
@@ -65,8 +72,11 @@ void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
 
 void ZoneTableDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
   //std::cout << "begin editor update\n";
+  
   switch (index.column()) {
-    case JM_ZONE_AMP: {
+    case JM_ZONE_AMP:
+    case JM_ZONE_LOW_VEL:
+    case JM_ZONE_HIGH_VEL: {
       DragBox* dbox = static_cast<DragBox*>(editor);
 
       double val = index.model()->data(index, Qt::EditRole).toDouble();
@@ -85,7 +95,9 @@ void ZoneTableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model,
   //std::cout << "begin model update\n";
 
   switch (index.column()) {
-    case JM_ZONE_AMP: {
+    case JM_ZONE_AMP:
+    case JM_ZONE_LOW_VEL:
+    case JM_ZONE_HIGH_VEL: {
       DragBox* dbox = static_cast<DragBox*>(editor);
 
       model->setData(index, dbox->value(), Qt::EditRole);
@@ -302,7 +314,7 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         break;
       case JM_ZONE_AMP:
         zones[index.row()].amp = value.toDouble();
-        std::cout << value.toString().toStdString();
+        std::cout << value.toDouble();
         break;
       case JM_ZONE_ORIGIN:
         zones[index.row()].origin = value.toString();
@@ -317,12 +329,12 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << value.toString().toStdString();
         break;
       case JM_ZONE_LOW_VEL:
-        zones[index.row()].low_vel = value.toString();
-        std::cout << value.toString().toStdString();
+        zones[index.row()].low_vel = value.toDouble();
+        std::cout << value.toInt(); // convert to int for output
         break;
       case JM_ZONE_HIGH_VEL:
-        zones[index.row()].high_vel = value.toString();
-        std::cout << value.toString().toStdString();
+        zones[index.row()].high_vel = value.toDouble();
+        std::cout << value.toInt();
         break;
       case JM_ZONE_PITCH:
         zones[index.row()].pitch = value.toString();
@@ -427,9 +439,9 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.high_key = field.c_str();
       std::getline(sin, field, ',');
-      z.low_vel = field.c_str();
+      z.low_vel = atof(field.c_str());
       std::getline(sin, field, ',');
-      z.high_vel = field.c_str();
+      z.high_vel = atof(field.c_str());
       std::getline(sin, field, ',');
       z.pitch = field.c_str();
       std::getline(sin, field, ',');
