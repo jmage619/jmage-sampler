@@ -36,6 +36,10 @@ enum zone_params {
   JM_ZONE_PATH
 };
 
+enum roles {
+  JM_MAX_ROLE = Qt::UserRole
+};
+
 enum loop_mode {
   LOOP_OFF,
   LOOP_CONTINUOUS,
@@ -53,9 +57,9 @@ struct zone {
   double low_vel;
   double high_vel;
   double pitch;
-  QString start;
-  QString left;
-  QString right;
+  double start;
+  double left;
+  double right;
   QString loop_mode;
   QString crossfade;
   QString group;

@@ -55,6 +55,13 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
+    case JM_ZONE_START:
+    case JM_ZONE_LEFT:
+    case JM_ZONE_RIGHT:
+      dbox = new DragBox(parent, 0.0, index.data(JM_MAX_ROLE).toDouble());
+      connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
+      connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
+      return dbox;
     default:
       return QStyledItemDelegate::createEditor(parent, option, index);
   }
@@ -67,6 +74,9 @@ void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
     case JM_ZONE_LOW_VEL:
     case JM_ZONE_HIGH_VEL:
     case JM_ZONE_PITCH:
+    case JM_ZONE_START:
+    case JM_ZONE_LEFT:
+    case JM_ZONE_RIGHT:
       static_cast<DragBox*>(editor)->setGeometry(option.rect); // have to cast because setGeometry isn't virtual
       break;
     default:
@@ -83,7 +93,10 @@ void ZoneTableDelegate::setEditorData(QWidget* editor, const QModelIndex& index)
     case JM_ZONE_AMP:
     case JM_ZONE_LOW_VEL:
     case JM_ZONE_HIGH_VEL:
-    case JM_ZONE_PITCH: {
+    case JM_ZONE_PITCH:
+    case JM_ZONE_START:
+    case JM_ZONE_LEFT:
+    case JM_ZONE_RIGHT: {
       DragBox* dbox = static_cast<DragBox*>(editor);
 
       double val = index.model()->data(index, Qt::EditRole).toDouble();
@@ -105,7 +118,10 @@ void ZoneTableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model,
     case JM_ZONE_AMP:
     case JM_ZONE_LOW_VEL:
     case JM_ZONE_HIGH_VEL:
-    case JM_ZONE_PITCH: {
+    case JM_ZONE_PITCH:
+    case JM_ZONE_START:
+    case JM_ZONE_LEFT:
+    case JM_ZONE_RIGHT: {
       DragBox* dbox = static_cast<DragBox*>(editor);
 
       model->setData(index, dbox->value(), Qt::EditRole);
@@ -251,6 +267,14 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
         return zones[index.row()].long_tail;
     }
   }
+  else if (role == JM_MAX_ROLE) {
+    switch (index.column()) {
+      case JM_ZONE_START:
+      case JM_ZONE_LEFT:
+      case JM_ZONE_RIGHT:
+        return zones[index.row()].wave_length;
+    }
+  }
   else if (role == Qt::DisplayRole || role == Qt::EditRole) {
     switch (index.column()) {
       case JM_ZONE_NAME:
@@ -349,16 +373,16 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << value.toDouble();
         break;
       case JM_ZONE_START:
-        zones[index.row()].start = value.toString();
-        std::cout << value.toString().toStdString();
+        zones[index.row()].start = value.toDouble();
+        std::cout << value.toDouble();
         break;
       case JM_ZONE_LEFT:
-        zones[index.row()].left = value.toString();
-        std::cout << value.toString().toStdString();
+        zones[index.row()].left = value.toDouble();
+        std::cout << value.toDouble();
         break;
       case JM_ZONE_RIGHT:
-        zones[index.row()].right = value.toString();
-        std::cout << value.toString().toStdString();
+        zones[index.row()].right = value.toDouble();
+        std::cout << value.toDouble();
         break;
       case JM_ZONE_LOOP_MODE:
         zones[index.row()].loop_mode = value.toString();
@@ -455,11 +479,11 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.pitch = atof(field.c_str());
       std::getline(sin, field, ',');
-      z.start = field.c_str();
+      z.start = atof(field.c_str());
       std::getline(sin, field, ',');
-      z.left = field.c_str();
+      z.left = atof(field.c_str());
       std::getline(sin, field, ',');
-      z.right = field.c_str();
+      z.right = atof(field.c_str());
 
       // loop mode
       std::getline(sin, field, ',');
