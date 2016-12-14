@@ -97,6 +97,7 @@ class ZoneTableDelegate: public QStyledItemDelegate {
   public slots:
     void updateData();
     void forceClose();
+    void commitAndCloseEditor();
 };
 
 class ZoneTableModel: public QAbstractTableModel {

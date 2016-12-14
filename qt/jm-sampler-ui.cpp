@@ -34,6 +34,7 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
     const QModelIndex& index) const {
 
   DragBox* dbox;
+  QComboBox* combo;
   switch (index.column()) {
     case JM_ZONE_AMP:
       dbox = new DragBox(parent, -144, 6, 151);
@@ -62,6 +63,16 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
+    case JM_ZONE_LOOP_MODE: {
+      combo = new QComboBox(parent);
+      combo->addItem(tr("off"));
+      combo->addItem(tr("on"));
+      combo->addItem(tr("one shot"));
+      // activated better than index changed for case where user clicks same
+      // still get a combo box if click outside border or hit escape..
+      connect(combo, static_cast<void (QComboBox::*)(int)>(&QComboBox::activated), this, &ZoneTableDelegate::commitAndCloseEditor);
+      return combo;
+    }
     case JM_ZONE_CROSSFADE:
       dbox = new DragBox(parent, 0, 1000);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
@@ -113,6 +124,14 @@ void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
     case JM_ZONE_RELEASE:
       static_cast<DragBox*>(editor)->setGeometry(option.rect); // have to cast because setGeometry isn't virtual
       break;
+    case JM_ZONE_LOOP_MODE: {
+      QComboBox* combo = static_cast<QComboBox*>(editor);
+      // base new y off centers since current cell may have been resized
+      int y = option.rect.y() + (option.rect.height() - combo->height()) / 2;
+      // set width to grid cell
+      combo->setGeometry(option.rect.x(), y, option.rect.width(), combo->height());
+      break;
+    }
     default:
       QStyledItemDelegate::updateEditorGeometry(editor, option, index);
   }
@@ -139,9 +158,17 @@ void ZoneTableDelegate::setEditorData(QWidget* editor, const QModelIndex& index)
     case JM_ZONE_RELEASE: {
       DragBox* dbox = static_cast<DragBox*>(editor);
 
-      double val = index.model()->data(index, Qt::EditRole).toDouble();
+      double val = index.data(Qt::EditRole).toDouble();
 
       dbox->setValue(val);
+      break;
+    }
+    case JM_ZONE_LOOP_MODE: {
+      QComboBox* combo = static_cast<QComboBox*>(editor);
+      combo->setCurrentText(index.data(Qt::EditRole).toString());
+      // must show popup here instead of update geometry because it
+      // must be called after set cur text to properly place menu
+      combo->showPopup();
       break;
     }
     default:
@@ -173,6 +200,11 @@ void ZoneTableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model,
       model->setData(index, dbox->value(), Qt::EditRole);
       break;
     }
+    case JM_ZONE_LOOP_MODE: {
+      QComboBox* combo = static_cast<QComboBox*>(editor);
+      model->setData(index, combo->currentText(), Qt::EditRole);
+      break;
+    }
     default:
       QStyledItemDelegate::setModelData(editor, model, index);
   }
@@ -188,6 +220,12 @@ void ZoneTableDelegate::forceClose() {
   QWidget* editor = static_cast<QWidget*>(sender());
   emit closeEditor(editor);
   //std::cout << "menu action triggered; commit and close\n";
+}
+
+void ZoneTableDelegate::commitAndCloseEditor() {
+  QWidget* editor = static_cast<QWidget*>(sender());
+  emit commitData(editor);
+  emit closeEditor(editor);
 }
 
 /************
