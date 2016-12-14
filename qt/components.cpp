@@ -4,6 +4,12 @@
 
 #include "components.h"
 
+/************
+*
+* DragBox
+*
+**/
+
 DragBox::DragBox(QWidget* parent, double min, double max, int steps):
     QWidget(parent),
     index(0),
@@ -75,4 +81,83 @@ void DragBox::setValue(double val) {
 
 double DragBox::value() {
   return (max - min) / (steps - 1) * index + min;
+}
+
+/************
+*
+* NotePopup
+*
+**/
+
+void NotePopup::setIndexFromAction(QAction* action) {
+  text = action->text();
+
+  emit selected(text);
+}
+
+NotePopup::NotePopup(QWidget* parent): QFrame(parent) {
+  this->setFrameStyle(QFrame::Box | QFrame::Plain);
+  this->setLineWidth(2);
+
+  menu = new QMenu(this);
+
+  for (int i = -1; i <= 9; ++i) {
+    QMenu* submenu = menu->addMenu(QString::number(i));
+
+    submenu->addAction(QString::number(i) + "C");
+    submenu->addAction(QString::number(i) + "C#");
+    submenu->addAction(QString::number(i) + "D");
+    submenu->addAction(QString::number(i) + "D#");
+    submenu->addAction(QString::number(i) + "E");
+    submenu->addAction(QString::number(i) + "F");
+    submenu->addAction(QString::number(i) + "F#");
+    submenu->addAction(QString::number(i) + "G");
+    if (i == 9)
+      break;
+    submenu->addAction(QString::number(i) + "G#");
+    submenu->addAction(QString::number(i) + "A");
+    submenu->addAction(QString::number(i) + "A#");
+    submenu->addAction(QString::number(i) + "B");
+  }
+  connect(menu, &QMenu::triggered, this, &NotePopup::setIndexFromAction);
+}
+
+void NotePopup::showPopup() {
+  menu->setFixedWidth(width());
+
+  // line up height below cell
+  // eventually figure out how to draw box in cur cell for visibility
+  menu->popup(mapToGlobal(QPoint(0, height())));
+  //menu->popup(QCursor::pos());
+}
+
+QString NotePopup::currentText() {
+  return text;
+}
+
+void NotePopup::setCurrentText(const QString& text) {
+  this->text = text;
+
+  if (menu->isVisible()) {
+    // first octave is -1, add 1 to make it a valid index
+    int octave_index = text.startsWith("-1") ? 0: text[0].digitValue() + 1;
+    QAction* sub_action = menu->actions().at(octave_index);
+    menu->setActiveAction(sub_action);
+    QMenu* submenu  = sub_action->menu();
+
+    QList<QAction*> sub_actions = submenu->actions();
+
+    for (int i = 0; i < sub_actions.size(); ++i) {
+      if (sub_actions.at(i)->text() == text) {
+        submenu->setActiveAction(sub_actions.at(i));
+        break;
+      }
+    }
+  }
+}
+
+void NotePopup::mousePressEvent(QMouseEvent *event) {
+  if (event->button() == Qt::LeftButton) {
+    showPopup();
+  }
 }

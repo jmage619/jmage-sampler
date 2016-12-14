@@ -2,8 +2,11 @@
 #define JM_UI_COMPONENTS
 
 #include <QWidget>
+#include <QFrame>
 
 class QLineEdit;
+class QAction;
+class QMenu;
 
 class DragBox: public QWidget {
   Q_OBJECT
@@ -35,4 +38,24 @@ class DragBox: public QWidget {
     double value();
 };
 
+class NotePopup: public QFrame {
+  Q_OBJECT
+
+  private:
+    QString text;
+    QMenu* menu;
+
+  signals:
+    void selected(const QString& text);
+
+  private slots:
+    void setIndexFromAction(QAction* action);
+
+  public:
+    NotePopup(QWidget* parent = Q_NULLPTR);
+    void showPopup();
+    QString currentText();
+    void setCurrentText(const QString& text);
+    void mousePressEvent(QMouseEvent *event);
+};
 #endif

@@ -45,6 +45,13 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
 
       //std::cout << "editor created\n";
       return dbox;
+    case JM_ZONE_ORIGIN:
+    case JM_ZONE_LOW_KEY:
+    case JM_ZONE_HIGH_KEY: {
+      NotePopup* popup = new NotePopup(parent);
+      connect(popup, &NotePopup::selected, this, &ZoneTableDelegate::commitAndCloseEditor);
+      return popup;
+    }
     case JM_ZONE_LOW_VEL:
     case JM_ZONE_HIGH_VEL:
       dbox = new DragBox(parent, 0, 127, 128);
@@ -132,6 +139,14 @@ void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
     case JM_ZONE_RELEASE:
       static_cast<DragBox*>(editor)->setGeometry(option.rect); // have to cast because setGeometry isn't virtual
       break;
+    case JM_ZONE_ORIGIN:
+    case JM_ZONE_LOW_KEY:
+    case JM_ZONE_HIGH_KEY: {
+      NotePopup* popup = static_cast<NotePopup*>(editor);
+      popup->setGeometry(option.rect);
+      popup->showPopup();
+      break;
+    }
     case JM_ZONE_LOOP_MODE:
     case JM_ZONE_GROUP:
     case JM_ZONE_OFF_GROUP: {
@@ -173,6 +188,13 @@ void ZoneTableDelegate::setEditorData(QWidget* editor, const QModelIndex& index)
       dbox->setValue(val);
       break;
     }
+    case JM_ZONE_ORIGIN:
+    case JM_ZONE_LOW_KEY:
+    case JM_ZONE_HIGH_KEY: {
+      NotePopup* popup = static_cast<NotePopup*>(editor);
+      popup->setCurrentText(index.data(Qt::EditRole).toString());
+      break;
+    }
     case JM_ZONE_LOOP_MODE:
     case JM_ZONE_GROUP:
     case JM_ZONE_OFF_GROUP: {
@@ -212,6 +234,13 @@ void ZoneTableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model,
       model->setData(index, dbox->value(), Qt::EditRole);
       break;
     }
+    case JM_ZONE_ORIGIN:
+    case JM_ZONE_LOW_KEY:
+    case JM_ZONE_HIGH_KEY: {
+      NotePopup* popup = static_cast<NotePopup*>(editor);
+      model->setData(index, popup->currentText(), Qt::EditRole);
+      break;
+    }
     case JM_ZONE_LOOP_MODE:
     case JM_ZONE_GROUP:
     case JM_ZONE_OFF_GROUP: {
@@ -240,6 +269,79 @@ void ZoneTableDelegate::commitAndCloseEditor() {
   QWidget* editor = static_cast<QWidget*>(sender());
   emit commitData(editor);
   emit closeEditor(editor);
+}
+
+// some helper functions
+namespace {
+  QString note_to_string(int note) {
+    // first octave is -1, so subtract to translate to it
+    int octave = note / 12 - 1;
+    int pos = note % 12;
+
+    switch (pos) {
+      case 0:
+        return QString::number(octave) + "C";
+      case 1:
+        return QString::number(octave) + "C#";
+      case 2:
+        return QString::number(octave) + "D";
+      case 3:
+        return QString::number(octave) + "D#";
+      case 4:
+        return QString::number(octave) + "E";
+      case 5:
+        return QString::number(octave) + "F";
+      case 6:
+        return QString::number(octave) + "F#";
+      case 7:
+        return QString::number(octave) + "G";
+      case 8:
+        return QString::number(octave) + "G#";
+      case 9:
+        return QString::number(octave) + "A";
+      case 10:
+        return QString::number(octave) + "A#";
+      case 11:
+        return QString::number(octave) + "B";
+    }
+
+    return "";
+  }
+
+  int string_to_note(const QString& str) {
+    // first octave is -1, add 1 to make it a valid index
+    int octave = str.startsWith("-1") ? 0: str[0].digitValue() + 1;
+
+    // if octave -1, extra character to account for negative sign
+    QString note = octave == 0 ? str.mid(2): str.mid(1);
+
+    if (note == "C")
+      return octave * 12 + 0;
+    if (note == "C#")
+      return octave * 12 + 1;
+    if (note == "D")
+      return octave * 12 + 2;
+    if (note == "D#")
+      return octave * 12 + 3;
+    if (note == "E")
+      return octave * 12 + 4;
+    if (note == "F")
+      return octave * 12 + 5;
+    if (note == "F#")
+      return octave * 12 + 6;
+    if (note == "G")
+      return octave * 12 + 7;
+    if (note == "G#")
+      return octave * 12 + 8;
+    if (note == "A")
+      return octave * 12 + 9;
+    if (note == "A#")
+      return octave * 12 + 10;
+    if (note == "B")
+      return octave * 12 + 11;
+
+    return -1;
+  }
 }
 
 /************
@@ -447,15 +549,15 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         break;
       case JM_ZONE_ORIGIN:
         zones[index.row()].origin = value.toString();
-        std::cout << value.toString().toStdString();
+        std::cout << string_to_note(value.toString());
         break;
       case JM_ZONE_LOW_KEY:
         zones[index.row()].low_key = value.toString();
-        std::cout << value.toString().toStdString();
+        std::cout << string_to_note(value.toString());
         break;
       case JM_ZONE_HIGH_KEY:
         zones[index.row()].high_key = value.toString();
-        std::cout << value.toString().toStdString();
+        std::cout << string_to_note(value.toString());
         break;
       case JM_ZONE_LOW_VEL:
         zones[index.row()].low_vel = value.toDouble();
@@ -570,11 +672,11 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.amp = atof(field.c_str());
       std::getline(sin, field, ',');
-      z.origin = field.c_str();
+      z.origin = note_to_string(atoi(field.c_str()));
       std::getline(sin, field, ',');
-      z.low_key = field.c_str();
+      z.low_key = note_to_string(atoi(field.c_str()));
       std::getline(sin, field, ',');
-      z.high_key = field.c_str();
+      z.high_key = note_to_string(atoi(field.c_str()));
       std::getline(sin, field, ',');
       z.low_vel = atof(field.c_str());
       std::getline(sin, field, ',');
