@@ -63,7 +63,7 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
-    case JM_ZONE_LOOP_MODE: {
+    case JM_ZONE_LOOP_MODE:
       combo = new QComboBox(parent);
       combo->addItem(tr("off"));
       combo->addItem(tr("on"));
@@ -72,7 +72,15 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
       // still get a combo box if click outside border or hit escape..
       connect(combo, static_cast<void (QComboBox::*)(int)>(&QComboBox::activated), this, &ZoneTableDelegate::commitAndCloseEditor);
       return combo;
-    }
+    case JM_ZONE_GROUP:
+    case JM_ZONE_OFF_GROUP:
+      combo = new QComboBox(parent);
+      combo->addItem(tr("none"));
+      for (int i = 1; i <= 16; ++i)
+        combo->addItem(QString::number(i));
+
+      connect(combo, static_cast<void (QComboBox::*)(int)>(&QComboBox::activated), this, &ZoneTableDelegate::commitAndCloseEditor);
+      return combo;
     case JM_ZONE_CROSSFADE:
       dbox = new DragBox(parent, 0, 1000);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
@@ -124,7 +132,9 @@ void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
     case JM_ZONE_RELEASE:
       static_cast<DragBox*>(editor)->setGeometry(option.rect); // have to cast because setGeometry isn't virtual
       break;
-    case JM_ZONE_LOOP_MODE: {
+    case JM_ZONE_LOOP_MODE:
+    case JM_ZONE_GROUP:
+    case JM_ZONE_OFF_GROUP: {
       QComboBox* combo = static_cast<QComboBox*>(editor);
       // base new y off centers since current cell may have been resized
       int y = option.rect.y() + (option.rect.height() - combo->height()) / 2;
@@ -163,7 +173,9 @@ void ZoneTableDelegate::setEditorData(QWidget* editor, const QModelIndex& index)
       dbox->setValue(val);
       break;
     }
-    case JM_ZONE_LOOP_MODE: {
+    case JM_ZONE_LOOP_MODE:
+    case JM_ZONE_GROUP:
+    case JM_ZONE_OFF_GROUP: {
       QComboBox* combo = static_cast<QComboBox*>(editor);
       combo->setCurrentText(index.data(Qt::EditRole).toString());
       // must show popup here instead of update geometry because it
@@ -200,7 +212,9 @@ void ZoneTableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model,
       model->setData(index, dbox->value(), Qt::EditRole);
       break;
     }
-    case JM_ZONE_LOOP_MODE: {
+    case JM_ZONE_LOOP_MODE:
+    case JM_ZONE_GROUP:
+    case JM_ZONE_OFF_GROUP: {
       QComboBox* combo = static_cast<QComboBox*>(editor);
       model->setData(index, combo->currentText(), Qt::EditRole);
       break;
@@ -482,11 +496,17 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         break;
       case JM_ZONE_GROUP:
         zones[index.row()].group = value.toString();
-        std::cout << value.toString().toStdString();
+        if (value.toString() == "none")
+          std::cout << "0";
+        else
+          std::cout << value.toString().toStdString();
         break;
       case JM_ZONE_OFF_GROUP:
         zones[index.row()].off_group = value.toString();
-        std::cout << value.toString().toStdString();
+        if (value.toString() == "none")
+          std::cout << "0";
+        else
+          std::cout << value.toString().toStdString();
         break;
       case JM_ZONE_ATTACK:
         zones[index.row()].attack = value.toDouble();
@@ -585,9 +605,9 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.crossfade = atof(field.c_str());
       std::getline(sin, field, ',');
-      z.group = field.c_str();
+      z.group = field == "0" ? "none": field.c_str();
       std::getline(sin, field, ',');
-      z.off_group = field.c_str();
+      z.off_group = field == "0" ? "none": field.c_str();
       std::getline(sin, field, ',');
       z.attack = atof(field.c_str());
       std::getline(sin, field, ',');
