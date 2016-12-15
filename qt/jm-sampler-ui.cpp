@@ -18,8 +18,11 @@
 void ZoneTableView::mousePressEvent(QMouseEvent *event) {
   if (event->button() == Qt::LeftButton) {
       QModelIndex index = indexAt(event->pos());
-      if (index.isValid() && index.flags() & Qt::ItemIsEditable)
-        edit(index);
+      if (index.isValid()) {
+        setCurrentIndex(index);
+        if (index.flags() & Qt::ItemIsEditable)
+          edit(index);
+      }
   }
   QTableView::mousePressEvent(event);
 }
@@ -735,6 +738,7 @@ SamplerUI::SamplerUI() {
   QVBoxLayout* v_layout = new QVBoxLayout;
 
   ZoneTableView* view = new ZoneTableView;
+  view->setSelectionMode(QAbstractItemView::NoSelection);
   view->setModel(&zone_model);
   view->setItemDelegate(&delegate);
 
