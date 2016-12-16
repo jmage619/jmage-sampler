@@ -10,15 +10,20 @@
 *
 **/
 
+void DragBox::mousePressEvent(QMouseEvent*) {
+  showPopup();
+}
+
 DragBox::DragBox(QWidget* parent, double min, double max, int steps):
-    QWidget(parent),
+    QFrame(parent),
     index(0),
     min(min),
     max(max),
     steps(steps) {
+  setFrameStyle(QFrame::Box | QFrame::Plain);
+  setLineWidth(2);
   out = new QLineEdit(this);
-  out->setMouseTracking(false);
-  out->setFocusPolicy(Qt::NoFocus); // super important, qlineedit focus change confuses qtableview
+  out->setWindowFlags(Qt::Popup);
   out->setText("0");
   out->installEventFilter(this);
 }
@@ -27,15 +32,9 @@ bool DragBox::eventFilter(QObject* obj, QEvent* event) {
   QLineEdit* text_box = static_cast<QLineEdit*>(obj);
   QMouseEvent* mouse_event;
   switch (event->type()) {
-    case QEvent::MouseButtonPress: 
-    case QEvent::MouseButtonDblClick: // needed to play nice with QTableView mechanics
-      mouse_event = static_cast<QMouseEvent*>(event);
-      // capture y on click
-      prev_y = mouse_event->pos().y();
-      //printf("dbox clicked; pos: %i\n", prev_y);
-      return true;
     case QEvent::MouseButtonRelease:
       //printf("dbox released\n");
+      out->hide();
       emit released(value());
       return true;
     case QEvent::MouseMove: {
@@ -65,6 +64,12 @@ bool DragBox::eventFilter(QObject* obj, QEvent* event) {
 void DragBox::setGeometry(const QRect& rect) {
   QWidget::setGeometry(rect);
   out->resize(rect.size());
+}
+
+void DragBox::showPopup() {
+  prev_y = mapFromGlobal(QCursor::pos()).y();
+  out->move(mapToGlobal(QPoint(0,0)));
+  out->show();
 }
 
 void DragBox::setValue(double val) {

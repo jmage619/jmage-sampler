@@ -8,11 +8,10 @@ class QLineEdit;
 class QAction;
 class QMenu;
 
-class DragBox: public QWidget {
+class DragBox: public QFrame {
   Q_OBJECT
 
   private:
-    //int val;
     int index;
     int prev_y;
     double min;
@@ -24,16 +23,14 @@ class DragBox: public QWidget {
     void released(double value);
     void dragged(double value);
 
-  /*protected:
+  protected:
     void mousePressEvent(QMouseEvent* e);
-    void mouseDoubleClickEvent(QMouseEvent* e);
-    void mouseReleaseEvent(QMouseEvent* e);
-    void mouseMoveEvent(QMouseEvent* e);
-  */
+
   public:
     DragBox(QWidget* parent = Q_NULLPTR, double min = 0.0, double max = 100.0, int steps = 101);
     bool eventFilter(QObject *obj, QEvent *event);
     void setGeometry(const QRect& rect);
+    void showPopup();
     void setValue(double val);
     double value();
 };

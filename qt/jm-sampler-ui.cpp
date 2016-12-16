@@ -139,9 +139,12 @@ void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
     case JM_ZONE_HOLD:
     case JM_ZONE_DECAY:
     case JM_ZONE_SUSTAIN:
-    case JM_ZONE_RELEASE:
-      static_cast<DragBox*>(editor)->setGeometry(option.rect); // have to cast because setGeometry isn't virtual
+    case JM_ZONE_RELEASE: {
+      DragBox* dbox = static_cast<DragBox*>(editor);
+      dbox->setGeometry(option.rect); // have to cast because setGeometry isn't virtual
+      dbox->showPopup();
       break;
+    }
     case JM_ZONE_ORIGIN:
     case JM_ZONE_LOW_KEY:
     case JM_ZONE_HIGH_KEY: {
