@@ -11,20 +11,124 @@
 
 /************
 *
+* SingleClickView
+*
+**/
+
+void SingleClickView::mousePressEvent(QMouseEvent *event) {
+if (event->button() == Qt::LeftButton) {
+    QModelIndex index = indexAt(event->pos());
+    if (index.isValid())
+      edit(index);
+  }
+  QTableView::mousePressEvent(event);
+}
+
+/************
+*
 * ZoneTableView
 *
 **/
 
-void ZoneTableView::mousePressEvent(QMouseEvent *event) {
-  if (event->button() == Qt::LeftButton) {
-      QModelIndex index = indexAt(event->pos());
-      if (index.isValid()) {
-        setCurrentIndex(index);
-        if (index.flags() & Qt::ItemIsEditable)
-          edit(index);
-      }
+void ZoneTableView::updateFrozenTableGeometry() {
+  frozen_view->setGeometry(frameWidth(), frameWidth(),
+    verticalHeader()->width() + columnWidth(0) + columnWidth(1),
+    viewport()->height()+horizontalHeader()->height());
+}
+
+void ZoneTableView::init() {
+  frozen_view->setModel(model());
+  ZoneTableDelegate* frozenDelegate = new ZoneTableDelegate(frozen_view);
+  frozen_view->setItemDelegate(frozenDelegate);
+  frozen_view->setFrameStyle(QFrame::NoFrame);
+  frozen_view->setFocusPolicy(Qt::NoFocus);
+
+  viewport()->stackUnder(frozen_view);
+
+  frozen_view->setSelectionModel(selectionModel());
+  for (int col = 2; col < model()->columnCount(); ++col)
+        frozen_view->setColumnHidden(col, true);
+
+  frozen_view->setColumnWidth(0, columnWidth(0));
+  frozen_view->setColumnWidth(1, columnWidth(1));
+
+  frozen_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  frozen_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  frozen_view->show();
+
+  updateFrozenTableGeometry();
+
+  setHorizontalScrollMode(ScrollPerPixel);
+  setVerticalScrollMode(ScrollPerPixel);
+  frozen_view->setVerticalScrollMode(ScrollPerPixel);
+}
+
+ZoneTableView::ZoneTableView(QAbstractItemModel* model) {
+  setModel(model);
+  ZoneTableDelegate* delegate = new ZoneTableDelegate(this);
+  setItemDelegate(delegate);
+
+  frozen_view = new SingleClickView(this);
+
+  init();
+
+  //connect the headers and scrollbars of both tableviews together
+  connect(horizontalHeader(),&QHeaderView::sectionResized, this,
+    &ZoneTableView::updateFrozenSectionWidth);
+  connect(frozen_view->horizontalHeader(),&QHeaderView::sectionResized, this,
+    &ZoneTableView::updateSectionWidth);
+  connect(frozen_view->verticalHeader(),&QHeaderView::sectionResized, this,
+    &ZoneTableView::updateSectionHeight);
+
+  connect(frozen_view->verticalScrollBar(), &QAbstractSlider::valueChanged,
+    verticalScrollBar(), &QAbstractSlider::setValue);
+  connect(verticalScrollBar(), &QAbstractSlider::valueChanged,
+    frozen_view->verticalScrollBar(), &QAbstractSlider::setValue);
+}
+
+void ZoneTableView::setSelectionMode(QAbstractItemView::SelectionMode mode) {
+  QAbstractItemView::setSelectionMode(mode);
+  frozen_view->setSelectionMode(mode);
+}
+
+void ZoneTableView::resizeEvent(QResizeEvent* event) {
+  QTableView::resizeEvent(event);
+  updateFrozenTableGeometry();
+}
+
+QModelIndex ZoneTableView::moveCursor(CursorAction cursorAction, Qt::KeyboardModifiers modifiers) {
+  QModelIndex current = QTableView::moveCursor(cursorAction, modifiers);
+
+  if (cursorAction == MoveLeft && current.column() > 1
+      && visualRect(current).topLeft().x() < frozen_view->columnWidth(0) + frozen_view->columnWidth(1)) {
+    const int newValue = horizontalScrollBar()->value() + visualRect(current).topLeft().x()
+                         - (frozen_view->columnWidth(0) + frozen_view->columnWidth(1));
+    horizontalScrollBar()->setValue(newValue);
   }
-  QTableView::mousePressEvent(event);
+  return current;
+}
+
+void ZoneTableView::scrollTo(const QModelIndex& index, ScrollHint hint) {
+  if (index.column() > 1)
+    QTableView::scrollTo(index, hint);
+}
+
+void ZoneTableView::updateSectionWidth(int logicalIndex, int /* oldSize */, int newSize) {
+  setColumnWidth(logicalIndex, newSize);
+}
+
+void ZoneTableView::updateFrozenSectionWidth(int logicalIndex, int /* oldSize */, int newSize) {
+  switch (logicalIndex) {
+    case 0:
+    case 1:
+      frozen_view->setColumnWidth(logicalIndex, newSize);
+      updateFrozenTableGeometry();
+      break;
+  }
+}
+
+void ZoneTableView::updateSectionHeight(int logicalIndex, int /* oldSize */, int newSize) {
+  setRowHeight(logicalIndex, newSize);
 }
 
 /************
@@ -740,10 +844,8 @@ void InputThread::run() {
 SamplerUI::SamplerUI() {
   QVBoxLayout* v_layout = new QVBoxLayout;
 
-  ZoneTableView* view = new ZoneTableView;
+  ZoneTableView* view = new ZoneTableView(&zone_model);
   view->setSelectionMode(QAbstractItemView::NoSelection);
-  view->setModel(&zone_model);
-  view->setItemDelegate(&delegate);
 
   v_layout->addWidget(view);
 

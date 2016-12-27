@@ -75,17 +75,41 @@ struct zone {
 
 Q_DECLARE_METATYPE(zone)
 
-class ZoneTableView: public QTableView {
+class SingleClickView: public QTableView {
   Q_OBJECT
 
   protected:
     void mousePressEvent(QMouseEvent *event);
+
+  public:
+    SingleClickView(QWidget* parent = Q_NULLPTR): QTableView(parent) {}
+};
+
+class ZoneTableView: public SingleClickView {
+  Q_OBJECT
+
+  private:
+    SingleClickView* frozen_view;
+    void updateFrozenTableGeometry();
+    void init();
+  protected:
+    virtual void resizeEvent(QResizeEvent* event);
+    virtual QModelIndex moveCursor(CursorAction cursorAction, Qt::KeyboardModifiers modifiers);
+    void scrollTo(const QModelIndex& index, ScrollHint hint = EnsureVisible);
+  public:
+    ZoneTableView(QAbstractItemModel* model);
+    void setSelectionMode(QAbstractItemView::SelectionMode mode);
+  private slots:
+    void updateSectionWidth(int logicalIndex, int oldSize, int newSize);
+    void updateFrozenSectionWidth(int logicalIndex, int oldSize, int newSize);
+    void updateSectionHeight(int logicalIndex, int oldSize, int newSize);
 };
 
 class ZoneTableDelegate: public QStyledItemDelegate {
   Q_OBJECT
 
   public:
+    ZoneTableDelegate(QObject* parent = Q_NULLPTR): QStyledItemDelegate(parent) {}
     QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option,
         const QModelIndex& index) const;
     void updateEditorGeometry(QWidget* editor,
@@ -134,7 +158,6 @@ class SamplerUI: public QWidget {
 
   private:
     ZoneTableModel zone_model;
-    ZoneTableDelegate delegate;
 
   public:
     SamplerUI();
