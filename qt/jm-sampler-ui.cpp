@@ -16,10 +16,13 @@
 **/
 
 void SingleClickView::mousePressEvent(QMouseEvent *event) {
-if (event->button() == Qt::LeftButton) {
-    QModelIndex index = indexAt(event->pos());
-    if (index.isValid())
-      edit(index);
+  if (event->button() == Qt::LeftButton) {
+      QModelIndex index = indexAt(event->pos());
+      if (index.isValid()) {
+        setCurrentIndex(index);
+        if (index.flags() & Qt::ItemIsEditable)
+          edit(index);
+      }
   }
   QTableView::mousePressEvent(event);
 }
