@@ -851,6 +851,9 @@ SamplerUI::SamplerUI() {
   view->setSelectionMode(QAbstractItemView::NoSelection);
 
   v_layout->addWidget(view);
+  QPushButton* add_button = new QPushButton("+");
+  add_button->setSizePolicy(QSizePolicy::Fixed, add_button->sizePolicy().verticalPolicy());
+  v_layout->addWidget(add_button);
 
   setLayout(v_layout);
 
