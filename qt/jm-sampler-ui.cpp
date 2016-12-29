@@ -99,21 +99,13 @@ SamplerUI::SamplerUI() {
   v_layout->addWidget(view);
   QPushButton* add_button = new QPushButton("+");
   add_button->setSizePolicy(QSizePolicy::Fixed, add_button->sizePolicy().verticalPolicy());
+  connect(add_button, &QAbstractButton::clicked, this, &SamplerUI::sendAddZone);
   v_layout->addWidget(add_button);
 
   setLayout(v_layout);
 
-  /*zone_model.insertRows(0, 1);
-  QModelIndex i = zone_model.index(0, 0);
-  zone_model.setData(i, "Zone 1", Qt::EditRole);
-  i = zone_model.index(0, 1);
-  zone_model.setData(i, "-10.0", Qt::EditRole);
-  */
-  //addNewZone({"Zone 1", "-10.0"});
-
   InputThread* in_thread = new InputThread;
   qRegisterMetaType<zone>();
-  //connect(in_thread, &InputThread::receivedValue, slider, &QSlider::setValue);
   connect(in_thread, &InputThread::receivedShow, this, &SamplerUI::showAndRaise);
   connect(in_thread, &InputThread::receivedHide, this, &QWidget::hide);
   connect(in_thread, &InputThread::receivedAddZone, this, &SamplerUI::addNewZone);
@@ -133,4 +125,10 @@ void SamplerUI::addNewZone(const zone& z) {
   int i = zone_model.rowCount();
   zone_model.insertRows(i, 1);
   zone_model.setZone(i, z);
+}
+
+void SamplerUI::sendAddZone() {
+  QString path = QFileDialog::getOpenFileName(this, tr("Open a FUCKING WAV already!!"), "", tr("wav (*.wav)"));
+  if (!path.isNull())
+    std::cout << "add_zone:" << path.toStdString() << std::endl;
 }

@@ -29,6 +29,7 @@ class SamplerUI: public QWidget {
   public slots:
     void showAndRaise();
     void addNewZone(const zone& z);
+    void sendAddZone();
 };
 
 #endif
