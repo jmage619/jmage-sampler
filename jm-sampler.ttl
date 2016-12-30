@@ -4,12 +4,15 @@
 @prefix atom:  <http://lv2plug.in/ns/ext/atom#> .
 @prefix ui:   <http://lv2plug.in/ns/extensions/ui#> .
 @prefix exui: <http://kxstudio.sf.net/ns/lv2ext/external-ui#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
 
 <http://lv2plug.in/plugins/jm-sampler>
 	a lv2:Plugin;
   doap:name "JMAGE Sampler" ;
   doap:license <http://opensource.org/licenses/isc> ;
-	lv2:requiredFeature urid:map ;
+	lv2:requiredFeature urid:map ,
+    work:schedule ;
+  lv2:extensionData work:interface ;
 	ui:ui <http://lv2plug.in/plugins/jm-sampler#ui> ;
 	lv2:port [
 		a lv2:InputPort ,

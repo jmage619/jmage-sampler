@@ -1,6 +1,8 @@
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
+#include <map>
+#include <string>
 #include <cstring>
 
 #include <lv2/lv2plug.in/ns/lv2core/lv2.h>
@@ -9,6 +11,7 @@
 #include <lv2/lv2plug.in/ns/ext/atom/util.h>
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
 #include <lv2/lv2plug.in/ns/ext/midi/midi.h>
+#include <lv2/lv2plug.in/ns/ext/worker/worker.h>
 
 #include "uris.h"
 #include "jmage/sampler.h"
@@ -29,11 +32,13 @@ struct jm_sampler_plugin {
   float* out2;
   LV2_URID_Map* map;
   jm_uris uris;
+  LV2_Worker_Schedule* schedule;
   LV2_Atom_Forge forge;
+  LV2_Atom_Forge_Frame seq_frame;
   JMSampler sampler;
 };
 
-static jm_wave WAV;
+static std::map<std::string, jm_wave> WAVES;
 
 static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
     double rate, const char* path, const LV2_Feature* const* features) {
@@ -41,23 +46,33 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
 
   // Scan host features for URID map
   LV2_URID_Map* map = NULL;
+  LV2_Worker_Schedule* schedule = NULL;
+
   for (int i = 0; features[i]; ++i) {
-    if (!strcmp(features[i]->URI, LV2_URID__map)) {
+    if (!strcmp(features[i]->URI, LV2_URID__map))
       map = static_cast<LV2_URID_Map*>(features[i]->data);
-    }
+    else if (!strcmp(features[i]->URI, LV2_WORKER__schedule))
+      schedule = static_cast<LV2_Worker_Schedule*>(features[i]->data);
   }
   if (!map) {
     fprintf(stderr, "Host does not support urid:map.\n");
     delete plugin;
     return NULL;
   }
+  if (!schedule) {
+    fprintf(stderr, "Host does not support work:schedule.\n");
+    delete plugin;
+    return NULL;
+  }
+
+  plugin->schedule = schedule;
 
   // Map URIS
   plugin->map = map;
   jm_map_uris(plugin->map, &plugin->uris);
   lv2_atom_forge_init(&plugin->forge, plugin->map);
 
-  jm_parse_wave(&WAV, "/home/jdost/dev/c/jmage-sampler/afx.wav");
+  /*jm_parse_wave(&WAV, "/home/jdost/dev/c/jmage-sampler/afx.wav");
   jm_key_zone zone;
   jm_init_key_zone(&zone);
   zone.wave = WAV.wave;
@@ -80,6 +95,7 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
   zone.amp = 0.2;
   zone.origin = 3;
   plugin->sampler.zones_add(zone);
+  */
 
   printf("sampler instantiated.\n");
   return plugin;
@@ -88,7 +104,10 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
 static void cleanup(LV2_Handle instance)
 {
   delete static_cast<jm_sampler_plugin*>(instance);
-  jm_destroy_wave(&WAV);
+
+  std::map<std::string, jm_wave>::iterator it;
+  for (it = WAVES.begin(); it != WAVES.end(); ++it)
+    jm_destroy_wave(&it->second);
 }
 
 static void connect_port(LV2_Handle instance, uint32_t port, void* data) {
@@ -220,6 +239,50 @@ static void update_zone(jm_sampler_plugin* plugin, const LV2_Atom_Object* obj) {
   }
 }
 
+static void add_zone_from_wave(jm_sampler_plugin* plugin, const jm_wave& wav, const char* path) {
+  jm_key_zone zone;
+  jm_init_key_zone(&zone);
+  zone.wave = wav.wave;
+  zone.num_channels = wav.num_channels;
+  zone.wave_length = wav.length;
+  zone.right = wav.length;
+  // need name counter
+  strcpy(zone.name, "Zone 1");
+  strcpy(zone.path, path);
+  plugin->sampler.zones_add(zone);
+
+  send_add_zone(plugin, &zone);
+}
+
+static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function respond,
+    LV2_Worker_Respond_Handle handle, uint32_t size, const void* data) {
+  //jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
+
+  const char* path = static_cast<const char*>(data);
+
+  jm_wave wav;
+  jm_parse_wave(&wav, path);
+  WAVES[path] = wav;
+
+  respond(handle, size, path); 
+  //fprintf(stderr, "SAMPLER: work completed; parsed: %s\n", path);
+
+  return LV2_WORKER_SUCCESS;
+}
+
+static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t size, const void* data) {
+  jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
+  const char* path = static_cast<const char*>(data);
+
+  //LV2_Atom_Forge_Frame seq_frame;
+  //lv2_atom_forge_sequence_head(&plugin->forge, &seq_frame, 0);
+  add_zone_from_wave(plugin, WAVES[path], path);
+  //lv2_atom_forge_pop(&plugin->forge, &seq_frame);
+  //fprintf(stderr, "SAMPLER: response completed; added: %s\n", path);
+
+  return LV2_WORKER_SUCCESS;
+}
+
 // later most of this opaque logic should be moved to member funs
 // consider everything in common w/ stand alone jack audio callback when we re-implement that version
 static void run(LV2_Handle instance, uint32_t n_samples) {
@@ -233,8 +296,9 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
   lv2_atom_forge_set_buffer(&plugin->forge, reinterpret_cast<uint8_t*>(plugin->notify_port),
     notify_capacity);
 
-  LV2_Atom_Forge_Frame seq_frame;
-  lv2_atom_forge_sequence_head(&plugin->forge, &seq_frame, 0);
+  //LV2_Atom_Forge_Frame seq_frame;
+  //lv2_atom_forge_sequence_head(&plugin->forge, &seq_frame, 0);
+  lv2_atom_forge_sequence_head(&plugin->forge, &plugin->seq_frame, 0);
 
   // we used to handle ui messages here
   // but now they will be in the same atom list as midi
@@ -254,6 +318,18 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
       else if (obj->body.otype == plugin->uris.jm_updateZone) {
         //fprintf(stderr, "SAMPLER: update zone received!!\n");
         update_zone(plugin, obj);
+      }
+      else if (obj->body.otype == plugin->uris.jm_addZone) {
+        //fprintf(stderr, "SAMPLER: add zone received!!\n");
+        LV2_Atom* params = NULL;
+
+        lv2_atom_object_get(obj, plugin->uris.jm_params, &params, 0);
+        char* path = (char*)(params + 1);
+ 
+        if (WAVES.find(path) == WAVES.end())
+          plugin->schedule->schedule_work(plugin->schedule->handle, strlen(path) + 1, path);
+        else
+          add_zone_from_wave(plugin, WAVES[path], path);
       }
     }
   }
@@ -384,7 +460,16 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
     }
   }
 
-  lv2_atom_forge_pop(&plugin->forge, &seq_frame);
+  //lv2_atom_forge_pop(&plugin->forge, &seq_frame);
+  //lv2_atom_forge_pop(&plugin->forge, &plugin->seq_frame);
+}
+
+static const void* extension_data(const char* uri) {
+  static const LV2_Worker_Interface worker = { work, work_response, NULL };
+  if (!strcmp(uri, LV2_WORKER__interface))
+    return &worker;
+
+  return NULL;
 }
 
 static const LV2_Descriptor descriptor = {
@@ -395,7 +480,7 @@ static const LV2_Descriptor descriptor = {
   run,
   NULL, // deactivate
   cleanup,
-  NULL // extension_data
+  extension_data
 };
 
 LV2_SYMBOL_EXPORT const LV2_Descriptor* lv2_descriptor(uint32_t index) {
