@@ -35,6 +35,7 @@ struct jm_sampler_plugin {
   LV2_Worker_Schedule* schedule;
   LV2_Atom_Forge forge;
   LV2_Atom_Forge_Frame seq_frame;
+  int zone_number; // only for naming
   JMSampler sampler;
 };
 
@@ -71,6 +72,8 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
   plugin->map = map;
   jm_map_uris(plugin->map, &plugin->uris);
   lv2_atom_forge_init(&plugin->forge, plugin->map);
+
+  plugin->zone_number = 1;
 
   /*jm_parse_wave(&WAV, "/home/jdost/dev/c/jmage-sampler/afx.wav");
   jm_key_zone zone;
@@ -246,8 +249,7 @@ static void add_zone_from_wave(jm_sampler_plugin* plugin, const jm_wave& wav, co
   zone.num_channels = wav.num_channels;
   zone.wave_length = wav.length;
   zone.right = wav.length;
-  // need name counter
-  strcpy(zone.name, "Zone 1");
+  sprintf(zone.name, "Zone %i", plugin->zone_number++);
   strcpy(zone.path, path);
   plugin->sampler.zones_add(zone);
 
