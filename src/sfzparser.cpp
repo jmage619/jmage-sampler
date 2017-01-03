@@ -1,0 +1,279 @@
+#include <cstdlib>
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <exception>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include "sfzparser.h"
+
+//    self.reg_write_order = ['volume', 'pitch_keycenter', 'lokey', 'hikey', 'lovel', 'hivel', 'tune', 'offset', 'loop_start', 'loop_end', 'loop_mode', 'loop_crossfade', 'group', 'off_group', 'ampeg_attack', 'ampeg_hold', 'ampeg_decay', 'ampeg_sustain', 'ampeg_release', 'sample']
+
+void SFZRegion::write_fields(std::ostream& out) {
+  out << " volume=" << volume;
+  out << " pitch_keycenter=" << pitch_keycenter;
+  out << " lokey=" << lokey;
+  out << " hikey=" << hikey;
+  out << " lovel=" << lovel;
+  out << " hivel=" << hivel;
+  out << " tune=" << tune;
+  out << " offset=" << offset;
+  out << " loop_start=" << loop_start;
+  out << " loop_end=" << loop_end;
+  out << " loop_mode=";
+  switch (mode) {
+    case LOOP_OFF:
+      out << "no_loop";
+      break;
+    case LOOP_CONTINUOUS:
+      out << "loop_continuous";
+      break;
+    case LOOP_ONE_SHOT:
+      out << "one_shot";
+      break;
+  }
+  out << " loop_crossfade=" << loop_crossfade;
+  out << " group=" << group;
+  out << " off_group=" << off_group;
+  out << " ampeg_attack=" << ampeg_attack;
+  out << " ampeg_hold=" << ampeg_hold;
+  out << " ampeg_decay=" << ampeg_decay;
+  out << " ampeg_sustain=" << ampeg_sustain;
+  out << " ampeg_release=" << ampeg_release;
+  out << " sample=" << sample;
+}
+
+SFZ::~SFZ() {
+  if (control != NULL)
+    delete control;
+
+  std::vector<SFZRegion*>::iterator it;
+  for (it = regions.begin(); it != regions.end(); ++it) {
+    delete *it;
+  }
+}
+
+void SFZ::write(std::ostream& out) {
+  if (control != NULL) {
+    control->write(out);
+    out << std::endl;
+  }
+
+  std::vector<SFZRegion*>::iterator it;
+  for (it = regions.begin(); it != regions.end(); ++it) {
+    (*it)->write(out);
+    out << std::endl;
+  }
+}
+
+namespace {
+  void validate_int(const std::string& op, long val, long min, long max) {
+    if (val < min || val > max) {
+      std::ostringstream sout;
+      sout << op << " must be between " << min << " and " << max << ": " << val;
+      throw std::runtime_error(sout.str());
+    }
+  }
+};
+
+// missing some validation checks here
+void SFZParser::update_region(SFZRegion* region) {
+  if (cur_op == "volume")
+    region->volume = strtod(data.c_str(), NULL);
+  else if (cur_op == "pitch_keycenter") {
+    long val = strtol(data.c_str(), NULL, 10);
+    validate_int(cur_op, val, 0, 127);
+    region->pitch_keycenter = val;
+  }
+  else if (cur_op == "lokey") {
+    long val = strtol(data.c_str(), NULL, 10);
+    validate_int(cur_op, val, 0, 127);
+    region->lokey = val;
+  }
+  else if (cur_op == "hikey") {
+    long val = strtol(data.c_str(), NULL, 10);
+    validate_int(cur_op, val, 0, 127);
+    region->hikey = val;
+  }
+  else if (cur_op == "lovel") {
+    long val = strtol(data.c_str(), NULL, 10);
+    validate_int(cur_op, val, 0, 127);
+    region->lovel = val;
+  }
+  else if (cur_op == "hivel") {
+    long val = strtol(data.c_str(), NULL, 10);
+    validate_int(cur_op, val, 0, 127);
+    region->hivel = val;
+  }
+  else if (cur_op == "tune") {
+    long val = strtol(data.c_str(), NULL, 10);
+    validate_int(cur_op, val, -100, 100);
+    region->tune = val;
+  }
+  else if (cur_op == "offset")
+    region->offset = strtol(data.c_str(), NULL, 10);
+  else if (cur_op == "loop_start")
+    region->loop_start = strtol(data.c_str(), NULL, 10);
+  else if (cur_op == "loop_end")
+    region->loop_end = strtol(data.c_str(), NULL, 10);
+  else if (cur_op == "loop_mode") {
+    if (data == "no_loop")
+      region->mode = LOOP_OFF;
+    else if (data == "loop_continuous")
+      region->mode = LOOP_CONTINUOUS;
+    else if (data == "one_shot")
+      region->mode = LOOP_ONE_SHOT;
+    else
+      throw std::runtime_error("loop_mode must be \"no_loop\", \"loop_continuous\", or \"one_shot\"");
+  }
+  else if (cur_op == "loop_crossfade")
+    region->loop_crossfade = strtod(data.c_str(), NULL);
+  else if (cur_op == "group")
+    region->group = strtol(data.c_str(), NULL, 10);
+  else if (cur_op == "off_group")
+    region->off_group = strtol(data.c_str(), NULL, 10);
+  else if (cur_op == "ampeg_attack")
+    region->ampeg_attack = strtod(data.c_str(), NULL);
+  else if (cur_op == "ampeg_hold")
+    region->ampeg_hold = strtod(data.c_str(), NULL);
+  else if (cur_op == "ampeg_decay")
+    region->ampeg_decay = strtod(data.c_str(), NULL);
+  else if (cur_op == "ampeg_sustain")
+    region->ampeg_sustain = strtod(data.c_str(), NULL);
+  else if (cur_op == "ampeg_release")
+    region->ampeg_release = strtod(data.c_str(), NULL);
+  else if (cur_op == "sample") {
+    struct stat sb;
+
+    // bail if stat fails or if you don't own file and others not allowed to read
+    if (stat(data.c_str(), &sb) || (sb.st_uid != getuid() && !(sb.st_mode & S_IROTH)))
+      throw std::runtime_error("unable to access file: " + data);
+
+    if (!S_ISREG(sb.st_mode))
+      throw std::runtime_error("not regular file: " + data);
+
+    region->sample = data;
+  }
+}
+
+void SFZParser::save_prev() {
+  switch (state) {
+    case CONTROL:
+      update_control(control);
+      break;
+    case GROUP:
+      update_region(cur_group);
+      break;
+    case REGION:
+      update_region(cur_region);
+      break;
+    default:
+      break;
+  }
+
+  data.erase();
+}
+
+// assumes all allocated region and control sections make it to SFZ,
+// but can a malformed sfz file cause a memory leak??
+// also i am too lazy to consider a SFZ copy constructor / assignment op
+// so we just return a pointer rather than an object copy
+SFZ* SFZParser::parse() {
+  SFZ* sfz = new SFZ;
+
+  std::string line;
+  while (std::getline(*in, line)) {
+    // strip comment
+    size_t pos = line.find("//");
+    if (pos != std::string::npos)
+      line.erase(pos);
+
+    // split line by space
+    std::istringstream sin(line);
+    std::string field;
+    while (sin >> field) {
+      // either a new tag
+      if (field[0] == '<' && field[field.length() - 1] == '>') {
+        if (data.length() > 0) {
+          save_prev();
+          if (state == REGION)
+            sfz->add_region(cur_region);
+          else if (state == CONTROL)
+            sfz->add_control(control);
+        }
+        if (field == "<control>") {
+          control = new_control();
+          state = CONTROL;
+        }
+        else if (field == "<group>") {
+          // reset cur_group
+          if (cur_group != NULL)
+            delete cur_group;
+          cur_group = new_region();
+          state = GROUP;
+        }
+        else if (field == "<region>") {
+          cur_region = cur_group == NULL ? new_region(): new_region(cur_group);
+          state = REGION;
+        }
+      }
+      // or new op code
+      else if ((pos = field.find('=')) != std::string::npos) {
+        if (data.length() > 0)
+          save_prev();
+
+        cur_op = field.substr(0, pos);
+        data += field.substr(pos + 1);
+      }
+      // or continuing space separated data for prev op code
+      else {
+        data += " ";
+        data += field;
+      }
+    }
+  }
+  // save last region or control if data left over
+  if (data.length() > 0) {
+    save_prev();
+    if (state == REGION)
+      sfz->add_region(cur_region);
+    else if (state == CONTROL)
+      sfz->add_control(control);
+  }
+
+  return sfz;
+}
+
+void JMZControl::write_fields(std::ostream& out) {
+  out << " jm_vol=" << jm_vol;
+  out << " jm_chan=" << jm_chan;
+  SFZControl::write_fields(out);
+}
+
+void JMZRegion::write_fields(std::ostream& out) {
+  out << " jm_name=" << jm_name;
+  SFZRegion::write_fields(out);
+}
+
+void JMZParser::update_control(SFZControl* control) {
+  if (cur_op == "jm_vol") {
+    long val = strtol(data.c_str(), NULL, 10);
+    validate_int(cur_op, val, 0, 16);
+    static_cast<JMZControl*>(control)->jm_vol = val;
+  }
+  else if (cur_op == "jm_chan") {
+    long val = strtol(data.c_str(), NULL, 10);
+    validate_int(cur_op, val, 1, 16);
+    static_cast<JMZControl*>(control)->jm_chan = val;
+  }
+  else
+    SFZParser::update_control(control);
+}
+
+void JMZParser::update_region(SFZRegion* region) {
+  if (cur_op == "jm_name")
+    static_cast<JMZRegion*>(region)->jm_name = data;
+  else
+    SFZParser::update_region(region);
+}
