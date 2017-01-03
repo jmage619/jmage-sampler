@@ -103,13 +103,13 @@ class SFZParser {
     std::string data;
     std::string cur_op;
     virtual SFZControl* new_control() {return new SFZControl;}
+    virtual SFZControl* new_control(const SFZControl* control) {return new SFZControl(*control);}
     virtual SFZRegion* new_region() {return new SFZRegion;}
     virtual SFZRegion* new_region(const SFZRegion* region) {return new SFZRegion(*region);}
     virtual void update_control(SFZControl* control) {}
     virtual void update_region(SFZRegion* region);
   public:
     SFZParser(std::istream* in): cur_group(NULL), in(in) {}
-    ~SFZParser() {if (cur_group != NULL) delete cur_group;}
     SFZ* parse();
 };
 
@@ -135,6 +135,7 @@ class JMZRegion: public SFZRegion {
 class JMZParser: public SFZParser {
   protected:
     virtual SFZControl* new_control() {return new JMZControl;}
+    virtual SFZControl* new_control(const SFZControl* control) {return new JMZControl(*static_cast<const JMZControl*>(control));}
     virtual SFZRegion* new_region() {return new JMZRegion;}
     virtual SFZRegion* new_region(const SFZRegion* region) {return new JMZRegion(*static_cast<const JMZRegion*>(region));}
     virtual void update_control(SFZControl* control);

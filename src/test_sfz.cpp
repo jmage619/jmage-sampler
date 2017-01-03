@@ -32,12 +32,12 @@ int main() {
   JMZParser parser(&fin);
   sfz = parser.parse();
 
-  /*const SFZRegion* jmz = new JMZRegion;
-  SFZRegion* jmz2 = new JMZRegion(*static_cast<const JMZRegion*>(jmz));
-  jmz2->write(std::cout);
-  delete jmz2;
-  delete jmz;
-  */
+  JMZRegion jmz;
+  jmz.jm_name = "bob";
+  SFZRegion& jmz2 = jmz;
+  printf("jmz name: %s\n", static_cast<JMZRegion&>(jmz2).jm_name.c_str());
+  //jmz2.write(std::cout);
+
   sfz->write(std::cout);
   fin.close();
 

@@ -175,12 +175,13 @@ void SFZParser::save_prev() {
   data.erase();
 }
 
-// assumes all allocated region and control sections make it to SFZ,
-// but can a malformed sfz file cause a memory leak??
-// also i am too lazy to consider a SFZ copy constructor / assignment op
+// i am too lazy to consider a SFZ copy constructor / assignment op
 // so we just return a pointer rather than an object copy
 SFZ* SFZParser::parse() {
   SFZ* sfz = new SFZ;
+  control = new_control();
+  cur_group = new_region();
+  cur_region = new_region(cur_group);
 
   std::string line;
   while (std::getline(*in, line)) {
@@ -198,23 +199,28 @@ SFZ* SFZParser::parse() {
         if (data.length() > 0) {
           save_prev();
           if (state == REGION)
-            sfz->add_region(cur_region);
+            // create copy of region for sfz to prevent ownership conflict
+            sfz->add_region(new_region(cur_region));
           else if (state == CONTROL)
-            sfz->add_control(control);
+            // create copy of control for sfz to prevent ownership conflict
+            sfz->add_control(new_control(control));
         }
         if (field == "<control>") {
+          // reset control
+          delete control;
           control = new_control();
           state = CONTROL;
         }
         else if (field == "<group>") {
           // reset cur_group
-          if (cur_group != NULL)
-            delete cur_group;
+          delete cur_group;
           cur_group = new_region();
           state = GROUP;
         }
         else if (field == "<region>") {
-          cur_region = cur_group == NULL ? new_region(): new_region(cur_group);
+          // reset cur_region
+          delete cur_region;
+          cur_region = new_region(cur_group);
           state = REGION;
         }
       }
@@ -237,10 +243,14 @@ SFZ* SFZParser::parse() {
   if (data.length() > 0) {
     save_prev();
     if (state == REGION)
-      sfz->add_region(cur_region);
+      sfz->add_region(new_region(cur_region));
     else if (state == CONTROL)
-      sfz->add_control(control);
+      sfz->add_control(new_control(control));
   }
+
+  delete control;
+  delete cur_group;
+  delete cur_region;
 
   return sfz;
 }
