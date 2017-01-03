@@ -92,6 +92,8 @@ class SFZParser {
       REGION
     } state;
 
+    std::string data;
+    std::string cur_op;
     SFZControl* control;
     SFZRegion* cur_group;
     SFZRegion* cur_region;
@@ -100,16 +102,14 @@ class SFZParser {
     void save_prev();
 
   protected:
-    std::string data;
-    std::string cur_op;
     virtual SFZControl* new_control() {return new SFZControl;}
     virtual SFZControl* new_control(const SFZControl* control) {return new SFZControl(*control);}
     virtual SFZRegion* new_region() {return new SFZRegion;}
     virtual SFZRegion* new_region(const SFZRegion* region) {return new SFZRegion(*region);}
-    virtual void update_control(SFZControl* control) {}
-    virtual void update_region(SFZRegion* region);
+    virtual void update_control(SFZControl* control, const std::string& field, const std::string& data) {}
+    virtual void update_region(SFZRegion* region, const std::string& field, const std::string& data);
   public:
-    SFZParser(std::istream* in): cur_group(NULL), in(in) {}
+    SFZParser(std::istream* in): in(in) {}
     SFZ* parse();
 };
 
@@ -138,8 +138,8 @@ class JMZParser: public SFZParser {
     virtual SFZControl* new_control(const SFZControl* control) {return new JMZControl(*static_cast<const JMZControl*>(control));}
     virtual SFZRegion* new_region() {return new JMZRegion;}
     virtual SFZRegion* new_region(const SFZRegion* region) {return new JMZRegion(*static_cast<const JMZRegion*>(region));}
-    virtual void update_control(SFZControl* control);
-    virtual void update_region(SFZRegion* region);
+    virtual void update_control(SFZControl* control, const std::string& field, const std::string& data);
+    virtual void update_region(SFZRegion* region, const std::string& field, const std::string& data);
   public:
     JMZParser(std::istream* in): SFZParser(in) {}
 };

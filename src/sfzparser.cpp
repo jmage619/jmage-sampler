@@ -78,46 +78,46 @@ namespace {
 };
 
 // missing some validation checks here
-void SFZParser::update_region(SFZRegion* region) {
-  if (cur_op == "volume")
+void SFZParser::update_region(SFZRegion* region, const std::string& field, const std::string& data) {
+  if (field == "volume")
     region->volume = strtod(data.c_str(), NULL);
-  else if (cur_op == "pitch_keycenter") {
+  else if (field == "pitch_keycenter") {
     long val = strtol(data.c_str(), NULL, 10);
-    validate_int(cur_op, val, 0, 127);
+    validate_int(field, val, 0, 127);
     region->pitch_keycenter = val;
   }
-  else if (cur_op == "lokey") {
+  else if (field == "lokey") {
     long val = strtol(data.c_str(), NULL, 10);
-    validate_int(cur_op, val, 0, 127);
+    validate_int(field, val, 0, 127);
     region->lokey = val;
   }
-  else if (cur_op == "hikey") {
+  else if (field == "hikey") {
     long val = strtol(data.c_str(), NULL, 10);
-    validate_int(cur_op, val, 0, 127);
+    validate_int(field, val, 0, 127);
     region->hikey = val;
   }
-  else if (cur_op == "lovel") {
+  else if (field == "lovel") {
     long val = strtol(data.c_str(), NULL, 10);
-    validate_int(cur_op, val, 0, 127);
+    validate_int(field, val, 0, 127);
     region->lovel = val;
   }
-  else if (cur_op == "hivel") {
+  else if (field == "hivel") {
     long val = strtol(data.c_str(), NULL, 10);
-    validate_int(cur_op, val, 0, 127);
+    validate_int(field, val, 0, 127);
     region->hivel = val;
   }
-  else if (cur_op == "tune") {
+  else if (field == "tune") {
     long val = strtol(data.c_str(), NULL, 10);
-    validate_int(cur_op, val, -100, 100);
+    validate_int(field, val, -100, 100);
     region->tune = val;
   }
-  else if (cur_op == "offset")
+  else if (field == "offset")
     region->offset = strtol(data.c_str(), NULL, 10);
-  else if (cur_op == "loop_start")
+  else if (field == "loop_start")
     region->loop_start = strtol(data.c_str(), NULL, 10);
-  else if (cur_op == "loop_end")
+  else if (field == "loop_end")
     region->loop_end = strtol(data.c_str(), NULL, 10);
-  else if (cur_op == "loop_mode") {
+  else if (field == "loop_mode") {
     if (data == "no_loop")
       region->mode = LOOP_OFF;
     else if (data == "loop_continuous")
@@ -127,23 +127,23 @@ void SFZParser::update_region(SFZRegion* region) {
     else
       throw std::runtime_error("loop_mode must be \"no_loop\", \"loop_continuous\", or \"one_shot\"");
   }
-  else if (cur_op == "loop_crossfade")
+  else if (field == "loop_crossfade")
     region->loop_crossfade = strtod(data.c_str(), NULL);
-  else if (cur_op == "group")
+  else if (field == "group")
     region->group = strtol(data.c_str(), NULL, 10);
-  else if (cur_op == "off_group")
+  else if (field == "off_group")
     region->off_group = strtol(data.c_str(), NULL, 10);
-  else if (cur_op == "ampeg_attack")
+  else if (field == "ampeg_attack")
     region->ampeg_attack = strtod(data.c_str(), NULL);
-  else if (cur_op == "ampeg_hold")
+  else if (field == "ampeg_hold")
     region->ampeg_hold = strtod(data.c_str(), NULL);
-  else if (cur_op == "ampeg_decay")
+  else if (field == "ampeg_decay")
     region->ampeg_decay = strtod(data.c_str(), NULL);
-  else if (cur_op == "ampeg_sustain")
+  else if (field == "ampeg_sustain")
     region->ampeg_sustain = strtod(data.c_str(), NULL);
-  else if (cur_op == "ampeg_release")
+  else if (field == "ampeg_release")
     region->ampeg_release = strtod(data.c_str(), NULL);
-  else if (cur_op == "sample") {
+  else if (field == "sample") {
     struct stat sb;
 
     // bail if stat fails or if you don't own file and others not allowed to read
@@ -160,13 +160,13 @@ void SFZParser::update_region(SFZRegion* region) {
 void SFZParser::save_prev() {
   switch (state) {
     case CONTROL:
-      update_control(control);
+      update_control(control, cur_op, data);
       break;
     case GROUP:
-      update_region(cur_group);
+      update_region(cur_group, cur_op, data);
       break;
     case REGION:
-      update_region(cur_region);
+      update_region(cur_region, cur_op, data);
       break;
     default:
       break;
@@ -266,24 +266,24 @@ void JMZRegion::write_fields(std::ostream& out) {
   SFZRegion::write_fields(out);
 }
 
-void JMZParser::update_control(SFZControl* control) {
-  if (cur_op == "jm_vol") {
+void JMZParser::update_control(SFZControl* control, const std::string& field, const std::string& data) {
+  if (field == "jm_vol") {
     long val = strtol(data.c_str(), NULL, 10);
-    validate_int(cur_op, val, 0, 16);
+    validate_int(field, val, 0, 16);
     static_cast<JMZControl*>(control)->jm_vol = val;
   }
-  else if (cur_op == "jm_chan") {
+  else if (field == "jm_chan") {
     long val = strtol(data.c_str(), NULL, 10);
-    validate_int(cur_op, val, 1, 16);
+    validate_int(field, val, 1, 16);
     static_cast<JMZControl*>(control)->jm_chan = val;
   }
   else
-    SFZParser::update_control(control);
+    SFZParser::update_control(control, field, data);
 }
 
-void JMZParser::update_region(SFZRegion* region) {
-  if (cur_op == "jm_name")
+void JMZParser::update_region(SFZRegion* region, const std::string& field, const std::string& data) {
+  if (field == "jm_name")
     static_cast<JMZRegion*>(region)->jm_name = data;
   else
-    SFZParser::update_region(region);
+    SFZParser::update_region(region, field, data);
 }
