@@ -25,6 +25,16 @@ enum {
   SAMPLER_OUT_R = 3
 };
 
+enum worker_msg_type {
+  WORKER_LOAD_WAV,
+  WORKER_LOAD_PATCH
+};
+
+struct worker_msg {
+  worker_msg_type type;
+  char data[256];
+};
+
 struct jm_sampler_plugin {
   const LV2_Atom_Sequence* control_port;
   LV2_Atom_Sequence* notify_port;
@@ -260,27 +270,30 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
     LV2_Worker_Respond_Handle handle, uint32_t size, const void* data) {
   //jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
 
-  const char* path = static_cast<const char*>(data);
+  const worker_msg* msg = static_cast<const worker_msg*>(data);
+  if (msg->type == WORKER_LOAD_WAV) {
+    jm_wave wav;
+    jm_parse_wave(&wav, msg->data);
+    WAVES[msg->data] = wav;
 
-  jm_wave wav;
-  jm_parse_wave(&wav, path);
-  WAVES[path] = wav;
-
-  respond(handle, size, path); 
-  //fprintf(stderr, "SAMPLER: work completed; parsed: %s\n", path);
+    respond(handle, sizeof(worker_msg), msg); 
+    //fprintf(stderr, "SAMPLER: work completed; parsed: %s\n", path);
+  }
 
   return LV2_WORKER_SUCCESS;
 }
 
 static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t size, const void* data) {
   jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
-  const char* path = static_cast<const char*>(data);
+  const worker_msg* msg = static_cast<const worker_msg*>(data);
 
-  //LV2_Atom_Forge_Frame seq_frame;
-  //lv2_atom_forge_sequence_head(&plugin->forge, &seq_frame, 0);
-  add_zone_from_wave(plugin, WAVES[path], path);
-  //lv2_atom_forge_pop(&plugin->forge, &seq_frame);
-  //fprintf(stderr, "SAMPLER: response completed; added: %s\n", path);
+  if (msg->type == WORKER_LOAD_WAV) {
+    //LV2_Atom_Forge_Frame seq_frame;
+    //lv2_atom_forge_sequence_head(&plugin->forge, &seq_frame, 0);
+    add_zone_from_wave(plugin, WAVES[msg->data], msg->data);
+    //lv2_atom_forge_pop(&plugin->forge, &seq_frame);
+    //fprintf(stderr, "SAMPLER: response completed; added: %s\n", path);
+  }
 
   return LV2_WORKER_SUCCESS;
 }
@@ -328,10 +341,16 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         lv2_atom_object_get(obj, plugin->uris.jm_params, &params, 0);
         char* path = (char*)(params + 1);
  
-        if (WAVES.find(path) == WAVES.end())
-          plugin->schedule->schedule_work(plugin->schedule->handle, strlen(path) + 1, path);
+        if (WAVES.find(path) == WAVES.end()) {
+          worker_msg msg;
+          msg.type =  WORKER_LOAD_WAV;
+          strcpy(msg.data, path);
+          plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &msg);
+        }
         else
           add_zone_from_wave(plugin, WAVES[path], path);
+      }
+      else if (obj->body.otype == plugin->uris.jm_loadPatch) {
       }
     }
   }

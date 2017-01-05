@@ -93,14 +93,19 @@ void InputThread::run() {
 SamplerUI::SamplerUI() {
   QVBoxLayout* v_layout = new QVBoxLayout;
 
+  QHBoxLayout* h_layout = new QHBoxLayout;
+  QPushButton* load_button = new QPushButton("load");
+  connect(load_button, &QAbstractButton::clicked, this, &SamplerUI::sendLoadPatch);
+  h_layout->addWidget(load_button, 0, Qt::AlignLeft);
+  v_layout->addLayout(h_layout);
+  
   ZoneTableView* view = new ZoneTableView(&zone_model);
   view->setSelectionMode(QAbstractItemView::NoSelection);
 
   v_layout->addWidget(view);
   QPushButton* add_button = new QPushButton("+");
-  add_button->setSizePolicy(QSizePolicy::Fixed, add_button->sizePolicy().verticalPolicy());
   connect(add_button, &QAbstractButton::clicked, this, &SamplerUI::sendAddZone);
-  v_layout->addWidget(add_button);
+  v_layout->addWidget(add_button, 0, Qt::AlignLeft);
 
   setLayout(v_layout);
 
@@ -128,7 +133,13 @@ void SamplerUI::addNewZone(const zone& z) {
 }
 
 void SamplerUI::sendAddZone() {
-  QString path = QFileDialog::getOpenFileName(this, tr("Open a FUCKING WAV already!!"), "", tr("wav (*.wav)"));
+  QString path = QFileDialog::getOpenFileName(this, tr("Open a FUCKING WAV already!!"), "", tr("WAV (*.wav)"));
   if (!path.isNull())
     std::cout << "add_zone:" << path.toStdString() << std::endl;
+}
+
+void SamplerUI::sendLoadPatch() {
+  QString path = QFileDialog::getOpenFileName(this, tr("Open a FUCKING patch already!!"), "", tr("Patch Files (*.sfz *.jmz);;SFZ (*.sfz);;JMZ (*.jmz)"));
+  if (!path.isNull())
+    std::cout << "load_patch:" << path.toStdString() << std::endl;
 }

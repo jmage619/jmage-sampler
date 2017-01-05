@@ -30,6 +30,7 @@ class SamplerUI: public QWidget {
     void showAndRaise();
     void addNewZone(const zone& z);
     void sendAddZone();
+    void sendLoadPatch();
 };
 
 #endif
