@@ -31,7 +31,7 @@ int jm_parse_wave(jm_wave* wav, char const * path) {
 
   SF_INSTRUMENT inst;
   if (sf_command(sf_wav, SFC_GET_INSTRUMENT, &inst, sizeof(inst)) == SF_FALSE) {
-    printf("wav %s: no instrument info found, assuming 0 loop points\n", path);
+    fprintf(stderr, "wav %s: no instrument info found, assuming 0 loop points\n", path);
     sf_close(sf_wav);
     return 0;
   } 

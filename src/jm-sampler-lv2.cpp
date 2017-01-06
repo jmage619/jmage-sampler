@@ -120,7 +120,7 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
   plugin->sampler.zones_add(zone);
   */
 
-  printf("sampler instantiated.\n");
+  fprintf(stderr, "sampler instantiated.\n");
   return plugin;
 }
 
@@ -183,6 +183,8 @@ static void send_add_zone(jm_sampler_plugin* plugin, const jm_key_zone* zone) {
   lv2_atom_forge_string(&plugin->forge, zone->path, strlen(zone->path));
   lv2_atom_forge_pop(&plugin->forge, &tuple_frame);
   lv2_atom_forge_pop(&plugin->forge, &obj_frame);
+
+  fprintf(stderr, "SAMPLER: add zone sent!! %s\n", zone->name);
 }
 
 static void update_zone(jm_sampler_plugin* plugin, const LV2_Atom_Object* obj) {
@@ -483,10 +485,10 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
               std::vector<jm_key_zone>::iterator it;
               for (it = plugin->sampler.zones_begin(); it != plugin->sampler.zones_end(); ++it) {
                 if (jm_zone_contains(&*it, msg[1], msg[2])) {
-                  printf("sg num: %li\n", plugin->sampler.sound_gens_size());
+                  fprintf(stderr, "sg num: %li\n", plugin->sampler.sound_gens_size());
                   // oops we hit polyphony, remove oldest sound gen in the queue to make room
                   if (plugin->sampler.sound_gens_size() >= POLYPHONY) {
-                    printf("hit poly lim!\n");
+                    fprintf(stderr, "hit poly lim!\n");
                     plugin->sampler.sound_gens_tail()->sg->release_resources();
                     plugin->sampler.sound_gens_remove_last();
                   }
@@ -504,19 +506,19 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
                   Playhead* ph = plugin->sampler.new_playhead();
                   ph->init(*it, msg[1]);
                   ag->init(ph, *it, msg[1], msg[2]);
-                  printf("pre process start\n");
+                  fprintf(stderr, "pre process start\n");
                   ag->pre_process(n_samples - n);
-                  printf("pre process finish\n");
+                  fprintf(stderr, "pre process finish\n");
 
                   // add sound gen to queue
                   plugin->sampler.sound_gens_add(ag);
-                  printf("event: channel: %i; note on;  note: %i; vel: %i\n", msg[0] & 0x0F, msg[1], msg[2]);
+                  fprintf(stderr, "event: channel: %i; note on;  note: %i; vel: %i\n", msg[0] & 0x0F, msg[1], msg[2]);
                 }
               }
             }
             // process note off
             else if (lv2_midi_message_type(msg) == LV2_MIDI_MSG_NOTE_OFF) {
-              printf("event: note off; note: %i\n", msg[1]);
+              fprintf(stderr, "event: note off; note: %i\n", msg[1]);
               // find all sound gens assigned to this pitch
               for (sg_el = plugin->sampler.sound_gens_head(); sg_el != NULL; sg_el = sg_el->next) {
                 if (sg_el->sg->pitch == msg[1]) {
@@ -538,7 +540,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
               // >= 64 turns on sustain
               if (msg[2] >= 64) {
                 plugin->sampler.sustain_on = true;
-                printf("sustain on\n");
+                fprintf(stderr, "sustain on\n");
               }
               // < 64 turns ustain off
               else {
@@ -549,12 +551,12 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
                 }
 
                 plugin->sampler.sustain_on = false;
-                printf("sustain off\n");
+                fprintf(stderr, "sustain off\n");
               }
             }
             // just print messages we don't currently handle
             else if (lv2_midi_message_type(msg) != LV2_MIDI_MSG_ACTIVE_SENSE)
-              printf("event: 0x%x\n", msg[0]);
+              fprintf(stderr, "event: 0x%x\n", msg[0]);
           }
         }
         // get next midi event or break if none left
