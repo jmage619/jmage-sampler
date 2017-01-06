@@ -1,10 +1,13 @@
 #include <cstdlib>
 #include <string>
+#include <cstring>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <exception>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <libgen.h>
 
 #include "sfzparser.h"
 
@@ -31,6 +34,8 @@ void SFZRegion::write_fields(std::ostream& out) {
       break;
     case LOOP_ONE_SHOT:
       out << "one_shot";
+      break;
+    default:
       break;
   }
   out << " loop_crossfade=" << loop_crossfade;
@@ -145,15 +150,17 @@ void SFZParser::update_region(SFZRegion* region, const std::string& field, const
     region->ampeg_release = strtod(data.c_str(), NULL);
   else if (field == "sample") {
     struct stat sb;
+    std::string sample_path(dir_path);
+    sample_path += data;
 
     // bail if stat fails or if you don't own file and others not allowed to read
-    if (stat(data.c_str(), &sb) || (sb.st_uid != getuid() && !(sb.st_mode & S_IROTH)))
-      throw std::runtime_error("unable to access file: " + data);
+    if (stat(sample_path.c_str(), &sb) || (sb.st_uid != getuid() && !(sb.st_mode & S_IROTH)))
+      throw std::runtime_error("unable to access file: " + sample_path);
 
     if (!S_ISREG(sb.st_mode))
-      throw std::runtime_error("not regular file: " + data);
+      throw std::runtime_error("not regular file: " + sample_path);
 
-    region->sample = data;
+    region->sample = sample_path;
   }
 }
 
@@ -178,13 +185,19 @@ void SFZParser::save_prev() {
 // i am too lazy to consider a SFZ copy constructor / assignment op
 // so we just return a pointer rather than an object copy
 SFZ* SFZParser::parse() {
+  char tmp_str[256];
+  strcpy(tmp_str, path.c_str());
+  dir_path += dirname(tmp_str);
+  dir_path += "/";
+
+  std::ifstream fin(path);
   SFZ* sfz = new SFZ;
   control = new_control();
   cur_group = new_region();
   cur_region = new_region(cur_group);
 
   std::string line;
-  while (std::getline(*in, line)) {
+  while (std::getline(fin, line)) {
     // strip comment
     size_t pos = line.find("//");
     if (pos != std::string::npos)
@@ -247,6 +260,8 @@ SFZ* SFZParser::parse() {
     else if (state == CONTROL)
       sfz->add_control(new_control(control));
   }
+
+  fin.close();
 
   delete control;
   delete cur_group;

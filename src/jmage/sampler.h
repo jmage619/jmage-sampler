@@ -23,6 +23,7 @@ typedef struct {
 } jm_wave;
 
 typedef enum {
+  LOOP_UNSET = -1,
   LOOP_OFF,
   LOOP_CONTINUOUS,
   LOOP_ONE_SHOT

@@ -1,8 +1,10 @@
-#include <cstdlib>
-#include <cstdio>
+#include <fstream>
 #include <vector>
 #include <map>
 #include <string>
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
 #include <cstring>
 
 #include <lv2/lv2plug.in/ns/lv2core/lv2.h>
@@ -17,6 +19,9 @@
 #include "jmage/sampler.h"
 #include "jmage/jmsampler.h"
 #include "jmage/components.h"
+#include "sfzparser.h"
+
+#define SAMPLE_RATE 44100
 
 enum {
   SAMPLER_CONTROL = 0,
@@ -26,13 +31,17 @@ enum {
 };
 
 enum worker_msg_type {
-  WORKER_LOAD_WAV,
+  WORKER_LOAD_PATH_WAV,
+  WORKER_LOAD_REGION_WAV,
   WORKER_LOAD_PATCH
 };
 
 struct worker_msg {
   worker_msg_type type;
-  char data[256];
+  union {
+    char str[256];
+    int i;
+  } data;
 };
 
 struct jm_sampler_plugin {
@@ -50,6 +59,7 @@ struct jm_sampler_plugin {
 };
 
 static std::map<std::string, jm_wave> WAVES;
+SFZ* PATCH = NULL;
 
 static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
     double rate, const char* path, const LV2_Feature* const* features) {
@@ -114,8 +124,7 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
   return plugin;
 }
 
-static void cleanup(LV2_Handle instance)
-{
+static void cleanup(LV2_Handle instance) {
   delete static_cast<jm_sampler_plugin*>(instance);
 
   std::map<std::string, jm_wave>::iterator it;
@@ -258,9 +267,51 @@ static void add_zone_from_wave(jm_sampler_plugin* plugin, const jm_wave& wav, co
   zone.wave = wav.wave;
   zone.num_channels = wav.num_channels;
   zone.wave_length = wav.length;
+  zone.left = wav.left;
   zone.right = wav.length;
+  if (wav.has_loop)
+    zone.mode = LOOP_CONTINUOUS;
   sprintf(zone.name, "Zone %i", plugin->zone_number++);
   strcpy(zone.path, path);
+  plugin->sampler.zones_add(zone);
+
+  send_add_zone(plugin, &zone);
+}
+
+static void add_zone_from_region(jm_sampler_plugin* plugin, const jm_wave& wav, const SFZRegion* region) {
+  jm_key_zone zone;
+  jm_init_key_zone(&zone);
+  zone.wave = wav.wave;
+  zone.num_channels = wav.num_channels;
+  zone.wave_length = wav.length;
+  zone.left = wav.left;
+  zone.right = wav.length;
+  if (wav.has_loop)
+    zone.mode = LOOP_CONTINUOUS;
+  sprintf(zone.name, "Zone %i", plugin->zone_number++);
+  strcpy(zone.path, region->sample.c_str());
+  zone.amp = pow(10., region->volume / 20.);
+  zone.low_key = region->lokey;
+  zone.high_key = region->hikey;
+  zone.origin = region->pitch_keycenter;
+  zone.low_vel = region->lovel;
+  zone.high_vel = region->hivel;
+  zone.pitch_corr = region->tune / 100.;
+  zone.start = region->offset;
+  if (region->mode != LOOP_UNSET)
+    zone.mode = region->mode;
+  if (region->loop_start >= 0)
+    zone.left = region->loop_start;
+  if (region->loop_end >= 0)
+    zone.right = region->loop_end;
+  zone.crossfade = SAMPLE_RATE * region->loop_crossfade;
+  zone.group = region->group;
+  zone.off_group = region->off_group;
+  zone.attack = SAMPLE_RATE * region->ampeg_attack;
+  zone.hold = SAMPLE_RATE * region->ampeg_hold;
+  zone.decay = SAMPLE_RATE * region->ampeg_decay;
+  zone.sustain = region->ampeg_sustain / 100.;
+  zone.release = SAMPLE_RATE * region->ampeg_release;
   plugin->sampler.zones_add(zone);
 
   send_add_zone(plugin, &zone);
@@ -271,13 +322,31 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
   //jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
 
   const worker_msg* msg = static_cast<const worker_msg*>(data);
-  if (msg->type == WORKER_LOAD_WAV) {
+  if (msg->type == WORKER_LOAD_PATH_WAV) {
     jm_wave wav;
-    jm_parse_wave(&wav, msg->data);
-    WAVES[msg->data] = wav;
+    jm_parse_wave(&wav, msg->data.str);
+    WAVES[msg->data.str] = wav;
 
     respond(handle, sizeof(worker_msg), msg); 
     //fprintf(stderr, "SAMPLER: work completed; parsed: %s\n", path);
+  }
+  else if (msg->type == WORKER_LOAD_REGION_WAV) {
+    SFZRegion* reg = PATCH->regions_at(msg->data.i);
+    jm_wave wav;
+    jm_parse_wave(&wav, reg->sample.c_str());
+    WAVES[reg->sample] = wav;
+
+    respond(handle, sizeof(worker_msg), msg); 
+  }
+  else if (msg->type == WORKER_LOAD_PATCH) {
+    SFZParser parser(msg->data.str);
+    fprintf(stderr, "SAMPLER: work loading patch: %s\n", msg->data.str);
+    if (PATCH != NULL)
+      delete PATCH;
+
+    PATCH = parser.parse();
+
+    respond(handle, sizeof(worker_msg), msg); 
   }
 
   return LV2_WORKER_SUCCESS;
@@ -287,12 +356,31 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t size, const
   jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
   const worker_msg* msg = static_cast<const worker_msg*>(data);
 
-  if (msg->type == WORKER_LOAD_WAV) {
+  if (msg->type == WORKER_LOAD_PATH_WAV) {
     //LV2_Atom_Forge_Frame seq_frame;
     //lv2_atom_forge_sequence_head(&plugin->forge, &seq_frame, 0);
-    add_zone_from_wave(plugin, WAVES[msg->data], msg->data);
+    add_zone_from_wave(plugin, WAVES[msg->data.str], msg->data.str);
     //lv2_atom_forge_pop(&plugin->forge, &seq_frame);
     //fprintf(stderr, "SAMPLER: response completed; added: %s\n", path);
+  }
+  else if (msg->type == WORKER_LOAD_REGION_WAV) {
+    fprintf(stderr, "SAMPLER load region wav response!!\n");
+    SFZRegion* reg = PATCH->regions_at(msg->data.i);
+    add_zone_from_region(plugin, WAVES[reg->sample], reg);
+  }
+  else if (msg->type == WORKER_LOAD_PATCH) {
+    fprintf(stderr, "SAMPLER load patch response!! num regions: %i\n", PATCH->regions_size());
+    std::vector<SFZRegion*>::iterator it;
+    for (it = PATCH->regions_begin(); it != PATCH->regions_end(); ++it) {
+      if (WAVES.find((*it)->sample) == WAVES.end()) {
+        worker_msg reg_msg;
+        reg_msg.type = WORKER_LOAD_REGION_WAV;
+        reg_msg.data.i = it - PATCH->regions_begin();
+        plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &reg_msg);
+      }
+      else
+        add_zone_from_region(plugin, WAVES[(*it)->sample], *it);
+    }
   }
 
   return LV2_WORKER_SUCCESS;
@@ -343,14 +431,23 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
  
         if (WAVES.find(path) == WAVES.end()) {
           worker_msg msg;
-          msg.type =  WORKER_LOAD_WAV;
-          strcpy(msg.data, path);
+          msg.type =  WORKER_LOAD_PATH_WAV;
+          strcpy(msg.data.str, path);
           plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &msg);
         }
         else
           add_zone_from_wave(plugin, WAVES[path], path);
       }
       else if (obj->body.otype == plugin->uris.jm_loadPatch) {
+        //fprintf(stderr, "SAMPLER: load patch received!!\n");
+        LV2_Atom* params = NULL;
+
+        lv2_atom_object_get(obj, plugin->uris.jm_params, &params, 0);
+        char* path = (char*)(params + 1);
+        worker_msg msg;
+        msg.type =  WORKER_LOAD_PATCH;
+        strcpy(msg.data.str, path);
+        plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &msg);
       }
     }
   }

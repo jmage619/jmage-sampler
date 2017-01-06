@@ -51,9 +51,10 @@ class SFZRegion {
       hivel(127),
       tune(0),
       offset(0),
-      loop_start(0),
-      loop_end(0),
-      mode(LOOP_OFF),
+      // -1 to say not defined since may be defined in wav
+      loop_start(-1),
+      loop_end(-1),
+      mode(LOOP_UNSET),
       loop_crossfade(0.),
       group(0),
       off_group(0),
@@ -78,6 +79,8 @@ class SFZ {
     ~SFZ();
     void add_region(SFZRegion* r) {regions.push_back(r);}
     void add_control(SFZControl* c) {control = c;}
+    SFZRegion* regions_at(std::vector<SFZRegion*>::size_type i) {return regions.at(i);}
+    std::vector<SFZRegion*>::size_type regions_size() {return regions.size();}
     std::vector<SFZRegion*>::iterator regions_begin() {return regions.begin();}
     std::vector<SFZRegion*>::iterator regions_end() {return regions.end();}
 
@@ -97,7 +100,8 @@ class SFZParser {
     SFZControl* control;
     SFZRegion* cur_group;
     SFZRegion* cur_region;
-    std::istream* in;
+    std::string path;
+    std::string dir_path;
 
     void save_prev();
 
@@ -109,7 +113,7 @@ class SFZParser {
     virtual void update_control(SFZControl* control, const std::string& field, const std::string& data) {}
     virtual void update_region(SFZRegion* region, const std::string& field, const std::string& data);
   public:
-    SFZParser(std::istream* in): in(in) {}
+    SFZParser(const std::string& path): path(path) {}
     SFZ* parse();
 };
 
@@ -141,7 +145,7 @@ class JMZParser: public SFZParser {
     virtual void update_control(SFZControl* control, const std::string& field, const std::string& data);
     virtual void update_region(SFZRegion* region, const std::string& field, const std::string& data);
   public:
-    JMZParser(std::istream* in): SFZParser(in) {}
+    JMZParser(const std::string& path): SFZParser(path) {}
 };
 
 #endif

@@ -25,11 +25,9 @@ int main() {
   }
   */
 
-  //std::ifstream fin("fake.sfz");
-  std::ifstream fin("fake.jmz");
-  //std::ifstream fin("/home/jdost/sounds/simple_grand/grand.sfz");
-  //SFZParser parser(&fin);
-  JMZParser parser(&fin);
+  JMZParser parser("fake.jmz");
+  //JMZParser parser("fake.sfz");
+  //SFZParser parser("/home/jdost/sounds/simple_grand/grand.sfz");
   sfz = parser.parse();
 
   JMZRegion jmz;
@@ -39,7 +37,6 @@ int main() {
   //jmz2.write(std::cout);
 
   sfz->write(std::cout);
-  fin.close();
 
   delete sfz;
 
