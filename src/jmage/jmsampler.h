@@ -59,6 +59,7 @@ class JMSampler {
     void sound_gens_remove_last(){sound_gens.remove_last();}
     std::vector<jm_key_zone>::iterator zones_begin(){return zones.begin();}
     std::vector<jm_key_zone>::iterator zones_end(){return zones.end();}
+    std::vector<jm_key_zone>::iterator zones_erase(std::vector<jm_key_zone>::iterator first, std::vector<jm_key_zone>::iterator last){return zones.erase(first, last);}
     std::vector<jm_key_zone>::size_type zones_size(){return zones.size();}
     jm_key_zone& zones_at(int i) {return zones.at(i);}
     void zones_add(jm_key_zone zone){zones.push_back(zone);}

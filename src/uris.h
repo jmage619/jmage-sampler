@@ -8,6 +8,7 @@
 
 #define JM_SAMPLER_URI "http://lv2plug.in/plugins/jm-sampler"
 #define JM_SAMPLER__addZone JM_SAMPLER_URI "#addZone"
+#define JM_SAMPLER__removeZone JM_SAMPLER_URI "#removeZone"
 #define JM_SAMPLER__params JM_SAMPLER_URI "#params"
 #define JM_SAMPLER__getZones JM_SAMPLER_URI "#getZones"
 #define JM_SAMPLER__updateZone JM_SAMPLER_URI "#updateZone"
@@ -44,6 +45,7 @@ typedef struct {
   LV2_URID atom_Object;
   LV2_URID midi_Event;
   LV2_URID jm_addZone;
+  LV2_URID jm_removeZone;
   LV2_URID jm_params;
   LV2_URID jm_getZones;
   LV2_URID jm_updateZone;
@@ -56,6 +58,7 @@ static inline void jm_map_uris(LV2_URID_Map* map, jm_uris* uris) {
 	uris->atom_Object = map->map(map->handle, LV2_ATOM__Object);
   uris->midi_Event = map->map(map->handle, LV2_MIDI__MidiEvent);
   uris->jm_addZone = map->map(map->handle, JM_SAMPLER__addZone);
+  uris->jm_removeZone = map->map(map->handle, JM_SAMPLER__removeZone);
   uris->jm_params = map->map(map->handle, JM_SAMPLER__params);
   uris->jm_getZones = map->map(map->handle, JM_SAMPLER__getZones);
   uris->jm_updateZone = map->map(map->handle, JM_SAMPLER__updateZone);

@@ -87,6 +87,8 @@ void InputThread::run() {
 
       emit receivedAddZone(z);
     }
+    else if (!input.compare(0, 12, "remove_zone:"))
+      emit receivedRemoveZone(atoi(input.substr(12).c_str()));
   }
 }
 
@@ -114,6 +116,7 @@ SamplerUI::SamplerUI() {
   connect(in_thread, &InputThread::receivedShow, this, &SamplerUI::showAndRaise);
   connect(in_thread, &InputThread::receivedHide, this, &QWidget::hide);
   connect(in_thread, &InputThread::receivedAddZone, this, &SamplerUI::addNewZone);
+  connect(in_thread, &InputThread::receivedRemoveZone, this, &SamplerUI::removeZone);
   connect(in_thread, &QThread::finished, in_thread, &QObject::deleteLater);
   connect(in_thread, &QThread::finished, this, &QWidget::close);
   connect(in_thread, &QThread::finished, &QApplication::quit);
@@ -130,6 +133,10 @@ void SamplerUI::addNewZone(const zone& z) {
   int i = zone_model.rowCount();
   zone_model.insertRows(i, 1);
   zone_model.setZone(i, z);
+}
+
+void SamplerUI::removeZone(int i) {
+  zone_model.removeRows(i, 1);
 }
 
 void SamplerUI::sendAddZone() {

@@ -187,6 +187,17 @@ static void send_add_zone(jm_sampler_plugin* plugin, const jm_key_zone* zone) {
   fprintf(stderr, "SAMPLER: add zone sent!! %s\n", zone->name);
 }
 
+static void send_remove_zone(jm_sampler_plugin* plugin, int index) {
+  lv2_atom_forge_frame_time(&plugin->forge, 0);
+  LV2_Atom_Forge_Frame obj_frame;
+  lv2_atom_forge_object(&plugin->forge, &obj_frame, 0, plugin->uris.jm_removeZone);
+  lv2_atom_forge_key(&plugin->forge, plugin->uris.jm_params);
+  lv2_atom_forge_int(&plugin->forge, index);
+  lv2_atom_forge_pop(&plugin->forge, &obj_frame);
+
+  fprintf(stderr, "SAMPLER: remove zone sent!! %i\n", index);
+}
+
 static void update_zone(jm_sampler_plugin* plugin, const LV2_Atom_Object* obj) {
   LV2_Atom* params = NULL;
 
@@ -371,7 +382,16 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t size, const
     add_zone_from_region(plugin, WAVES[reg->sample], reg);
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
-    fprintf(stderr, "SAMPLER load patch response!! num regions: %i\n", PATCH->regions_size());
+    fprintf(stderr, "SAMPLER load patch response!! num regions: %i\n", (int) PATCH->regions_size());
+
+    int num_zones = (int) plugin->sampler.zones_size();
+
+    for (int i = 0; i < num_zones; ++i)
+      send_remove_zone(plugin, 0);
+
+    plugin->zone_number = 1;
+
+    plugin->sampler.zones_erase(plugin->sampler.zones_begin(), plugin->sampler.zones_end());
     std::vector<SFZRegion*>::iterator it;
     for (it = PATCH->regions_begin(); it != PATCH->regions_end(); ++it) {
       if (WAVES.find((*it)->sample) == WAVES.end()) {

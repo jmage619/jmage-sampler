@@ -387,6 +387,16 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       fprintf(ui->fout, outstr);
       fflush(ui->fout);
     }
+    else if (obj->body.otype == ui->uris.jm_removeZone) {
+      LV2_Atom* params = NULL;
+
+      lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
+
+      int index = ((LV2_Atom_Int*) params)->body; 
+      fprintf(stderr, "UI: received remove zone!! %i\n", index);
+      fprintf(ui->fout, "remove_zone:%i\n", index);
+      fflush(ui->fout);
+    }
   }
 }
 static const LV2UI_Descriptor descriptor = {

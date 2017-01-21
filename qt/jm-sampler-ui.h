@@ -15,6 +15,7 @@ class InputThread: public QThread {
     void receivedShow();
     void receivedHide();
     void receivedAddZone(const zone& z);
+    void receivedRemoveZone(int i);
 };
 
 class SamplerUI: public QWidget {
@@ -29,6 +30,7 @@ class SamplerUI: public QWidget {
   public slots:
     void showAndRaise();
     void addNewZone(const zone& z);
+    void removeZone(int i);
     void sendAddZone();
     void sendLoadPatch();
 };
