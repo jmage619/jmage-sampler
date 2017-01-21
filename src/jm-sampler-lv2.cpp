@@ -126,6 +126,11 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
 }
 
 static void cleanup(LV2_Handle instance) {
+  jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
+  if (plugin->patch != NULL)
+    delete plugin->patch;
+
+  delete plugin;
   delete static_cast<jm_sampler_plugin*>(instance);
 
   std::map<std::string, jm_wave>::iterator it;
