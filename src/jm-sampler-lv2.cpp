@@ -307,7 +307,13 @@ static void add_zone_from_region(jm_sampler_plugin* plugin, const SFZRegion* reg
   zone.right = wav.length;
   if (wav.has_loop)
     zone.mode = LOOP_CONTINUOUS;
-  sprintf(zone.name, "Zone %i", plugin->zone_number++);
+
+  const JMZRegion* jm_region = dynamic_cast<const JMZRegion*>(region);
+  if (jm_region != NULL)
+    strcpy(zone.name, jm_region->jm_name.c_str());
+  else
+    sprintf(zone.name, "Zone %i", plugin->zone_number++);
+
   strcpy(zone.path, region->sample.c_str());
   zone.amp = pow(10., region->volume / 20.);
   zone.low_key = region->lokey;
@@ -358,12 +364,19 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
     respond(handle, sizeof(worker_msg), msg); 
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
-    SFZParser parser(msg->data.str);
+    SFZParser* parser;
+    int len = strlen(msg->data.str);
+    if (!strcmp(msg->data.str + len - 4, ".jmz"))
+      parser = new JMZParser(msg->data.str);
+    // assumed it could ony eitehr be jmz or sfz
+    else
+      parser = new SFZParser(msg->data.str);
+
     fprintf(stderr, "SAMPLER: work loading patch: %s\n", msg->data.str);
     if (plugin->patch != NULL)
       delete plugin->patch;
 
-    plugin->patch = parser.parse();
+    plugin->patch = parser->parse();
 
     respond(handle, sizeof(worker_msg), msg); 
   }

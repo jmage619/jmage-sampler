@@ -114,6 +114,7 @@ class SFZParser {
     virtual void update_region(SFZRegion* region, const std::string& field, const std::string& data);
   public:
     SFZParser(const std::string& path): path(path) {}
+    virtual ~SFZParser(){}
     SFZ* parse();
 };
 
