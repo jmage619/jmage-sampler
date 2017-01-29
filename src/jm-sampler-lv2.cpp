@@ -25,9 +25,10 @@
 
 enum {
   SAMPLER_CONTROL = 0,
-  SAMPLER_NOTIFY  = 1,
-  SAMPLER_OUT_L = 2,
-  SAMPLER_OUT_R = 3
+  SAMPLER_VOLUME = 1,
+  SAMPLER_NOTIFY  = 2,
+  SAMPLER_OUT_L = 3,
+  SAMPLER_OUT_R = 4
 };
 
 enum worker_msg_type {
@@ -141,6 +142,9 @@ static void connect_port(LV2_Handle instance, uint32_t port, void* data) {
   switch (port) {
     case SAMPLER_CONTROL:
       plugin->control_port = static_cast<const LV2_Atom_Sequence*>(data);
+      break;
+    case SAMPLER_VOLUME:
+      plugin->sampler.level = (float*) data;
       break;
     case SAMPLER_NOTIFY:
       plugin->notify_port = static_cast<LV2_Atom_Sequence*>(data);
@@ -608,8 +612,8 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
     for (sg_el = plugin->sampler.sound_gens_head(); sg_el != NULL; sg_el = sg_el->next) {
       float values[2];
       sg_el->sg->get_values(values);
-      plugin->out1[n] += plugin->sampler.amp[plugin->sampler.level] * values[0];
-      plugin->out2[n] += plugin->sampler.amp[plugin->sampler.level] * values[1];
+      plugin->out1[n] += plugin->sampler.amp[(size_t) *plugin->sampler.level] * values[0];
+      plugin->out2[n] += plugin->sampler.amp[(size_t) *plugin->sampler.level] * values[1];
 
       sg_el->sg->inc();
       if (sg_el->sg->is_finished()) {

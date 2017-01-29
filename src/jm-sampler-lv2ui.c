@@ -122,33 +122,37 @@ static void run(LV2_External_UI_Widget* widget) {
     char* new_line;
     while ((new_line = strchr(ui->buf, '\n')) != NULL) {
       *new_line = '\0';
-      uint8_t buf[128];
-      lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
-      //fprintf(stderr, "UI: ui stdout message: %s\n", ui->buf);
-      LV2_Atom* obj;
-      if (!strncmp(ui->buf, "update_zone:", 12)) {
-        obj = handle_update_zone(ui, ui->buf + 12);
-      }
-      else if (!strncmp(ui->buf, "add_zone:", 9)) {
-        //fprintf(stderr, "UI: ui add zone: %s; len: %i\n", ui->buf + 9, strlen(ui->buf + 9));
-        LV2_Atom_Forge_Frame obj_frame;
-        obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_addZone);
-        lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
-        lv2_atom_forge_string(&ui->forge, ui->buf + 9, strlen(ui->buf + 9));
-        lv2_atom_forge_pop(&ui->forge, &obj_frame);
-      }
-      else if (!strncmp(ui->buf, "load_patch:", 11)) {
-        //fprintf(stderr, "UI: ui add zone: %s; len: %i\n", ui->buf + 9, strlen(ui->buf + 9));
-        LV2_Atom_Forge_Frame obj_frame;
-        obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_loadPatch);
-        lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
-        lv2_atom_forge_string(&ui->forge, ui->buf + 11, strlen(ui->buf + 11));
-        lv2_atom_forge_pop(&ui->forge, &obj_frame);
-      }
-      ui->write(ui->controller, 0, lv2_atom_total_size(obj),
-                ui->uris.atom_eventTransfer,
-                obj);
 
+      if (!strncmp(ui->buf, "update_vol:", 11)) {
+        float val = atof(ui->buf + 11);
+        ui->write(ui->controller, 1, sizeof(float), 0, &val);
+      }
+      else {
+        uint8_t buf[128];
+        lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
+        //fprintf(stderr, "UI: ui stdout message: %s\n", ui->buf);
+        LV2_Atom* obj;
+        if (!strncmp(ui->buf, "update_zone:", 12)) {
+          obj = handle_update_zone(ui, ui->buf + 12);
+        }
+        else if (!strncmp(ui->buf, "add_zone:", 9)) {
+          //fprintf(stderr, "UI: ui add zone: %s; len: %i\n", ui->buf + 9, strlen(ui->buf + 9));
+          LV2_Atom_Forge_Frame obj_frame;
+          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_addZone);
+          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
+          lv2_atom_forge_string(&ui->forge, ui->buf + 9, strlen(ui->buf + 9));
+          lv2_atom_forge_pop(&ui->forge, &obj_frame);
+        }
+        else if (!strncmp(ui->buf, "load_patch:", 11)) {
+          //fprintf(stderr, "UI: ui add zone: %s; len: %i\n", ui->buf + 9, strlen(ui->buf + 9));
+          LV2_Atom_Forge_Frame obj_frame;
+          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_loadPatch);
+          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
+          lv2_atom_forge_string(&ui->forge, ui->buf + 11, strlen(ui->buf + 11));
+          lv2_atom_forge_pop(&ui->forge, &obj_frame);
+        }
+        ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
+      }
       // shift left to prepare next value
       strmov(ui->buf, new_line + 1);
       // correct for shift
@@ -283,7 +287,11 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
   jm_sampler_ui* ui = (jm_sampler_ui*) handle;
   const LV2_Atom* atom = (const LV2_Atom*) buffer;
 
-  if (format == ui->uris.atom_eventTransfer && (atom->type == ui->uris.atom_Blank || atom->type == ui->uris.atom_Object)) {
+  if (format == 0) {
+    fprintf(ui->fout, "update_vol:%f\n", *(float*) buffer);
+    fflush(ui->fout);
+  }
+  else if (format == ui->uris.atom_eventTransfer && (atom->type == ui->uris.atom_Blank || atom->type == ui->uris.atom_Object)) {
     const LV2_Atom_Object* obj = (const LV2_Atom_Object*) atom;
     if (obj->body.otype == ui->uris.jm_addZone) {
       LV2_Atom* params = NULL;

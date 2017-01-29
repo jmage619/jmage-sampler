@@ -2,6 +2,7 @@
 #include <string>
 #include <sstream>
 #include <QtWidgets>
+#include <cmath>
 
 #include "jm-sampler-ui.h"
 #include "zonegrid.h"

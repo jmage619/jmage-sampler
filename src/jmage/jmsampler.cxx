@@ -33,7 +33,6 @@ JMSampler::JMSampler():
     sound_gens(POLYPHONY),
     playhead_pool(POLYPHONY),
     amp_gen_pool(POLYPHONY),
-    level(VOL_STEPS - 1),
     channel(0),
     sustain_on(false) {
   // init amplitude array
@@ -116,7 +115,7 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
   while (jms->msg_q_in.remove(msg)) {
     switch (msg.type) {
       case MT_VOLUME:
-        jms->level = msg.data.i;
+        *jms->level = msg.data.i;
         break;
       case MT_CHANNEL:
         jms->channel = msg.data.i;
@@ -256,8 +255,8 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
     for (sg_el = jms->sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
       float values[2];
       sg_el->sg->get_values(values);
-      buffer1[n] += jms->amp[jms->level] * values[0];
-      buffer2[n] += jms->amp[jms->level] * values[1];
+      buffer1[n] += jms->amp[(size_t) *jms->level] * values[0];
+      buffer2[n] += jms->amp[(size_t) *jms->level] * values[1];
 
       sg_el->sg->inc();
       if (sg_el->sg->is_finished()) {
