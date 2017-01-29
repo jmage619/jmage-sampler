@@ -3,10 +3,36 @@
 
 #include <QWidget>
 #include <QFrame>
+#include <QSlider>
 
 class QLineEdit;
 class QAction;
 class QMenu;
+
+class HDoubleSlider: public QWidget {
+  Q_OBJECT
+
+  private:
+    double min;
+    double max;
+    QLineEdit* out;
+    QSlider* slider;
+
+    double indexToVal(int i) {return (max - min) / slider->maximum() * i + min;}
+
+  signals:
+    void sliderMoved(double val);
+
+  private slots:
+    void handleMove(int val);
+
+  public:
+    HDoubleSlider(QWidget* parent = Q_NULLPTR, double min = 0.0, double max = 100.0, int steps = 101);
+    double value(){return indexToVal(slider->value());}
+
+  public slots:
+    void setValue(double val);
+};
 
 class DragBox: public QFrame {
   Q_OBJECT

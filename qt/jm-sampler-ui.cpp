@@ -89,6 +89,9 @@ void InputThread::run() {
     }
     else if (!input.compare(0, 12, "remove_zone:"))
       emit receivedRemoveZone(atoi(input.substr(12).c_str()));
+    else if (!input.compare(0, 11, "update_vol:")) {
+      emit receivedUpdateVol(atof(input.substr(11).c_str()));
+    }
   }
 }
 
@@ -99,6 +102,18 @@ SamplerUI::SamplerUI() {
   QPushButton* load_button = new QPushButton("load");
   connect(load_button, &QAbstractButton::clicked, this, &SamplerUI::sendLoadPatch);
   h_layout->addWidget(load_button, 0, Qt::AlignLeft);
+  v_layout->addLayout(h_layout);
+
+  h_layout = new QHBoxLayout;
+  QLabel* label = new QLabel;
+  label->setText(tr("Vol:"));
+  h_layout->addWidget(label);
+
+  slider = new HDoubleSlider(Q_NULLPTR, 0, 16, 17);
+  connect(slider, &HDoubleSlider::sliderMoved, this, &SamplerUI::sendUpdateVol);
+  h_layout->addWidget(slider);
+  h_layout->addStretch();
+
   v_layout->addLayout(h_layout);
   
   ZoneTableView* view = new ZoneTableView(&zone_model);
@@ -117,6 +132,7 @@ SamplerUI::SamplerUI() {
   connect(in_thread, &InputThread::receivedHide, this, &QWidget::hide);
   connect(in_thread, &InputThread::receivedAddZone, this, &SamplerUI::addNewZone);
   connect(in_thread, &InputThread::receivedRemoveZone, this, &SamplerUI::removeZone);
+  connect(in_thread, &InputThread::receivedUpdateVol, this, &SamplerUI::checkAndUpdateVol);
   connect(in_thread, &QThread::finished, in_thread, &QObject::deleteLater);
   connect(in_thread, &QThread::finished, this, &QWidget::close);
   connect(in_thread, &QThread::finished, &QApplication::quit);
@@ -139,6 +155,12 @@ void SamplerUI::removeZone(int i) {
   zone_model.removeRows(i, 1);
 }
 
+void SamplerUI::checkAndUpdateVol(double val) {
+  // only set if different, 0.05 for double comparison fuzziness
+  if (fabs(slider->value() - val) > 0.05)
+    slider->setValue(val);
+}
+
 void SamplerUI::sendAddZone() {
   QString path = QFileDialog::getOpenFileName(this, tr("Open a FUCKING WAV already!!"), "", tr("WAV (*.wav)"));
   if (!path.isNull())
@@ -149,4 +171,8 @@ void SamplerUI::sendLoadPatch() {
   QString path = QFileDialog::getOpenFileName(this, tr("Open a FUCKING patch already!!"), "", tr("Patch Files (*.sfz *.jmz);;SFZ (*.sfz);;JMZ (*.jmz)"));
   if (!path.isNull())
     std::cout << "load_patch:" << path.toStdString() << std::endl;
+}
+
+void SamplerUI::sendUpdateVol(double val) {
+  std::cout << "update_vol:" << val << std::endl;
 }

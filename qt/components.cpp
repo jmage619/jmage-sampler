@@ -6,6 +6,53 @@
 
 /************
 *
+* HDoubleSlider
+*
+**/
+
+void HDoubleSlider::handleMove(int i) {
+  double val = indexToVal(i);
+  out->setText(QString::number(val));
+  emit sliderMoved(val);
+}
+
+HDoubleSlider::HDoubleSlider(QWidget* parent, double min, double max, int steps):
+    QWidget(parent),
+    min(min),
+    max(max) {
+  QHBoxLayout* h_layout = new QHBoxLayout;
+  out = new QLineEdit;
+  out->setFixedWidth(50);
+  out->setAlignment(Qt::AlignRight);
+  h_layout->addWidget(out, 0, Qt::AlignLeft);
+
+  slider = new QSlider(Qt::Horizontal);
+  slider->setMinimum(0);
+  slider->setMaximum(steps - 1);
+  slider->setFixedWidth(200);
+  h_layout->addWidget(slider, 0, Qt::AlignLeft);
+
+  out->setText(QString::number(indexToVal(0)));
+
+  setLayout(h_layout);
+
+  connect(slider, &QSlider::sliderMoved, this, &HDoubleSlider::handleMove);
+}
+
+void HDoubleSlider::setValue(double val) {
+  if (val < min)
+    slider->setValue(0);
+  else if (val > max)
+    slider->setValue(slider->maximum());
+  // 0.05 is epsilon to deal with truncation errors...might be too big?
+  else
+    slider->setValue(slider->maximum() * (val - min) / (max - min) + 0.05);
+
+  out->setText(QString::number(value()));
+}
+
+/************
+*
 * DragBox
 *
 **/

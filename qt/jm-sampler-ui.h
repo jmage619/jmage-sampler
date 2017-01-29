@@ -5,6 +5,8 @@
 
 #include "zonegrid.h"
 
+class HDoubleSlider;
+
 class InputThread: public QThread {
   Q_OBJECT
 
@@ -16,12 +18,14 @@ class InputThread: public QThread {
     void receivedHide();
     void receivedAddZone(const zone& z);
     void receivedRemoveZone(int i);
+    void receivedUpdateVol(double val);
 };
 
 class SamplerUI: public QWidget {
   Q_OBJECT
 
   private:
+    HDoubleSlider* slider;
     ZoneTableModel zone_model;
 
   public:
@@ -31,8 +35,10 @@ class SamplerUI: public QWidget {
     void showAndRaise();
     void addNewZone(const zone& z);
     void removeZone(int i);
+    void checkAndUpdateVol(double val);
     void sendAddZone();
     void sendLoadPatch();
+    void sendUpdateVol(double val);
 };
 
 #endif
