@@ -33,7 +33,6 @@ JMSampler::JMSampler():
     sound_gens(POLYPHONY),
     playhead_pool(POLYPHONY),
     amp_gen_pool(POLYPHONY),
-    channel(0),
     sustain_on(false) {
   // init amplitude array
   init_amp(this);
@@ -118,7 +117,7 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
         *jms->level = msg.data.i;
         break;
       case MT_CHANNEL:
-        jms->channel = msg.data.i;
+        *jms->channel = msg.data.i;
         break;
       default:
         break;
@@ -146,7 +145,7 @@ int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
       // procces next midi event if it applies to current time (frame)
       while (n == event.time) {
         // only consider events from current channel
-        if ((event.buffer[0] & 0x0f) == jms->channel) {
+        if ((event.buffer[0] & 0x0f) == (int) *jms->channel) {
           // process note on
           if ((event.buffer[0] & 0xf0) == 0x90) {
             // if sustain on and note is already playing, release old one first

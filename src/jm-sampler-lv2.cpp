@@ -26,9 +26,10 @@
 enum {
   SAMPLER_CONTROL = 0,
   SAMPLER_VOLUME = 1,
-  SAMPLER_NOTIFY  = 2,
-  SAMPLER_OUT_L = 3,
-  SAMPLER_OUT_R = 4
+  SAMPLER_CHANNEL = 2,
+  SAMPLER_NOTIFY  = 3,
+  SAMPLER_OUT_L = 4,
+  SAMPLER_OUT_R = 5
 };
 
 enum worker_msg_type {
@@ -145,6 +146,9 @@ static void connect_port(LV2_Handle instance, uint32_t port, void* data) {
       break;
     case SAMPLER_VOLUME:
       plugin->sampler.level = (float*) data;
+      break;
+    case SAMPLER_CHANNEL:
+      plugin->sampler.channel = (float*) data;
       break;
     case SAMPLER_NOTIFY:
       plugin->notify_port = static_cast<LV2_Atom_Sequence*>(data);
@@ -513,7 +517,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         if (ev->body.type == plugin->uris.midi_Event) {
           const uint8_t* const msg = (const uint8_t*)(ev + 1);
           // only consider events from current channel
-          if ((msg[0] & 0x0f) == plugin->sampler.channel) {
+          if ((msg[0] & 0x0f) == (int) *plugin->sampler.channel) {
             // process note on
             if (lv2_midi_message_type(msg) == LV2_MIDI_MSG_NOTE_ON) {
               // if sustain on and note is already playing, release old one first

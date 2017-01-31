@@ -127,6 +127,10 @@ static void run(LV2_External_UI_Widget* widget) {
         float val = atof(ui->buf + 11);
         ui->write(ui->controller, 1, sizeof(float), 0, &val);
       }
+      else if (!strncmp(ui->buf, "update_chan:", 12)) {
+        float val = atof(ui->buf + 12);
+        ui->write(ui->controller, 2, sizeof(float), 0, &val);
+      }
       else {
         uint8_t buf[128];
         lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
@@ -288,7 +292,10 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
   const LV2_Atom* atom = (const LV2_Atom*) buffer;
 
   if (format == 0) {
-    fprintf(ui->fout, "update_vol:%f\n", *(float*) buffer);
+    if (port_index == 1)
+      fprintf(ui->fout, "update_vol:%f\n", *(float*) buffer);
+    else if (port_index == 2)
+      fprintf(ui->fout, "update_chan:%f\n", *(float*) buffer);
     fflush(ui->fout);
   }
   else if (format == ui->uris.atom_eventTransfer && (atom->type == ui->uris.atom_Blank || atom->type == ui->uris.atom_Object)) {

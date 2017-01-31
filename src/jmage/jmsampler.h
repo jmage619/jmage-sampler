@@ -44,7 +44,7 @@ class JMSampler {
     float amp[VOL_STEPS];
 
     float* level;
-    int channel;
+    float* channel;
     bool sustain_on;
     //JMSampler(JMZoneList* zones);
     JMSampler();
