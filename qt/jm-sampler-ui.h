@@ -6,6 +6,7 @@
 #include "zonegrid.h"
 
 class HDoubleSlider;
+class QComboBox;
 
 class InputThread: public QThread {
   Q_OBJECT
@@ -19,13 +20,15 @@ class InputThread: public QThread {
     void receivedAddZone(const zone& z);
     void receivedRemoveZone(int i);
     void receivedUpdateVol(double val);
+    void receivedUpdateChan(int index);
 };
 
 class SamplerUI: public QWidget {
   Q_OBJECT
 
   private:
-    HDoubleSlider* slider;
+    HDoubleSlider* vol_slider;
+    QComboBox* chan_combo;
     ZoneTableModel zone_model;
 
   public:
@@ -36,9 +39,11 @@ class SamplerUI: public QWidget {
     void addNewZone(const zone& z);
     void removeZone(int i);
     void checkAndUpdateVol(double val);
+    void checkAndUpdateChan(int index);
     void sendAddZone();
     void sendLoadPatch();
     void sendUpdateVol(double val);
+    void sendUpdateChan(int index);
 };
 
 #endif

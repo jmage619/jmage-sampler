@@ -90,9 +90,10 @@ void InputThread::run() {
     }
     else if (!input.compare(0, 12, "remove_zone:"))
       emit receivedRemoveZone(atoi(input.substr(12).c_str()));
-    else if (!input.compare(0, 11, "update_vol:")) {
+    else if (!input.compare(0, 11, "update_vol:"))
       emit receivedUpdateVol(atof(input.substr(11).c_str()));
-    }
+    else if (!input.compare(0, 12, "update_chan:"))
+      emit receivedUpdateChan(atoi(input.substr(12).c_str()));
   }
 }
 
@@ -110,9 +111,21 @@ SamplerUI::SamplerUI() {
   label->setText(tr("Vol:"));
   h_layout->addWidget(label);
 
-  slider = new HDoubleSlider(Q_NULLPTR, 0, 16, 17);
-  connect(slider, &HDoubleSlider::sliderMoved, this, &SamplerUI::sendUpdateVol);
-  h_layout->addWidget(slider);
+  vol_slider = new HDoubleSlider(Q_NULLPTR, 0, 16, 17);
+  connect(vol_slider, &HDoubleSlider::sliderMoved, this, &SamplerUI::sendUpdateVol);
+  h_layout->addWidget(vol_slider);
+
+  label = new QLabel;
+  label->setText(tr("Chan:"));
+  h_layout->addWidget(label);
+
+  chan_combo = new QComboBox;
+  for (int i = 1; i <= 16; ++i)
+    chan_combo->addItem(QString::number(i));
+  connect(chan_combo, static_cast<void(QComboBox::*)(int)>(&QComboBox::activated), this, &SamplerUI::sendUpdateChan);
+
+  h_layout->addWidget(chan_combo);
+
   h_layout->addStretch();
 
   v_layout->addLayout(h_layout);
@@ -134,6 +147,7 @@ SamplerUI::SamplerUI() {
   connect(in_thread, &InputThread::receivedAddZone, this, &SamplerUI::addNewZone);
   connect(in_thread, &InputThread::receivedRemoveZone, this, &SamplerUI::removeZone);
   connect(in_thread, &InputThread::receivedUpdateVol, this, &SamplerUI::checkAndUpdateVol);
+  connect(in_thread, &InputThread::receivedUpdateChan, this, &SamplerUI::checkAndUpdateChan);
   connect(in_thread, &QThread::finished, in_thread, &QObject::deleteLater);
   connect(in_thread, &QThread::finished, this, &QWidget::close);
   connect(in_thread, &QThread::finished, &QApplication::quit);
@@ -158,8 +172,14 @@ void SamplerUI::removeZone(int i) {
 
 void SamplerUI::checkAndUpdateVol(double val) {
   // only set if different, 0.05 for double comparison fuzziness
-  if (fabs(slider->value() - val) > 0.05)
-    slider->setValue(val);
+  if (fabs(vol_slider->value() - val) > 0.05)
+    vol_slider->setValue(val);
+}
+
+void SamplerUI::checkAndUpdateChan(int index) {
+  // only set if different
+  if (chan_combo->currentIndex() != index)
+    chan_combo->setCurrentIndex(index);
 }
 
 void SamplerUI::sendAddZone() {
@@ -176,4 +196,8 @@ void SamplerUI::sendLoadPatch() {
 
 void SamplerUI::sendUpdateVol(double val) {
   std::cout << "update_vol:" << val << std::endl;
+}
+
+void SamplerUI::sendUpdateChan(int index) {
+  std::cout << "update_chan:" << index << std::endl;
 }
