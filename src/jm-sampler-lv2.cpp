@@ -210,6 +210,28 @@ static void send_remove_zone(jm_sampler_plugin* plugin, int index) {
   fprintf(stderr, "SAMPLER: remove zone sent!! %i\n", index);
 }
 
+static void send_update_vol(jm_sampler_plugin* plugin, float vol) {
+  lv2_atom_forge_frame_time(&plugin->forge, 0);
+  LV2_Atom_Forge_Frame obj_frame;
+  lv2_atom_forge_object(&plugin->forge, &obj_frame, 0, plugin->uris.jm_updateVol);
+  lv2_atom_forge_key(&plugin->forge, plugin->uris.jm_params);
+  lv2_atom_forge_float(&plugin->forge, vol);
+  lv2_atom_forge_pop(&plugin->forge, &obj_frame);
+
+  fprintf(stderr, "SAMPLER: update vol sent!! %f\n", vol);
+}
+
+static void send_update_chan(jm_sampler_plugin* plugin, float chan) {
+  lv2_atom_forge_frame_time(&plugin->forge, 0);
+  LV2_Atom_Forge_Frame obj_frame;
+  lv2_atom_forge_object(&plugin->forge, &obj_frame, 0, plugin->uris.jm_updateChan);
+  lv2_atom_forge_key(&plugin->forge, plugin->uris.jm_params);
+  lv2_atom_forge_float(&plugin->forge, chan);
+  lv2_atom_forge_pop(&plugin->forge, &obj_frame);
+
+  fprintf(stderr, "SAMPLER: update chan sent!! %f\n", chan);
+}
+
 static void update_zone(jm_sampler_plugin* plugin, const LV2_Atom_Object* obj) {
   LV2_Atom* params = NULL;
 
@@ -417,6 +439,17 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t size, const
       send_remove_zone(plugin, 0);
 
     plugin->zone_number = 1;
+
+    const JMZControl* jm_control = dynamic_cast<const JMZControl*>(plugin->patch->get_control());
+    if (jm_control != NULL) {
+      send_update_vol(plugin, jm_control->jm_vol);
+      send_update_chan(plugin, jm_control->jm_chan - 1);
+    }
+    // reset to reasonable defaults if not defined
+    else {
+      send_update_vol(plugin, 16);
+      send_update_chan(plugin, 0);
+    }
 
     plugin->sampler.zones_erase(plugin->sampler.zones_begin(), plugin->sampler.zones_end());
     std::vector<SFZRegion*>::iterator it;

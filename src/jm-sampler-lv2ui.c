@@ -407,10 +407,26 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
 
       lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
 
-      int index = ((LV2_Atom_Int*) params)->body; 
+      int index = ((LV2_Atom_Int*) params)->body;
       fprintf(stderr, "UI: received remove zone!! %i\n", index);
       fprintf(ui->fout, "remove_zone:%i\n", index);
       fflush(ui->fout);
+    }
+    else if (obj->body.otype == ui->uris.jm_updateVol) {
+      LV2_Atom* params = NULL;
+
+      lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
+
+      float val = ((LV2_Atom_Float*) params)->body;
+      ui->write(ui->controller, 1, sizeof(float), 0, &val);
+    }
+    else if (obj->body.otype == ui->uris.jm_updateChan) {
+      LV2_Atom* params = NULL;
+
+      lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
+
+      float val = ((LV2_Atom_Float*) params)->body;
+      ui->write(ui->controller, 2, sizeof(float), 0, &val);
     }
   }
 }

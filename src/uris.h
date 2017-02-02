@@ -13,6 +13,8 @@
 #define JM_SAMPLER__getZones JM_SAMPLER_URI "#getZones"
 #define JM_SAMPLER__updateZone JM_SAMPLER_URI "#updateZone"
 #define JM_SAMPLER__loadPatch JM_SAMPLER_URI "#loadPatch"
+#define JM_SAMPLER__updateVol JM_SAMPLER_URI "#updateVol"
+#define JM_SAMPLER__updateChan JM_SAMPLER_URI "#updateChan"
 
 enum zone_params {
   JM_ZONE_NAME,
@@ -50,6 +52,8 @@ typedef struct {
   LV2_URID jm_getZones;
   LV2_URID jm_updateZone;
   LV2_URID jm_loadPatch;
+  LV2_URID jm_updateVol;
+  LV2_URID jm_updateChan;
 } jm_uris;
 
 static inline void jm_map_uris(LV2_URID_Map* map, jm_uris* uris) {
@@ -63,6 +67,8 @@ static inline void jm_map_uris(LV2_URID_Map* map, jm_uris* uris) {
   uris->jm_getZones = map->map(map->handle, JM_SAMPLER__getZones);
   uris->jm_updateZone = map->map(map->handle, JM_SAMPLER__updateZone);
   uris->jm_loadPatch = map->map(map->handle, JM_SAMPLER__loadPatch);
+  uris->jm_updateVol = map->map(map->handle, JM_SAMPLER__updateVol);
+  uris->jm_updateChan = map->map(map->handle, JM_SAMPLER__updateChan);
 }
 
 #endif

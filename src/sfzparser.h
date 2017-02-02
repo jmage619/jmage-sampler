@@ -79,6 +79,7 @@ class SFZ {
     ~SFZ();
     void add_region(SFZRegion* r) {regions.push_back(r);}
     void add_control(SFZControl* c) {control = c;}
+    const SFZControl* get_control() {return control;}
     SFZRegion* regions_at(std::vector<SFZRegion*>::size_type i) {return regions.at(i);}
     std::vector<SFZRegion*>::size_type regions_size() {return regions.size();}
     std::vector<SFZRegion*>::iterator regions_begin() {return regions.begin();}
