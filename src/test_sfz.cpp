@@ -3,42 +3,35 @@
 #include <cstdio>
 #include <vector>
 #include <string>
+#include <cstring>
 #include "sfzparser.h"
 
 int main() {
-  SFZ* sfz;
-  /*sfz_region s;
-  s.volume = 3;
-  sfz.add_region(s);
-  s = sfz_region();
-  sfz.add_region(s);
+  /*
+  sfz::sfz s;
+  sfz::Value v = "fags";
+  printf("%s\n", v.get_str());
+  s.control["jm_vol"] = 12;
+  s.control["jm_chan"] = 2;
+
+  std::map<std::string, sfz::Value> region;
+  region["sample"] = "test1.wav";
+  region["volume"] = 3.5;
+  s.regions.push_back(region);
+
+  region["sample"] = "test2.wav";
+  region["volume"] = 7.;
+  s.regions.push_back(region);
+
+  sfz::sfz s2 = s;
+  sfz::write(s2, std::cout);
   */
-  /*s.volume = 7;
-  sfz.add_region(s);
-  s.volume = 2;
-  sfz.add_region(s);
-  */
 
-  /*std::vector<sfz_region>::iterator it;
-  for (it = sfz.regions_begin(); it != sfz.regions_end(); ++it) {
-    printf("region vol: %f\n", it->volume);
-  }
-  */
-
-  JMZParser parser("fake.jmz");
-  //JMZParser parser("fake.sfz");
-  //SFZParser parser("/home/jdost/sounds/simple_grand/grand.sfz");
-  sfz = parser.parse();
-
-  JMZRegion jmz;
-  jmz.jm_name = "bob";
-  SFZRegion& jmz2 = jmz;
-  printf("jmz name: %s\n", static_cast<JMZRegion&>(jmz2).jm_name.c_str());
-  //jmz2.write(std::cout);
-
-  sfz->write(std::cout);
-
-  delete sfz;
+  //sfz::sfz* s = sfz::Parser("/home/jdost/sounds/simple_grand/grand.sfz").parse();
+  sfz::sfz* s = sfz::JMZParser("fake.jmz").parse();
+  //sfz::sfz* s = sfz::JMZParser("fake.sfz").parse();
+  sfz::write(s, std::cout);
+  delete s;
 
   return 0;
 }

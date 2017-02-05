@@ -1,5 +1,7 @@
 #include <cstdlib>
 #include <string>
+#include <vector>
+#include <map>
 #include <cstring>
 #include <iostream>
 #include <fstream>
@@ -11,67 +13,6 @@
 
 #include "sfzparser.h"
 
-//    self.reg_write_order = ['volume', 'pitch_keycenter', 'lokey', 'hikey', 'lovel', 'hivel', 'tune', 'offset', 'loop_start', 'loop_end', 'loop_mode', 'loop_crossfade', 'group', 'off_group', 'ampeg_attack', 'ampeg_hold', 'ampeg_decay', 'ampeg_sustain', 'ampeg_release', 'sample']
-
-void SFZRegion::write_fields(std::ostream& out) {
-  out << " volume=" << volume;
-  out << " pitch_keycenter=" << pitch_keycenter;
-  out << " lokey=" << lokey;
-  out << " hikey=" << hikey;
-  out << " lovel=" << lovel;
-  out << " hivel=" << hivel;
-  out << " tune=" << tune;
-  out << " offset=" << offset;
-  out << " loop_start=" << loop_start;
-  out << " loop_end=" << loop_end;
-  out << " loop_mode=";
-  switch (mode) {
-    case LOOP_OFF:
-      out << "no_loop";
-      break;
-    case LOOP_CONTINUOUS:
-      out << "loop_continuous";
-      break;
-    case LOOP_ONE_SHOT:
-      out << "one_shot";
-      break;
-    default:
-      break;
-  }
-  out << " loop_crossfade=" << loop_crossfade;
-  out << " group=" << group;
-  out << " off_group=" << off_group;
-  out << " ampeg_attack=" << ampeg_attack;
-  out << " ampeg_hold=" << ampeg_hold;
-  out << " ampeg_decay=" << ampeg_decay;
-  out << " ampeg_sustain=" << ampeg_sustain;
-  out << " ampeg_release=" << ampeg_release;
-  out << " sample=" << sample;
-}
-
-SFZ::~SFZ() {
-  if (control != NULL)
-    delete control;
-
-  std::vector<SFZRegion*>::iterator it;
-  for (it = regions.begin(); it != regions.end(); ++it) {
-    delete *it;
-  }
-}
-
-void SFZ::write(std::ostream& out) {
-  if (control != NULL) {
-    control->write(out);
-    out << std::endl;
-  }
-
-  std::vector<SFZRegion*>::iterator it;
-  for (it = regions.begin(); it != regions.end(); ++it) {
-    (*it)->write(out);
-    out << std::endl;
-  }
-}
-
 namespace {
   void validate_int(const std::string& op, long val, long min, long max) {
     if (val < min || val > max) {
@@ -82,72 +23,120 @@ namespace {
   }
 };
 
+void sfz::Value::write(std::ostream& out) const {
+  switch (type) {
+    case STRING:
+      out << str;
+      break;
+    case INT:
+      out << i;
+      break;
+    case DOUBLE:
+      out << d;
+      break;
+  }
+}
+
+void sfz::write(const sfz* s, std::ostream& out) {
+  out << "<control>";
+
+  std::map<std::string, Value>::const_iterator it;
+
+  for (it = s->control.begin(); it != s->control.end(); ++it) {
+    out << " " << it->first << "=";
+    it->second.write(out);
+  }
+
+  out << std::endl;
+
+  std::vector<std::map<std::string, Value>>::const_iterator v_it;
+  for (v_it = s->regions.begin(); v_it != s->regions.end(); ++v_it) {
+    out << "<region>";
+    for (it = v_it->begin(); it != v_it->end(); ++it) {
+      out << " " << it->first << "=";
+      it->second.write(out);
+    }
+    out << std::endl;
+  }
+}
+
+void sfz::Parser::save_prev() {
+  switch (state) {
+    case CONTROL:
+      update_control(*cur_control, cur_op, data);
+      break;
+    case GROUP:
+      update_region(*cur_group, cur_op, data);
+      break;
+    case REGION:
+      update_region(*cur_region, cur_op, data);
+      break;
+    default:
+      break;
+  }
+
+  data.erase();
+}
+
+void sfz::Parser::set_region_defaults(std::map<std::string, Value>& region) {
+  region["volume"] = 0.;
+  region["pitch_keycenter"] = 32;
+  region["lokey"] = 0;
+  region["hikey"] = 127;
+  region["lovel"] = 0;
+  region["hivel"] = 127;
+  region["tune"] = 0;
+  region["offset"] = 0;
+  // -1 to say not defined since may be defined in wav
+  region["loop_start"] = -1;
+  region["loop_end"] = -1;
+  region["mode"] = LOOP_UNSET;
+  region["loop_crossfade"] = 0.;
+  region["group"] = 0;
+  region["off_group"] = 0;
+  region["ampeg_attack"] = 0.;
+  region["ampeg_hold"] = 0.;
+  region["ampeg_decay"] = 0.;
+  region["ampeg_sustain"] = 100.;
+  region["ampeg_release"] = 0.;
+}
+
 // missing some validation checks here
-void SFZParser::update_region(SFZRegion* region, const std::string& field, const std::string& data) {
-  if (field == "volume")
-    region->volume = strtod(data.c_str(), NULL);
-  else if (field == "pitch_keycenter") {
+void sfz::Parser::update_region(std::map<std::string, Value>& region, const std::string& field, const std::string& data) {
+  // generic double
+  if (field == "volume" || field == "loop_crossfade" || field == "ampeg_attack" ||
+      field == "ampeg_hold" || field == "ampeg_decay" || field == "ampeg_sustain" ||
+      field == "ampeg_release")
+    region[field] = strtod(data.c_str(), NULL);
+  // int range 0-127
+  else if (field == "pitch_keycenter" || field == "lokey" || field == "hikey" ||
+      field == "lovel" || field == "hivel") {
     long val = strtol(data.c_str(), NULL, 10);
     validate_int(field, val, 0, 127);
-    region->pitch_keycenter = val;
+    region[field] = (int) val;
   }
-  else if (field == "lokey") {
-    long val = strtol(data.c_str(), NULL, 10);
-    validate_int(field, val, 0, 127);
-    region->lokey = val;
-  }
-  else if (field == "hikey") {
-    long val = strtol(data.c_str(), NULL, 10);
-    validate_int(field, val, 0, 127);
-    region->hikey = val;
-  }
-  else if (field == "lovel") {
-    long val = strtol(data.c_str(), NULL, 10);
-    validate_int(field, val, 0, 127);
-    region->lovel = val;
-  }
-  else if (field == "hivel") {
-    long val = strtol(data.c_str(), NULL, 10);
-    validate_int(field, val, 0, 127);
-    region->hivel = val;
-  }
+  // int range -100-100
   else if (field == "tune") {
     long val = strtol(data.c_str(), NULL, 10);
     validate_int(field, val, -100, 100);
-    region->tune = val;
+    region[field] = (int) val;
   }
-  else if (field == "offset")
-    region->offset = strtol(data.c_str(), NULL, 10);
-  else if (field == "loop_start")
-    region->loop_start = strtol(data.c_str(), NULL, 10);
-  else if (field == "loop_end")
-    region->loop_end = strtol(data.c_str(), NULL, 10);
+  // generic int
+  else if (field == "offset" || field == "loop_start" || field == "loop_end" ||
+      field == "group" || field == "off_group")
+    region[field] = (int) strtol(data.c_str(), NULL, 10);
+  // loop mode
   else if (field == "loop_mode") {
     if (data == "no_loop")
-      region->mode = LOOP_OFF;
+      region[field] = LOOP_OFF;
     else if (data == "loop_continuous")
-      region->mode = LOOP_CONTINUOUS;
+      region[field] = LOOP_CONTINUOUS;
     else if (data == "one_shot")
-      region->mode = LOOP_ONE_SHOT;
+      region[field] = LOOP_ONE_SHOT;
     else
       throw std::runtime_error("loop_mode must be \"no_loop\", \"loop_continuous\", or \"one_shot\"");
   }
-  else if (field == "loop_crossfade")
-    region->loop_crossfade = strtod(data.c_str(), NULL);
-  else if (field == "group")
-    region->group = strtol(data.c_str(), NULL, 10);
-  else if (field == "off_group")
-    region->off_group = strtol(data.c_str(), NULL, 10);
-  else if (field == "ampeg_attack")
-    region->ampeg_attack = strtod(data.c_str(), NULL);
-  else if (field == "ampeg_hold")
-    region->ampeg_hold = strtod(data.c_str(), NULL);
-  else if (field == "ampeg_decay")
-    region->ampeg_decay = strtod(data.c_str(), NULL);
-  else if (field == "ampeg_sustain")
-    region->ampeg_sustain = strtod(data.c_str(), NULL);
-  else if (field == "ampeg_release")
-    region->ampeg_release = strtod(data.c_str(), NULL);
+  // sample path
   else if (field == "sample") {
     struct stat sb;
     std::string sample_path(dir_path);
@@ -160,41 +149,30 @@ void SFZParser::update_region(SFZRegion* region, const std::string& field, const
     if (!S_ISREG(sb.st_mode))
       throw std::runtime_error("not regular file: " + sample_path);
 
-    region->sample = sample_path;
+    region[field] = sample_path.c_str();
+  }
+  // don't know what it is; just pass through as string
+  else {
+    region[field] = data.c_str();
   }
 }
 
-void SFZParser::save_prev() {
-  switch (state) {
-    case CONTROL:
-      update_control(control, cur_op, data);
-      break;
-    case GROUP:
-      update_region(cur_group, cur_op, data);
-      break;
-    case REGION:
-      update_region(cur_region, cur_op, data);
-      break;
-    default:
-      break;
-  }
-
-  data.erase();
-}
-
-// i am too lazy to consider a SFZ copy constructor / assignment op
-// so we just return a pointer rather than an object copy
-SFZ* SFZParser::parse() {
+sfz::sfz* sfz::Parser::parse() {
   char tmp_str[256];
   strcpy(tmp_str, path.c_str());
   dir_path += dirname(tmp_str);
   dir_path += "/";
 
   std::ifstream fin(path);
-  SFZ* sfz = new SFZ;
-  control = new_control();
-  cur_group = new_region();
-  cur_region = new_region(cur_group);
+  sfz* s = new sfz;
+  std::map<std::string, Value> cur_control;
+  set_control_defaults(cur_control);
+  std::map<std::string, Value> cur_group;
+  set_region_defaults(cur_group);
+  std::map<std::string, Value> cur_region = cur_group;
+  this->cur_control = &cur_control;
+  this->cur_group = &cur_group;
+  this->cur_region = &cur_region;
 
   std::string line;
   while (std::getline(fin, line)) {
@@ -212,28 +190,25 @@ SFZ* SFZParser::parse() {
         if (data.length() > 0) {
           save_prev();
           if (state == REGION)
-            // create copy of region for sfz to prevent ownership conflict
-            sfz->add_region(new_region(cur_region));
+            s->regions.push_back(cur_region);
           else if (state == CONTROL)
-            // create copy of control for sfz to prevent ownership conflict
-            sfz->add_control(new_control(control));
+            s->control = cur_control;
         }
         if (field == "<control>") {
-          // reset control
-          delete control;
-          control = new_control();
+          // reset cur_control
+          cur_control = std::map<std::string, Value>();
+          set_control_defaults(cur_control);
           state = CONTROL;
         }
         else if (field == "<group>") {
           // reset cur_group
-          delete cur_group;
-          cur_group = new_region();
+          cur_group = std::map<std::string, Value>();
+          set_region_defaults(cur_group);
           state = GROUP;
         }
         else if (field == "<region>") {
           // reset cur_region
-          delete cur_region;
-          cur_region = new_region(cur_group);
+          cur_region = cur_group;
           state = REGION;
         }
       }
@@ -256,49 +231,48 @@ SFZ* SFZParser::parse() {
   if (data.length() > 0) {
     save_prev();
     if (state == REGION)
-      sfz->add_region(new_region(cur_region));
+      s->regions.push_back(cur_region);
     else if (state == CONTROL)
-      sfz->add_control(new_control(control));
+      s->control = cur_control;
   }
 
   fin.close();
 
-  delete control;
-  delete cur_group;
-  delete cur_region;
-
-  return sfz;
+  return s;
 }
 
-void JMZControl::write_fields(std::ostream& out) {
-  out << " jm_vol=" << jm_vol;
-  out << " jm_chan=" << jm_chan;
-  SFZControl::write_fields(out);
+void sfz::JMZParser::set_control_defaults(std::map<std::string, Value>& control) {
+  Parser::set_control_defaults(control);
+  control["jm_vol"] = 16;
+  control["jm_chan"] = 1;
 }
 
-void JMZRegion::write_fields(std::ostream& out) {
-  out << " jm_name=" << jm_name;
-  SFZRegion::write_fields(out);
+void sfz::JMZParser::set_region_defaults(std::map<std::string, Value>& region) {
+  Parser::set_region_defaults(region);
+  region["jm_name"] = "";
 }
 
-void JMZParser::update_control(SFZControl* control, const std::string& field, const std::string& data) {
+void sfz::JMZParser::update_control(std::map<std::string, Value>& control, const std::string& field, const std::string& data) {
   if (field == "jm_vol") {
     long val = strtol(data.c_str(), NULL, 10);
     validate_int(field, val, 0, 16);
-    static_cast<JMZControl*>(control)->jm_vol = val;
+    control["jm_vol"] = (int) val;
   }
   else if (field == "jm_chan") {
     long val = strtol(data.c_str(), NULL, 10);
     validate_int(field, val, 1, 16);
-    static_cast<JMZControl*>(control)->jm_chan = val;
+    control["jm_chan"] = (int) val;
   }
+  // don't know what it is; let parent handle it
   else
-    SFZParser::update_control(control, field, data);
+    Parser::update_control(control, field, data);
 }
 
-void JMZParser::update_region(SFZRegion* region, const std::string& field, const std::string& data) {
+void sfz::JMZParser::update_region(std::map<std::string, Value>& region, const std::string& field, const std::string& data) {
   if (field == "jm_name")
-    static_cast<JMZRegion*>(region)->jm_name = data;
+    region["jm_name"] = data.c_str();
+  // don't know what it is; let parent handle it
   else
-    SFZParser::update_region(region, field, data);
+    Parser::update_region(region, field, data);
 }
+
