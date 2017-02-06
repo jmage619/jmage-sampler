@@ -28,9 +28,9 @@ namespace sfz {
       Value(int i): type(INT), i(i) {}
       Value(double d): type(DOUBLE), d(d) {};
       void write(std::ostream& out) const;
-      const char* get_str() {if (type != STRING)throw std::runtime_error("Value is not of type STRING");return str.c_str();}
-      int get_int() {if (type != INT)throw std::runtime_error("Value is not of type INT");return i;}
-      double get_double() {if (type != DOUBLE)throw std::runtime_error("Value is not of type DOUBLE");return d;}
+      const std::string& get_str() const {if (type != STRING)throw std::runtime_error("Value is not of type STRING");return str;}
+      int get_int() const {if (type != INT)throw std::runtime_error("Value is not of type INT");return i;}
+      double get_double() const {if (type != DOUBLE)throw std::runtime_error("Value is not of type DOUBLE");return d;}
   };
 
   struct sfz {
