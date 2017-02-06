@@ -393,7 +393,7 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
     //fprintf(stderr, "SAMPLER: work completed; parsed: %s\n", path);
   }
   else if (msg->type == WORKER_LOAD_REGION_WAV) {
-    std::map<std::string, sfz::Value> reg = plugin->patch->regions.at(msg->data.i);
+    std::map<std::string, sfz::Value>& reg = plugin->patch->regions.at(msg->data.i);
     jm_wave wav;
 
     std::string wav_path = reg["sample"].get_str();
@@ -437,7 +437,7 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t size, const
   }
   else if (msg->type == WORKER_LOAD_REGION_WAV) {
     fprintf(stderr, "SAMPLER load region wav response!!\n");
-    std::map<std::string, sfz::Value> reg = plugin->patch->regions.at(msg->data.i);
+    std::map<std::string, sfz::Value>& reg = plugin->patch->regions.at(msg->data.i);
     add_zone_from_region(plugin, reg);
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
