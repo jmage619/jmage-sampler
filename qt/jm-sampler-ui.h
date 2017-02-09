@@ -42,6 +42,7 @@ class SamplerUI: public QWidget {
     void checkAndUpdateChan(int index);
     void sendAddZone();
     void sendLoadPatch();
+    void sendSavePatch();
     void sendUpdateVol(double val);
     void sendUpdateChan(int index);
 };

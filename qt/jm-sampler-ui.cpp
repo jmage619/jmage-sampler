@@ -101,9 +101,13 @@ SamplerUI::SamplerUI() {
   QVBoxLayout* v_layout = new QVBoxLayout;
 
   QHBoxLayout* h_layout = new QHBoxLayout;
+  QPushButton* save_button = new QPushButton("save");
+  connect(save_button, &QAbstractButton::clicked, this, &SamplerUI::sendSavePatch);
+  h_layout->addWidget(save_button);
   QPushButton* load_button = new QPushButton("load");
   connect(load_button, &QAbstractButton::clicked, this, &SamplerUI::sendLoadPatch);
-  h_layout->addWidget(load_button, 0, Qt::AlignLeft);
+  h_layout->addWidget(load_button);
+  h_layout->addStretch();
   v_layout->addLayout(h_layout);
 
   h_layout = new QHBoxLayout;
@@ -192,6 +196,12 @@ void SamplerUI::sendLoadPatch() {
   QString path = QFileDialog::getOpenFileName(this, tr("Open a FUCKING patch already!!"), "", tr("Patch Files (*.sfz *.jmz);;SFZ (*.sfz);;JMZ (*.jmz)"));
   if (!path.isNull())
     std::cout << "load_patch:" << path.toStdString() << std::endl;
+}
+
+void SamplerUI::sendSavePatch() {
+  QString path = QFileDialog::getSaveFileName(this, tr("Save a FUCKING patch already!!"), "", tr("Patch Files (*.sfz *.jmz);;SFZ (*.sfz);;JMZ (*.jmz)"));
+  if (!path.isNull())
+    std::cout << "save_patch:" << path.toStdString() << std::endl;
 }
 
 void SamplerUI::sendUpdateVol(double val) {

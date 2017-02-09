@@ -35,7 +35,8 @@ enum {
 enum worker_msg_type {
   WORKER_LOAD_PATH_WAV,
   WORKER_LOAD_REGION_WAV,
-  WORKER_LOAD_PATCH
+  WORKER_LOAD_PATCH,
+  WORKER_SAVE_PATCH
 };
 
 struct worker_msg {
@@ -354,7 +355,7 @@ static void add_zone_from_region(jm_sampler_plugin* plugin, const std::map<std::
   zone.pitch_corr = region.find("tune")->second.get_int() / 100.;
   zone.start = region.find("offset")->second.get_int();
 
-  loop_mode mode = (loop_mode) region.find("mode")->second.get_int();
+  loop_mode mode = (loop_mode) region.find("loop_mode")->second.get_int();
   if (mode != LOOP_UNSET)
     zone.mode = mode;
 
@@ -419,6 +420,55 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
     delete parser;
 
     respond(handle, sizeof(worker_msg), msg); 
+  }
+  else if (msg->type == WORKER_SAVE_PATCH) {
+    int len = strlen(msg->data.str);
+
+    sfz::sfz save_patch;
+
+    bool is_jmz = !strcmp(msg->data.str + len - 4, ".jmz");
+    if (is_jmz) {
+      save_patch.control["jm_vol"] = (int) *plugin->sampler.level;
+      save_patch.control["jm_chan"] = (int) *plugin->sampler.channel + 1;
+    }
+
+    std::vector<jm_key_zone>::iterator it;
+    for (it = plugin->sampler.zones_begin(); it != plugin->sampler.zones_end(); ++it) {
+      std::map<std::string, sfz::Value> region;
+
+      if (is_jmz)
+        region["jm_name"] = it->name;
+
+      region["sample"] = it->path;
+      region["volume"] = 20. * log10(it->amp);
+      region["lokey"] = it->low_key;
+      region["hikey"] = it->high_key;
+      region["pitch_keycenter"] = it->origin;
+      region["lovel"] = it->low_vel;
+      region["hivel"] = it->high_vel;
+      region["tune"] = (int) (100. * it->pitch_corr);
+      region["offset"] = it->start;
+      region["loop_mode"] = it->mode;
+      region["loop_start"] = it->left;
+      region["loop_end"] = it->right;
+      region["loop_crossfade"] = (double) it->crossfade / SAMPLE_RATE;
+      region["group"] = it->group;
+      region["off_group"] = it->off_group;
+      region["ampeg_attack"] = (double) it->attack / SAMPLE_RATE;
+      region["ampeg_hold"] = (double) it->hold / SAMPLE_RATE;
+      region["ampeg_decay"] = (double) it->decay / SAMPLE_RATE;
+      region["ampeg_sustain"] = 100. * it->sustain;
+      region["ampeg_release"] = (double) it->release / SAMPLE_RATE;
+
+      save_patch.regions.push_back(region);
+    }
+
+    std::ofstream fout(msg->data.str);
+
+    sfz::write(&save_patch, fout);
+    fout.close();
+
+    // probably should notify UI here that we finished!
   }
 
   return LV2_WORKER_SUCCESS;
@@ -538,6 +588,16 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         char* path = (char*)(params + 1);
         worker_msg msg;
         msg.type =  WORKER_LOAD_PATCH;
+        strcpy(msg.data.str, path);
+        plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &msg);
+      }
+      else if (obj->body.otype == plugin->uris.jm_savePatch) {
+        LV2_Atom* params = NULL;
+
+        lv2_atom_object_get(obj, plugin->uris.jm_params, &params, 0);
+        char* path = (char*)(params + 1);
+        worker_msg msg;
+        msg.type =  WORKER_SAVE_PATCH;
         strcpy(msg.data.str, path);
         plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &msg);
       }

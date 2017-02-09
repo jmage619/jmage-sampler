@@ -54,7 +54,29 @@ void sfz::write(const sfz* s, std::ostream& out) {
     out << "<region>";
     for (it = v_it->begin(); it != v_it->end(); ++it) {
       out << " " << it->first << "=";
-      it->second.write(out);
+      // for sample need to strip abs path dir; assumption
+      // is users will save sfz into same dir as wave files
+      if (it->first == "sample") {
+        char tmp_str[256];
+        strcpy(tmp_str, it->second.get_str().c_str());
+        out << basename(tmp_str);
+      }
+      else if (it->first == "loop_mode") {
+        switch (it->second.get_int()) {
+          case LOOP_OFF:
+            out << "no_loop";
+            break;
+          case LOOP_CONTINUOUS:
+            out << "loop_continuous";
+            break;
+          case LOOP_ONE_SHOT:
+            out << "one_shot";
+            break;
+        }
+      }
+      else {
+        it->second.write(out);
+      }
     }
     out << std::endl;
   }
@@ -90,7 +112,7 @@ void sfz::Parser::set_region_defaults(std::map<std::string, Value>& region) {
   // -1 to say not defined since may be defined in wav
   region["loop_start"] = -1;
   region["loop_end"] = -1;
-  region["mode"] = LOOP_UNSET;
+  region["loop_mode"] = LOOP_UNSET;
   region["loop_crossfade"] = 0.;
   region["group"] = 0;
   region["off_group"] = 0;
