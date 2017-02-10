@@ -64,7 +64,7 @@ namespace sfz {
       virtual void update_control(std::map<std::string, Value>& control, const std::string& field, const std::string& data) {}
       virtual void update_region(std::map<std::string, Value>& region, const std::string& field, const std::string& data);
     public:
-      Parser(const std::string& path): path(path) {}
+      Parser(const std::string& path);
       virtual ~Parser(){}
       sfz* parse();
   };

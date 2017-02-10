@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cmath>
 #include <cstring>
+#include <stdexcept>
 
 #include <lv2/lv2plug.in/ns/lv2core/lv2.h>
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
@@ -14,6 +15,7 @@
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
 #include <lv2/lv2plug.in/ns/ext/midi/midi.h>
 #include <lv2/lv2plug.in/ns/ext/worker/worker.h>
+#include <lv2/lv2plug.in/ns/ext/state/state.h>
 
 #include "uris.h"
 #include "jmage/sampler.h"
@@ -60,6 +62,7 @@ struct jm_sampler_plugin {
   int zone_number; // only for naming
   sfz::sfz* patch;
   std::map<std::string, jm_wave> waves;
+  char patch_path[256];
   JMSampler sampler;
 };
 
@@ -97,6 +100,7 @@ static LV2_Handle instantiate(const LV2_Descriptor* descriptor,
 
   plugin->zone_number = 1;
   plugin->patch = NULL;
+  plugin->patch_path[0] = '\0';
 
   /*jm_parse_wave(&WAV, "/home/jdost/dev/c/jmage-sampler/afx.wav");
   jm_key_zone zone;
@@ -419,6 +423,8 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
     plugin->patch = parser->parse();
     delete parser;
 
+    strcpy(plugin->patch_path, msg->data.str);
+
     respond(handle, sizeof(worker_msg), msg); 
   }
   else if (msg->type == WORKER_SAVE_PATCH) {
@@ -734,10 +740,114 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
   //lv2_atom_forge_pop(&plugin->forge, &plugin->seq_frame);
 }
 
+static LV2_State_Status save(LV2_Handle instance, LV2_State_Store_Function store,
+    LV2_State_Handle handle, uint32_t flags, const LV2_Feature* const* features) {
+  jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
+
+  if (plugin->patch_path[0] == '\0')
+    return LV2_STATE_SUCCESS;
+
+  LV2_State_Map_Path* map_path;
+
+  for (int i = 0; features[i]; ++i) {
+    if (!strcmp(features[i]->URI, LV2_STATE__mapPath))
+      map_path = static_cast<LV2_State_Map_Path*>(features[i]->data);
+  }
+
+  char* apath = map_path->abstract_path(map_path->handle, plugin->patch_path);
+
+  store(handle, plugin->uris.jm_patchFile, apath, strlen(apath) + 1,
+    plugin->uris.atom_String, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE);
+
+  delete apath;
+
+  return LV2_STATE_SUCCESS;
+}
+
+static LV2_State_Status restore(LV2_Handle instance, LV2_State_Retrieve_Function retrieve,
+    LV2_State_Handle handle, uint32_t flags, const LV2_Feature* const* features) {
+  jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
+
+  size_t   size;
+  uint32_t type;
+  uint32_t valflags;
+  const void* value = retrieve(handle, plugin->uris.jm_patchFile, &size, &type, &valflags);
+
+  if (value == NULL)
+    return LV2_STATE_SUCCESS;
+    
+  LV2_State_Map_Path* map_path;
+
+  for (int i = 0; features[i]; ++i) {
+    if (!strcmp(features[i]->URI, LV2_STATE__mapPath))
+      map_path = static_cast<LV2_State_Map_Path*>(features[i]->data);
+  }
+  const char* apath = static_cast<const char*>(value);
+  char* path = map_path->absolute_path(map_path->handle, apath);
+
+  // copied and pasted a lot from elsewhere.. consider wrapping in funs
+  sfz::Parser* parser;
+  int len = strlen(path);
+  if (!strcmp(path + len - 4, ".jmz"))
+    parser = new sfz::JMZParser(path);
+  // assumed it could ony eitehr be jmz or sfz
+  else
+    parser = new sfz::Parser(path);
+
+  fprintf(stderr, "SAMPLER: restore loading patch: %s\n", path);
+  if (plugin->patch != NULL)
+    delete plugin->patch;
+
+  try {
+    plugin->patch = parser->parse();
+  }
+  catch (std::runtime_error& e) {
+    fprintf(stderr, "restore failed parsing patch: %s\n", e.what());
+    delete parser;
+    delete path;
+    return LV2_STATE_ERR_UNKNOWN;
+  }
+
+  delete parser;
+
+  strcpy(plugin->patch_path, path);
+  delete path;
+
+  // skipping vol and chan updates; should get those automatically from save state
+  /*std::map<std::string, sfz::Value>::iterator c_it = plugin->patch->control.find("jm_vol");
+  if (c_it != plugin->patch->control.end()) {
+    send_update_vol(plugin, c_it->second.get_int());
+    send_update_chan(plugin, plugin->patch->control["jm_chan"].get_int() - 1);
+  }
+  // reset to reasonable defaults if not defined
+  else {
+    send_update_vol(plugin, 16);
+    send_update_chan(plugin, 0);
+  }
+  */
+
+  std::vector<std::map<std::string, sfz::Value>>::iterator it;
+  for (it = plugin->patch->regions.begin(); it != plugin->patch->regions.end(); ++it) {
+    if (plugin->waves.find((*it)["sample"].get_str()) == plugin->waves.end()) {
+      jm_wave wav;
+
+      std::string wav_path = (*it)["sample"].get_str();
+      jm_parse_wave(&wav, wav_path.c_str());
+      plugin->waves[wav_path] = wav;
+    }
+    add_zone_from_region(plugin, *it);
+  }
+
+  return LV2_STATE_SUCCESS;
+}
+
 static const void* extension_data(const char* uri) {
   static const LV2_Worker_Interface worker = { work, work_response, NULL };
+  static const LV2_State_Interface state = { save, restore };
   if (!strcmp(uri, LV2_WORKER__interface))
     return &worker;
+  if (!strcmp(uri, LV2_STATE__interface))
+    return &state;
 
   return NULL;
 }

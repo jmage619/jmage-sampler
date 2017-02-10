@@ -82,6 +82,12 @@ void sfz::write(const sfz* s, std::ostream& out) {
   }
 }
 
+sfz::Parser::Parser(const std::string& path) {
+  char buf[256];
+  realpath(path.c_str(), buf);
+  this->path = buf;
+}
+
 void sfz::Parser::save_prev() {
   switch (state) {
     case CONTROL:
