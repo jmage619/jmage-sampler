@@ -12,7 +12,7 @@
 // HACK until we figure out where to find this in LV2 instantiate!!
 #define AUDIO_BUF_SIZE 4096
 
-JMSampler::JMSampler(std::vector<jm::zone>* zones):
+JMSampler::JMSampler(std::vector<jm::zone>& zones):
     zones(zones),
     sustain_on(false),
     sound_gens(POLYPHONY),
@@ -40,6 +40,60 @@ JMSampler::~JMSampler() {
 
   while (amp_gen_pool.size() > 0)
     delete amp_gen_pool.pop();
+}
+
+void JMSampler::pre_process(size_t nframes) {
+  // pitch existing playheads
+  sg_list_el* sg_el;
+  for (sg_el = sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+    sg_el->sg->pre_process(nframes);
+  }
+}
+
+void JMSampler::handle_note_on(const char* midi_msg, size_t nframes, size_t curframe) {
+  sg_list_el* sg_el;
+  // if sustain on and note is already playing, release old one first
+  if (sustain_on) {
+    for (sg_el = sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+      // doesn't apply to one shot
+      if (!sg_el->sg->one_shot && sg_el->sg->pitch == midi_msg[1])
+        sg_el->sg->set_release();
+    }
+  }
+  // pick out zones midi event matches against and add sound gens to queue
+  std::vector<jm::zone>::iterator it;
+  for (it = zones.begin(); it != zones.end(); ++it) {
+    if (jm::zone_contains(*it, midi_msg[1], midi_msg[2])) {
+      fprintf(stderr, "sg num: %li\n", sound_gens.size());
+      // oops we hit polyphony, remove oldest sound gen in the queue to make room
+      if (sound_gens.size() >= POLYPHONY) {
+        fprintf(stderr, "hit poly lim!\n");
+        sound_gens.get_tail_ptr()->sg->release_resources();
+        sound_gens.remove_last();
+      }
+
+      // shut off any sound gens that are in this off group
+      if (it->group > 0) {
+        for (sg_el = sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+          if (sg_el->sg->off_group == it->group)
+            sg_el->sg->set_release();
+        }
+      }
+
+      // create sound gen
+      AmpEnvGenerator* ag = amp_gen_pool.pop();
+      Playhead* ph = playhead_pool.pop();
+      ph->init(*it, midi_msg[1]);
+      ag->init(ph, *it, midi_msg[1], midi_msg[2]);
+      fprintf(stderr, "pre process start\n");
+      ag->pre_process(nframes - curframe);
+      fprintf(stderr, "pre process finish\n");
+
+      // add sound gen to queue
+      sound_gens.add(ag);
+      fprintf(stderr, "event: channel: %i; note on;  note: %i; vel: %i\n", midi_msg[0] & 0x0F, midi_msg[1], midi_msg[2]);
+    }
+  }
 }
 
 /*int JMSampler::process_callback(jack_nframes_t nframes, void* arg) {
