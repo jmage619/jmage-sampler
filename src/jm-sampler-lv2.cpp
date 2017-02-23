@@ -539,8 +539,8 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t size, const
 static void run(LV2_Handle instance, uint32_t n_samples) {
   jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
 
-  memset(plugin->out1, 0, sizeof(uint32_t) * n_samples);
-  memset(plugin->out2, 0, sizeof(uint32_t) * n_samples);
+  memset(plugin->out1, 0, sizeof(float) * n_samples);
+  memset(plugin->out2, 0, sizeof(float) * n_samples);
 
   // Set up forge to write directly to notify output port.
   const uint32_t notify_capacity = plugin->notify_port->atom.size;
