@@ -119,7 +119,7 @@ crossfading:
   }
 }
 
-Playhead::Playhead(JMStack<Playhead*>* playhead_pool, size_t pitch_buf_size):
+Playhead::Playhead(JMStack<Playhead*>& playhead_pool, size_t pitch_buf_size):
     playhead_pool(playhead_pool) {
   // buf size * 2 to make room for stereo
   pitch_buf = new float[pitch_buf_size * 2];

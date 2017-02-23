@@ -60,7 +60,7 @@ class Playhead: public SoundGenerator {
       PLAYING,
       FINISHED
     } state;
-    JMStack<Playhead*>* playhead_pool;
+    JMStack<Playhead*>& playhead_pool;
     AudioStream as;
     SRC_STATE* resampler;
     float in_buf[PH_BUF_SIZE];
@@ -74,7 +74,7 @@ class Playhead: public SoundGenerator {
     size_t cur_frame;
 
   public:
-    Playhead(JMStack<Playhead*>* playhead_pool, size_t pitch_buf_size);
+    Playhead(JMStack<Playhead*>& playhead_pool, size_t pitch_buf_size);
     ~Playhead();
     void init(const jm::zone& zone, int pitch);
     void pre_process(size_t nframes);
@@ -82,7 +82,7 @@ class Playhead: public SoundGenerator {
     void get_values(float* values);
     void set_release() {state = FINISHED;}
     bool is_finished(){return state == FINISHED;}
-    void release_resources() {playhead_pool->push(this);}
+    void release_resources() {playhead_pool.push(this);}
 };
 
 class AmpEnvGenerator: public SoundGenerator {
@@ -95,7 +95,7 @@ class AmpEnvGenerator: public SoundGenerator {
       RELEASE,
       FINISHED
     } state;
-    JMStack<AmpEnvGenerator*>* amp_gen_pool;
+    JMStack<AmpEnvGenerator*>& amp_gen_pool;
     SoundGenerator* sg;
     float amp;
     int attack;
@@ -108,14 +108,14 @@ class AmpEnvGenerator: public SoundGenerator {
 
     float get_env_val();
   public:
-    AmpEnvGenerator(JMStack<AmpEnvGenerator*>* amp_gen_pool): amp_gen_pool(amp_gen_pool) {}
+    AmpEnvGenerator(JMStack<AmpEnvGenerator*>& amp_gen_pool): amp_gen_pool(amp_gen_pool) {}
     void init(SoundGenerator* sg, const jm::zone& zone, int pitch, int velocity);
     void pre_process(size_t nframes) {sg->pre_process(nframes);}
     void inc();
     void get_values(float* values);
     void set_release();
     bool is_finished(){return state == FINISHED;}
-    void release_resources() {sg->release_resources(); amp_gen_pool->push(this);}
+    void release_resources() {sg->release_resources(); amp_gen_pool.push(this);}
 };
 
 struct sg_list_el {
