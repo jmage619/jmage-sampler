@@ -23,6 +23,8 @@ class JMSampler {
     ~JMSampler();
     void pre_process(size_t nframes);
     void handle_note_on(const char* midi_msg, size_t nframes, size_t curframe);
+    void handle_note_off(const char* midi_msg);
+    void handle_sustain(const char* midi_msg);
 };
 
 #endif

@@ -44,8 +44,7 @@ JMSampler::~JMSampler() {
 
 void JMSampler::pre_process(size_t nframes) {
   // pitch existing playheads
-  sg_list_el* sg_el;
-  for (sg_el = sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+  for (sg_list_el* sg_el = sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
     sg_el->sg->pre_process(nframes);
   }
 }
@@ -93,6 +92,44 @@ void JMSampler::handle_note_on(const char* midi_msg, size_t nframes, size_t curf
       sound_gens.add(ag);
       fprintf(stderr, "event: channel: %i; note on;  note: %i; vel: %i\n", midi_msg[0] & 0x0F, midi_msg[1], midi_msg[2]);
     }
+  }
+}
+
+void JMSampler::handle_note_off(const char* midi_msg) {
+  fprintf(stderr, "event: note off; note: %i\n", midi_msg[1]);
+  // find all sound gens assigned to this pitch
+  for (sg_list_el* sg_el = sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+    if (sg_el->sg->pitch == midi_msg[1]) {
+      // note off does not apply to one shot
+      if (!sg_el->sg->one_shot) {
+        // if sustaining, just mark for removal later
+        if (sustain_on) {
+          sg_el->sg->note_off = true;
+        }
+        // not sustaining, remove immediately
+        else
+          sg_el->sg->set_release();
+      }
+    }
+  }
+}
+
+void JMSampler::handle_sustain(const char* midi_msg) {
+  // >= 64 turns on sustain
+  if (midi_msg[2] >= 64) {
+    sustain_on = true;
+    fprintf(stderr, "sustain on\n");
+  }
+  // < 64 turns ustain off
+  else {
+    for (sg_list_el* sg_el = sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+      // turn off all sound gens marked with previous note off
+      if (sg_el->sg->note_off == true)
+        sg_el->sg->set_release();
+    }
+
+    sustain_on = false;
+    fprintf(stderr, "sustain off\n");
   }
 }
 
