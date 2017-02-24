@@ -29,7 +29,7 @@ class AudioStream {
     int crossfade;
 
   public:
-    void init(const jm::zone& zone);
+    void init(const jm_zone& zone);
     int read(float* buf, int nframes);
 };
 
@@ -40,9 +40,9 @@ class SoundGenerator {
     int pitch;
     int off_group;
     virtual ~SoundGenerator(){}
-    void init(const jm::zone& zone, int pitch) {
+    void init(const jm_zone& zone, int pitch) {
       note_off = false;
-      one_shot = (zone.mode == jm::LOOP_ONE_SHOT) ? true : false;
+      one_shot = (zone.mode == LOOP_ONE_SHOT) ? true : false;
       off_group = zone.off_group;
       this->pitch = pitch;
     }
@@ -76,7 +76,7 @@ class Playhead: public SoundGenerator {
   public:
     Playhead(JMStack<Playhead*>& playhead_pool, size_t pitch_buf_size);
     ~Playhead();
-    void init(const jm::zone& zone, int pitch);
+    void init(const jm_zone& zone, int pitch);
     void pre_process(size_t nframes);
     void inc();
     void get_values(float* values);
@@ -109,7 +109,7 @@ class AmpEnvGenerator: public SoundGenerator {
     float get_env_val();
   public:
     AmpEnvGenerator(JMStack<AmpEnvGenerator*>& amp_gen_pool): amp_gen_pool(amp_gen_pool) {}
-    void init(SoundGenerator* sg, const jm::zone& zone, int pitch, int velocity);
+    void init(SoundGenerator* sg, const jm_zone& zone, int pitch, int velocity);
     void pre_process(size_t nframes) {sg->pre_process(nframes);}
     void inc();
     void get_values(float* values);

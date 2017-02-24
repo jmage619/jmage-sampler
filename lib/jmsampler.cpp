@@ -12,7 +12,7 @@
 // HACK until we figure out where to find this in LV2 instantiate!!
 #define AUDIO_BUF_SIZE 4096
 
-JMSampler::JMSampler(const std::vector<jm::zone>& zones):
+JMSampler::JMSampler(const std::vector<jm_zone>& zones):
     zones(zones),
     sustain_on(false),
     sound_gens(POLYPHONY),
@@ -60,9 +60,9 @@ void JMSampler::handle_note_on(const unsigned char* midi_msg, size_t nframes, si
     }
   }
   // pick out zones midi event matches against and add sound gens to queue
-  std::vector<jm::zone>::const_iterator it;
+  std::vector<jm_zone>::const_iterator it;
   for (it = zones.begin(); it != zones.end(); ++it) {
-    if (jm::zone_contains(*it, midi_msg[1], midi_msg[2])) {
+    if (jm_zone_contains(&*it, midi_msg[1], midi_msg[2])) {
       fprintf(stderr, "sg num: %li\n", sound_gens.size());
       // oops we hit polyphony, remove oldest sound gen in the queue to make room
       if (sound_gens.size() >= POLYPHONY) {

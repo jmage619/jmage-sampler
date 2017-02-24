@@ -17,7 +17,7 @@
 #include <lv2/lv2plug.in/ns/ext/worker/worker.h>
 #include <lv2/lv2plug.in/ns/ext/state/state.h>
 
-#include <lib/lv2/uris.h>
+#include <lib/lv2_uris.h>
 #include <lib/zone.h>
 #include <lib/wave.h>
 #include <lib/sfzparser.h>
@@ -62,7 +62,7 @@ struct jm_sampler_plugin {
   LV2_Atom_Forge_Frame seq_frame;
   int zone_number; // only for naming
   sfz::sfz* patch;
-  std::vector<jm::zone> zones;
+  std::vector<jm_zone> zones;
   std::map<std::string, jm::wave> waves;
   char patch_path[256];
   float* channel;
@@ -160,7 +160,7 @@ static void connect_port(LV2_Handle instance, uint32_t port, void* data) {
   }
 }
 
-static void send_add_zone(jm_sampler_plugin* plugin, const jm::zone* zone) {
+static void send_add_zone(jm_sampler_plugin* plugin, const jm_zone* zone) {
   lv2_atom_forge_frame_time(&plugin->forge, 0);
   LV2_Atom_Forge_Frame obj_frame;
   lv2_atom_forge_object(&plugin->forge, &obj_frame, 0, plugin->uris.jm_addZone);
@@ -272,7 +272,7 @@ static void update_zone(jm_sampler_plugin* plugin, const LV2_Atom_Object* obj) {
       plugin->zones.at(index).right = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
     case JM_ZONE_LOOP_MODE:
-      plugin->zones.at(index).mode = (jm::loop_mode) reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      plugin->zones.at(index).mode = (jm_loop_mode) reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
     case JM_ZONE_CROSSFADE:
       plugin->zones.at(index).crossfade = reinterpret_cast<LV2_Atom_Int*>(a)->body;
@@ -306,15 +306,15 @@ static void update_zone(jm_sampler_plugin* plugin, const LV2_Atom_Object* obj) {
 
 static void add_zone_from_wave(jm_sampler_plugin* plugin, const char* path) {
   jm::wave& wav = plugin->waves[path];
-  jm::zone zone;
-  jm::init_zone(zone);
+  jm_zone zone;
+  jm_init_zone(&zone);
   zone.wave = wav.wave;
   zone.num_channels = wav.num_channels;
   zone.wave_length = wav.length;
   zone.left = wav.left;
   zone.right = wav.length;
   if (wav.has_loop)
-    zone.mode = jm::LOOP_CONTINUOUS;
+    zone.mode = LOOP_CONTINUOUS;
   sprintf(zone.name, "Zone %i", plugin->zone_number++);
   strcpy(zone.path, path);
   plugin->zones.push_back(zone);
@@ -324,15 +324,15 @@ static void add_zone_from_wave(jm_sampler_plugin* plugin, const char* path) {
 
 static void add_zone_from_region(jm_sampler_plugin* plugin, const std::map<std::string, SFZValue>& region) {
   jm::wave& wav = plugin->waves[region.find("sample")->second.get_str()];
-  jm::zone zone;
-  jm::init_zone(zone);
+  jm_zone zone;
+  jm_init_zone(&zone);
   zone.wave = wav.wave;
   zone.num_channels = wav.num_channels;
   zone.wave_length = wav.length;
   zone.left = wav.left;
   zone.right = wav.length;
   if (wav.has_loop)
-    zone.mode = jm::LOOP_CONTINUOUS;
+    zone.mode = LOOP_CONTINUOUS;
 
   std::map<std::string, SFZValue>::const_iterator it = region.find("jm_name");
   if (it != region.end())
@@ -350,8 +350,8 @@ static void add_zone_from_region(jm_sampler_plugin* plugin, const std::map<std::
   zone.pitch_corr = region.find("tune")->second.get_int() / 100.;
   zone.start = region.find("offset")->second.get_int();
 
-  jm::loop_mode mode = (jm::loop_mode) region.find("loop_mode")->second.get_int();
-  if (mode != jm::LOOP_UNSET)
+  jm_loop_mode mode = (jm_loop_mode) region.find("loop_mode")->second.get_int();
+  if (mode != LOOP_UNSET)
     zone.mode = mode;
 
   int loop_start = region.find("loop_start")->second.get_int();
@@ -426,7 +426,7 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
       save_patch.control["jm_chan"] = (int) *plugin->channel + 1;
     }
 
-    std::vector<jm::zone>::iterator it;
+    std::vector<jm_zone>::iterator it;
     for (it = plugin->zones.begin(); it != plugin->zones.end(); ++it) {
       std::map<std::string, SFZValue> region;
 
@@ -549,7 +549,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
       const LV2_Atom_Object* obj = (const LV2_Atom_Object*)&ev->body;
       if (obj->body.otype == plugin->uris.jm_getZones) {
         //fprintf(stderr, "SAMPLER: get zones received!!\n");
-        std::vector<jm::zone>::iterator it;
+        std::vector<jm_zone>::iterator it;
         for (it = plugin->zones.begin(); it != plugin->zones.end(); ++it) {
           send_add_zone(plugin, &*it);
         }

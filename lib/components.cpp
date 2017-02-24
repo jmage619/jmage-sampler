@@ -13,8 +13,8 @@
 //#define VELOCITY_BOOST 1.2f
 #define VELOCITY_BOOST 1.0f
 
-void AudioStream::init(const jm::zone& zone) {
-  loop_on = (zone.mode == jm::LOOP_CONTINUOUS) ? true : false;
+void AudioStream::init(const jm_zone& zone) {
+  loop_on = (zone.mode == LOOP_CONTINUOUS) ? true : false;
   crossfading = false;
   cf_timer = 0;
   wave = zone.wave;
@@ -135,7 +135,7 @@ Playhead::~Playhead() {
   delete [] pitch_buf;
 }
 
-void Playhead::init(const jm::zone& zone, int pitch) {
+void Playhead::init(const jm_zone& zone, int pitch) {
   SoundGenerator::init(zone, pitch);
   as.init(zone);
   num_channels = zone.num_channels;
@@ -220,7 +220,7 @@ void Playhead::get_values(float* values) {
   values[1] = pitch_buf[2 * cur_frame + 1];
 }
 
-void AmpEnvGenerator::init(SoundGenerator* sg, const jm::zone& zone, int pitch, int velocity) {
+void AmpEnvGenerator::init(SoundGenerator* sg, const jm_zone& zone, int pitch, int velocity) {
   SoundGenerator::init(zone, pitch);
   this->sg = sg;
   state = ATTACK;
