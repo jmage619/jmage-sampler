@@ -49,7 +49,7 @@ void JMSampler::pre_process(size_t nframes) {
   }
 }
 
-void JMSampler::handle_note_on(const char* midi_msg, size_t nframes, size_t curframe) {
+void JMSampler::handle_note_on(const unsigned char* midi_msg, size_t nframes, size_t curframe) {
   sg_list_el* sg_el;
   // if sustain on and note is already playing, release old one first
   if (sustain_on) {
@@ -95,7 +95,7 @@ void JMSampler::handle_note_on(const char* midi_msg, size_t nframes, size_t curf
   }
 }
 
-void JMSampler::handle_note_off(const char* midi_msg) {
+void JMSampler::handle_note_off(const unsigned char* midi_msg) {
   fprintf(stderr, "event: note off; note: %i\n", midi_msg[1]);
   // find all sound gens assigned to this pitch
   for (sg_list_el* sg_el = sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
@@ -114,7 +114,7 @@ void JMSampler::handle_note_off(const char* midi_msg) {
   }
 }
 
-void JMSampler::handle_sustain(const char* midi_msg) {
+void JMSampler::handle_sustain(const unsigned char* midi_msg) {
   // >= 64 turns on sustain
   if (midi_msg[2] >= 64) {
     sustain_on = true;
