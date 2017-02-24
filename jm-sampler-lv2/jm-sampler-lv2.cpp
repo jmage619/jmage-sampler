@@ -322,7 +322,7 @@ static void add_zone_from_wave(jm_sampler_plugin* plugin, const char* path) {
   send_add_zone(plugin, &zone);
 }
 
-static void add_zone_from_region(jm_sampler_plugin* plugin, const std::map<std::string, sfz::Value>& region) {
+static void add_zone_from_region(jm_sampler_plugin* plugin, const std::map<std::string, SFZValue>& region) {
   jm::wave& wav = plugin->waves[region.find("sample")->second.get_str()];
   jm::zone zone;
   jm::init_zone(zone);
@@ -334,7 +334,7 @@ static void add_zone_from_region(jm_sampler_plugin* plugin, const std::map<std::
   if (wav.has_loop)
     zone.mode = jm::LOOP_CONTINUOUS;
 
-  std::map<std::string, sfz::Value>::const_iterator it = region.find("jm_name");
+  std::map<std::string, SFZValue>::const_iterator it = region.find("jm_name");
   if (it != region.end())
     strcpy(zone.name, it->second.get_str().c_str());
   else
@@ -387,7 +387,7 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
     //fprintf(stderr, "SAMPLER: work completed; parsed: %s\n", path);
   }
   else if (msg->type == WORKER_LOAD_REGION_WAV) {
-    std::map<std::string, sfz::Value>& reg = plugin->patch->regions.at(msg->data.i);
+    std::map<std::string, SFZValue>& reg = plugin->patch->regions.at(msg->data.i);
 
     std::string wav_path = reg["sample"].get_str();
     
@@ -396,13 +396,13 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
     respond(handle, sizeof(worker_msg), msg); 
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
-    sfz::Parser* parser;
+    SFZParser* parser;
     int len = strlen(msg->data.str);
     if (!strcmp(msg->data.str + len - 4, ".jmz"))
-      parser = new sfz::JMZParser(msg->data.str);
+      parser = new JMZParser(msg->data.str);
     // assumed it could ony eitehr be jmz or sfz
     else
-      parser = new sfz::Parser(msg->data.str);
+      parser = new SFZParser(msg->data.str);
 
     fprintf(stderr, "SAMPLER: work loading patch: %s\n", msg->data.str);
     if (plugin->patch != NULL)
@@ -428,7 +428,7 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
 
     std::vector<jm::zone>::iterator it;
     for (it = plugin->zones.begin(); it != plugin->zones.end(); ++it) {
-      std::map<std::string, sfz::Value> region;
+      std::map<std::string, SFZValue> region;
 
       if (is_jmz)
         region["jm_name"] = it->name;
@@ -481,7 +481,7 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
   }
   else if (msg->type == WORKER_LOAD_REGION_WAV) {
     fprintf(stderr, "SAMPLER load region wav response!!\n");
-    std::map<std::string, sfz::Value>& reg = plugin->patch->regions.at(msg->data.i);
+    std::map<std::string, SFZValue>& reg = plugin->patch->regions.at(msg->data.i);
     add_zone_from_region(plugin, reg);
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
@@ -494,7 +494,7 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
 
     plugin->zone_number = 1;
 
-    std::map<std::string, sfz::Value>::iterator c_it = plugin->patch->control.find("jm_vol");
+    std::map<std::string, SFZValue>::iterator c_it = plugin->patch->control.find("jm_vol");
     if (c_it != plugin->patch->control.end()) {
       send_update_vol(plugin, c_it->second.get_int());
       send_update_chan(plugin, plugin->patch->control["jm_chan"].get_int() - 1);
@@ -506,7 +506,7 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
     }
 
     plugin->zones.erase(plugin->zones.begin(), plugin->zones.end());
-    std::vector<std::map<std::string, sfz::Value>>::iterator it;
+    std::vector<std::map<std::string, SFZValue>>::iterator it;
     for (it = plugin->patch->regions.begin(); it != plugin->patch->regions.end(); ++it) {
       if (plugin->waves.find((*it)["sample"].get_str()) == plugin->waves.end()) {
         worker_msg reg_msg;
@@ -692,13 +692,13 @@ static LV2_State_Status restore(LV2_Handle instance, LV2_State_Retrieve_Function
   char* path = map_path->absolute_path(map_path->handle, apath);
 
   // copied and pasted a lot from elsewhere.. consider wrapping in funs
-  sfz::Parser* parser;
+  SFZParser* parser;
   int len = strlen(path);
   if (!strcmp(path + len - 4, ".jmz"))
-    parser = new sfz::JMZParser(path);
+    parser = new JMZParser(path);
   // assumed it could ony eitehr be jmz or sfz
   else
-    parser = new sfz::Parser(path);
+    parser = new SFZParser(path);
 
   fprintf(stderr, "SAMPLER: restore loading patch: %s\n", path);
   if (plugin->patch != NULL)
@@ -732,7 +732,7 @@ static LV2_State_Status restore(LV2_Handle instance, LV2_State_Retrieve_Function
   }
   */
 
-  std::vector<std::map<std::string, sfz::Value>>::iterator it;
+  std::vector<std::map<std::string, SFZValue>>::iterator it;
   for (it = plugin->patch->regions.begin(); it != plugin->patch->regions.end(); ++it) {
     if (plugin->waves.find((*it)["sample"].get_str()) == plugin->waves.end()) {
       std::string wav_path = (*it)["sample"].get_str();

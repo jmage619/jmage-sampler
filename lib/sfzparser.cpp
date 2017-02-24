@@ -24,24 +24,10 @@ namespace {
   }
 };
 
-void sfz::Value::write(std::ostream& out) const {
-  switch (type) {
-    case STRING:
-      out << str;
-      break;
-    case INT:
-      out << i;
-      break;
-    case DOUBLE:
-      out << d;
-      break;
-  }
-}
-
 void sfz::write(const sfz* s, std::ostream& out) {
   out << "<control>";
 
-  std::map<std::string, Value>::const_iterator it;
+  std::map<std::string, SFZValue>::const_iterator it;
 
   for (it = s->control.begin(); it != s->control.end(); ++it) {
     out << " " << it->first << "=";
@@ -50,7 +36,7 @@ void sfz::write(const sfz* s, std::ostream& out) {
 
   out << std::endl;
 
-  std::vector<std::map<std::string, Value>>::const_iterator v_it;
+  std::vector<std::map<std::string, SFZValue>>::const_iterator v_it;
   for (v_it = s->regions.begin(); v_it != s->regions.end(); ++v_it) {
     out << "<region>";
     for (it = v_it->begin(); it != v_it->end(); ++it) {
@@ -83,13 +69,27 @@ void sfz::write(const sfz* s, std::ostream& out) {
   }
 }
 
-sfz::Parser::Parser(const std::string& path) {
+void SFZValue::write(std::ostream& out) const {
+  switch (type) {
+    case STRING:
+      out << str;
+      break;
+    case INT:
+      out << i;
+      break;
+    case DOUBLE:
+      out << d;
+      break;
+  }
+}
+
+SFZParser::SFZParser(const std::string& path) {
   char buf[256];
   realpath(path.c_str(), buf);
   this->path = buf;
 }
 
-void sfz::Parser::save_prev() {
+void SFZParser::save_prev() {
   switch (state) {
     case CONTROL:
       update_control(*cur_control, cur_op, data);
@@ -107,7 +107,7 @@ void sfz::Parser::save_prev() {
   data.erase();
 }
 
-void sfz::Parser::set_region_defaults(std::map<std::string, Value>& region) {
+void SFZParser::set_region_defaults(std::map<std::string, SFZValue>& region) {
   region["volume"] = 0.;
   region["pitch_keycenter"] = 32;
   region["lokey"] = 0;
@@ -131,7 +131,7 @@ void sfz::Parser::set_region_defaults(std::map<std::string, Value>& region) {
 }
 
 // missing some validation checks here
-void sfz::Parser::update_region(std::map<std::string, Value>& region, const std::string& field, const std::string& data) {
+void SFZParser::update_region(std::map<std::string, SFZValue>& region, const std::string& field, const std::string& data) {
   // generic double
   if (field == "volume" || field == "loop_crossfade" || field == "ampeg_attack" ||
       field == "ampeg_hold" || field == "ampeg_decay" || field == "ampeg_sustain" ||
@@ -186,19 +186,19 @@ void sfz::Parser::update_region(std::map<std::string, Value>& region, const std:
   }
 }
 
-sfz::sfz* sfz::Parser::parse() {
+sfz::sfz* SFZParser::parse() {
   char tmp_str[256];
   strcpy(tmp_str, path.c_str());
   dir_path += dirname(tmp_str);
   dir_path += "/";
 
   std::ifstream fin(path);
-  sfz* s = new sfz;
-  std::map<std::string, Value> cur_control;
+  sfz::sfz* s = new sfz::sfz;
+  std::map<std::string, SFZValue> cur_control;
   set_control_defaults(cur_control);
-  std::map<std::string, Value> cur_group;
+  std::map<std::string, SFZValue> cur_group;
   set_region_defaults(cur_group);
-  std::map<std::string, Value> cur_region = cur_group;
+  std::map<std::string, SFZValue> cur_region = cur_group;
   this->cur_control = &cur_control;
   this->cur_group = &cur_group;
   this->cur_region = &cur_region;
@@ -225,13 +225,13 @@ sfz::sfz* sfz::Parser::parse() {
         }
         if (field == "<control>") {
           // reset cur_control
-          cur_control = std::map<std::string, Value>();
+          cur_control = std::map<std::string, SFZValue>();
           set_control_defaults(cur_control);
           state = CONTROL;
         }
         else if (field == "<group>") {
           // reset cur_group
-          cur_group = std::map<std::string, Value>();
+          cur_group = std::map<std::string, SFZValue>();
           set_region_defaults(cur_group);
           state = GROUP;
         }
@@ -270,18 +270,18 @@ sfz::sfz* sfz::Parser::parse() {
   return s;
 }
 
-void sfz::JMZParser::set_control_defaults(std::map<std::string, Value>& control) {
-  Parser::set_control_defaults(control);
+void JMZParser::set_control_defaults(std::map<std::string, SFZValue>& control) {
+  SFZParser::set_control_defaults(control);
   control["jm_vol"] = 16;
   control["jm_chan"] = 1;
 }
 
-void sfz::JMZParser::set_region_defaults(std::map<std::string, Value>& region) {
-  Parser::set_region_defaults(region);
+void JMZParser::set_region_defaults(std::map<std::string, SFZValue>& region) {
+  SFZParser::set_region_defaults(region);
   region["jm_name"] = "";
 }
 
-void sfz::JMZParser::update_control(std::map<std::string, Value>& control, const std::string& field, const std::string& data) {
+void JMZParser::update_control(std::map<std::string, SFZValue>& control, const std::string& field, const std::string& data) {
   if (field == "jm_vol") {
     long val = strtol(data.c_str(), NULL, 10);
     validate_int(field, val, 0, 16);
@@ -294,14 +294,14 @@ void sfz::JMZParser::update_control(std::map<std::string, Value>& control, const
   }
   // don't know what it is; let parent handle it
   else
-    Parser::update_control(control, field, data);
+    SFZParser::update_control(control, field, data);
 }
 
-void sfz::JMZParser::update_region(std::map<std::string, Value>& region, const std::string& field, const std::string& data) {
+void JMZParser::update_region(std::map<std::string, SFZValue>& region, const std::string& field, const std::string& data) {
   if (field == "jm_name")
     region["jm_name"] = data.c_str();
   // don't know what it is; let parent handle it
   else
-    Parser::update_region(region, field, data);
+    SFZParser::update_region(region, field, data);
 }
 
