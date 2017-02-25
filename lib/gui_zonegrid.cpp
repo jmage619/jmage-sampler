@@ -612,7 +612,17 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
       case ZONE_RIGHT:
         return (float) zones[index.row()].right / SAMPLE_RATE;
       case ZONE_LOOP_MODE:
-        return zones[index.row()].loop_mode;
+        switch (zones[index.row()].mode) {
+          case LOOP_OFF:
+            return "off";
+          case LOOP_CONTINUOUS:
+            return "on";
+          case LOOP_ONE_SHOT:
+            return "one shot";
+          default:
+            break;
+        }
+        break;
       case ZONE_CROSSFADE:
         return zones[index.row()].crossfade;
       case ZONE_GROUP:
@@ -696,13 +706,14 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << zones[index.row()].right;
         break;
       case ZONE_LOOP_MODE:
-        zones[index.row()].loop_mode = value.toString();
         if (value.toString() == "off")
-          std::cout << LOOP_OFF;
+          zones[index.row()].mode = LOOP_OFF;
         else if (value.toString() == "on")
-          std::cout << LOOP_CONTINUOUS;
+          zones[index.row()].mode = LOOP_CONTINUOUS;
         else if (value.toString() == "one shot")
-          std::cout << LOOP_ONE_SHOT;
+          zones[index.row()].mode = LOOP_ONE_SHOT;
+
+        std::cout << zones[index.row()].mode;
         break;
       case ZONE_CROSSFADE:
         zones[index.row()].crossfade = value.toDouble();

@@ -30,7 +30,7 @@ struct zone {
   int start;
   int left;
   int right;
-  QString loop_mode;
+  jm_loop_mode mode;
   double crossfade;
   QString group;
   QString off_group;
