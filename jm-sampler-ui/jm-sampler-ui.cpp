@@ -35,11 +35,11 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.amp = atof(field.c_str());
       std::getline(sin, field, ',');
-      z.origin = note_to_string(atoi(field.c_str()));
+      z.origin = atoi(field.c_str());
       std::getline(sin, field, ',');
-      z.low_key = note_to_string(atoi(field.c_str()));
+      z.low_key = atoi(field.c_str());
       std::getline(sin, field, ',');
-      z.high_key = note_to_string(atoi(field.c_str()));
+      z.high_key = atoi(field.c_str());
       std::getline(sin, field, ',');
       z.low_vel = atof(field.c_str());
       std::getline(sin, field, ',');

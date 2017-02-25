@@ -21,9 +21,9 @@ struct zone {
   int wave_length; // don't count as ZONE_ATTR, not used in ui
   char name[MAX_NAME];
   float amp;
-  QString origin;
-  QString low_key;
-  QString high_key;
+  int origin;
+  int low_key;
+  int high_key;
   double low_vel;
   double high_vel;
   double pitch;

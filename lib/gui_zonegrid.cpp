@@ -594,11 +594,11 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
       case ZONE_AMP:
         return 20.f * log10f(zones[index.row()].amp);
       case ZONE_ORIGIN:
-        return zones[index.row()].origin;
+        return note_to_string(zones[index.row()].origin);
       case ZONE_LOW_KEY:
-        return zones[index.row()].low_key;
+        return note_to_string(zones[index.row()].low_key);
       case ZONE_HIGH_KEY:
-        return zones[index.row()].high_key;
+        return note_to_string(zones[index.row()].high_key);
       case ZONE_LOW_VEL:
         return zones[index.row()].low_vel;
       case ZONE_HIGH_VEL:
@@ -660,16 +660,16 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << zones[index.row()].amp;
         break;
       case ZONE_ORIGIN:
-        zones[index.row()].origin = value.toString();
-        std::cout << string_to_note(value.toString());
+        zones[index.row()].origin = string_to_note(value.toString());
+        std::cout << zones[index.row()].origin;
         break;
       case ZONE_LOW_KEY:
-        zones[index.row()].low_key = value.toString();
-        std::cout << string_to_note(value.toString());
+        zones[index.row()].low_key = string_to_note(value.toString());
+        std::cout << zones[index.row()].low_key;
         break;
       case ZONE_HIGH_KEY:
-        zones[index.row()].high_key = value.toString();
-        std::cout << string_to_note(value.toString());
+        zones[index.row()].high_key = string_to_note(value.toString());
+        std::cout << zones[index.row()].high_key;
         break;
       case ZONE_LOW_VEL:
         zones[index.row()].low_vel = value.toDouble();
