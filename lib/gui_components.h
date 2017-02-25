@@ -1,5 +1,5 @@
-#ifndef UI_COMPONENTS_H
-#define UI_COMPONENTS_H
+#ifndef GUI_COMPONENTS_H
+#define GUI_COMPONENTS_H
 
 #include <QWidget>
 #include <QFrame>
