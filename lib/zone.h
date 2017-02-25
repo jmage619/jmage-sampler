@@ -10,6 +10,31 @@
 #define ORIGIN_DEFAULT 36
 
 typedef enum {
+  ZONE_NAME,
+  ZONE_AMP,
+  ZONE_ORIGIN,
+  ZONE_LOW_KEY,
+  ZONE_HIGH_KEY,
+  ZONE_LOW_VEL,
+  ZONE_HIGH_VEL,
+  ZONE_PITCH,
+  ZONE_START,
+  ZONE_LEFT,
+  ZONE_RIGHT,
+  ZONE_LOOP_MODE,
+  ZONE_CROSSFADE,
+  ZONE_GROUP,
+  ZONE_OFF_GROUP,
+  ZONE_ATTACK,
+  ZONE_HOLD,
+  ZONE_DECAY,
+  ZONE_SUSTAIN,
+  ZONE_RELEASE,
+  ZONE_LONG_TAIL, // not used but needed as placeholder to not screw up PATH index
+  ZONE_PATH
+} jm_zone_params;
+
+typedef enum {
   LOOP_UNSET = -1,
   LOOP_OFF,
   LOOP_CONTINUOUS,

@@ -238,67 +238,67 @@ static void update_zone(jm_sampler_plugin* plugin, const LV2_Atom_Object* obj) {
   int type = reinterpret_cast<LV2_Atom_Int*>(a)->body;
   a = lv2_atom_tuple_next(a);
   switch (type) {
-    case JM_ZONE_NAME:
+    case ZONE_NAME:
       strcpy(plugin->zones.at(index).name, (char*)(a + 1));
       break;
-    case JM_ZONE_AMP:
+    case ZONE_AMP:
       plugin->zones.at(index).amp = reinterpret_cast<LV2_Atom_Float*>(a)->body;
       break;
-    case JM_ZONE_ORIGIN:
+    case ZONE_ORIGIN:
       plugin->zones.at(index).origin = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_LOW_KEY:
+    case ZONE_LOW_KEY:
       plugin->zones.at(index).low_key = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_HIGH_KEY:
+    case ZONE_HIGH_KEY:
       plugin->zones.at(index).high_key = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_LOW_VEL:
+    case ZONE_LOW_VEL:
       plugin->zones.at(index).low_vel = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_HIGH_VEL:
+    case ZONE_HIGH_VEL:
       plugin->zones.at(index).high_vel = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_PITCH:
+    case ZONE_PITCH:
       plugin->zones.at(index).pitch_corr = reinterpret_cast<LV2_Atom_Double*>(a)->body;
       break;
-    case JM_ZONE_START:
+    case ZONE_START:
       plugin->zones.at(index).start = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_LEFT:
+    case ZONE_LEFT:
       plugin->zones.at(index).left = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_RIGHT:
+    case ZONE_RIGHT:
       plugin->zones.at(index).right = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_LOOP_MODE:
+    case ZONE_LOOP_MODE:
       plugin->zones.at(index).mode = (jm_loop_mode) reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_CROSSFADE:
+    case ZONE_CROSSFADE:
       plugin->zones.at(index).crossfade = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_GROUP:
+    case ZONE_GROUP:
       plugin->zones.at(index).group = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_OFF_GROUP:
+    case ZONE_OFF_GROUP:
       plugin->zones.at(index).off_group = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_ATTACK:
+    case ZONE_ATTACK:
       plugin->zones.at(index).attack = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_HOLD:
+    case ZONE_HOLD:
       plugin->zones.at(index).hold = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_DECAY:
+    case ZONE_DECAY:
       plugin->zones.at(index).decay = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_SUSTAIN:
+    case ZONE_SUSTAIN:
       plugin->zones.at(index).sustain = reinterpret_cast<LV2_Atom_Float*>(a)->body;
       break;
-    case JM_ZONE_RELEASE:
+    case ZONE_RELEASE:
       plugin->zones.at(index).release = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
-    case JM_ZONE_PATH:
+    case ZONE_PATH:
       strcpy(plugin->zones.at(index).path, (char*)(a + 1));
       break;
   }
