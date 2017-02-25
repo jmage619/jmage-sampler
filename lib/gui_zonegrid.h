@@ -26,7 +26,7 @@ struct zone {
   int high_key;
   int low_vel;
   int high_vel;
-  double pitch;
+  double pitch_corr;
   double start;
   double left;
   double right;

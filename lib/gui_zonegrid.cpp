@@ -604,7 +604,7 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
       case ZONE_HIGH_VEL:
         return zones[index.row()].high_vel;
       case ZONE_PITCH:
-        return zones[index.row()].pitch;
+        return zones[index.row()].pitch_corr;
       case ZONE_START:
         return zones[index.row()].start;
       case ZONE_LEFT:
@@ -680,7 +680,7 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << value.toInt();
         break;
       case ZONE_PITCH:
-        zones[index.row()].pitch = value.toDouble();
+        zones[index.row()].pitch_corr = value.toDouble();
         std::cout << value.toDouble();
         break;
       case ZONE_START:
