@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <cmath>
 #include <QtWidgets>
 
 #include "zone.h"
@@ -591,7 +592,7 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
       case ZONE_NAME:
         return zones[index.row()].name;
       case ZONE_AMP:
-        return zones[index.row()].amp;
+        return 20.f * log10f(zones[index.row()].amp);
       case ZONE_ORIGIN:
         return zones[index.row()].origin;
       case ZONE_LOW_KEY:
@@ -655,8 +656,8 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << value.toString().toStdString();
         break;
       case ZONE_AMP:
-        zones[index.row()].amp = value.toDouble();
-        std::cout << value.toDouble();
+        zones[index.row()].amp = powf(10.f, value.toFloat() / 20.f);
+        std::cout << zones[index.row()].amp;
         break;
       case ZONE_ORIGIN:
         zones[index.row()].origin = value.toString();

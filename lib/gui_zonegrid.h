@@ -20,7 +20,7 @@ enum roles {
 struct zone {
   int wave_length; // don't count as ZONE_ATTR, not used in ui
   char name[MAX_NAME];
-  double amp;
+  float amp;
   QString origin;
   QString low_key;
   QString high_key;

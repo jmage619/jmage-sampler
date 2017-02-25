@@ -76,7 +76,8 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
       lv2_atom_forge_string(&ui->forge, p, strlen(p));
       break;
     case ZONE_AMP:
-      lv2_atom_forge_float(&ui->forge, pow(10., atof(p) / 20.));
+    case ZONE_SUSTAIN:
+      lv2_atom_forge_float(&ui->forge, atof(p));
       break;
     case ZONE_ORIGIN:
     case ZONE_LOW_KEY:
@@ -102,9 +103,6 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
       break;
     case ZONE_CROSSFADE:
       lv2_atom_forge_int(&ui->forge, atof(p) * SAMPLE_RATE / 1000.);
-      break;
-    case ZONE_SUSTAIN:
-      lv2_atom_forge_float(&ui->forge, atof(p));
       break;
   }
   lv2_atom_forge_pop(&ui->forge, &tuple_frame);
@@ -337,7 +335,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       // amp
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
-      sprintf(p, "%f,", 20. * log10(((LV2_Atom_Float*) a)->body));
+      sprintf(p, "%f,", ((LV2_Atom_Float*) a)->body);
       // origin
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
