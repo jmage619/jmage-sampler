@@ -3,6 +3,7 @@
 #include <sstream>
 #include <QtWidgets>
 #include <cmath>
+#include <cstring>
 
 #include <lib/zone.h>
 #include <lib/gui_components.h>
@@ -30,7 +31,7 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.wave_length = atoi(field.c_str());
       std::getline(sin, field, ',');
-      z.name = field.c_str();
+      strcpy(z.name, field.c_str());
       std::getline(sin, field, ',');
       z.amp = atof(field.c_str());
       std::getline(sin, field, ',');

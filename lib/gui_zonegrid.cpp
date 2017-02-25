@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstring>
 #include <QtWidgets>
 
 #include "zone.h"
@@ -650,7 +651,7 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
     std::cout << "update_zone:" << index.row() << "," << index.column() << ",";
     switch (index.column()) {
       case ZONE_NAME:
-        zones[index.row()].name = value.toString();
+        strcpy(zones[index.row()].name, value.toString().toStdString().c_str());
         std::cout << value.toString().toStdString();
         break;
       case ZONE_AMP:

@@ -19,7 +19,7 @@ enum roles {
 // don't forget whenever we add an item to increase size in NUM_ZONE_ATTRS 
 struct zone {
   int wave_length; // don't count as ZONE_ATTR, not used in ui
-  QString name;
+  char name[MAX_NAME];
   double amp;
   QString origin;
   QString low_key;
