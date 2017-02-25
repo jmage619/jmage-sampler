@@ -672,11 +672,11 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << zones[index.row()].high_key;
         break;
       case ZONE_LOW_VEL:
-        zones[index.row()].low_vel = value.toDouble();
-        std::cout << value.toInt(); // convert to int for output
+        zones[index.row()].low_vel = value.toInt();
+        std::cout << value.toInt();
         break;
       case ZONE_HIGH_VEL:
-        zones[index.row()].high_vel = value.toDouble();
+        zones[index.row()].high_vel = value.toInt();
         std::cout << value.toInt();
         break;
       case ZONE_PITCH:

@@ -41,9 +41,9 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.high_key = atoi(field.c_str());
       std::getline(sin, field, ',');
-      z.low_vel = atof(field.c_str());
+      z.low_vel = atoi(field.c_str());
       std::getline(sin, field, ',');
-      z.high_vel = atof(field.c_str());
+      z.high_vel = atoi(field.c_str());
       std::getline(sin, field, ',');
       z.pitch = atof(field.c_str());
       std::getline(sin, field, ',');
