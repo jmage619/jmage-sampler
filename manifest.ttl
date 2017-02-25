@@ -10,5 +10,5 @@
 
 <http://lv2plug.in/plugins/jm-sampler#ui>
 	a exui:Widget ;
-	ui:binary <jm-sampler-lv2ui.so> ;
+	ui:binary <jm-sampler-lv2exui/jm-sampler-lv2exui.so> ;
 	rdfs:seeAlso <jm-sampler.ttl> .
