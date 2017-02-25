@@ -55,7 +55,7 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.mode = (jm_loop_mode) atoi(field.c_str());
       std::getline(sin, field, ',');
-      z.crossfade = atof(field.c_str());
+      z.crossfade = atoi(field.c_str());
       std::getline(sin, field, ',');
       z.group = field == "0" ? "none": field.c_str();
       std::getline(sin, field, ',');

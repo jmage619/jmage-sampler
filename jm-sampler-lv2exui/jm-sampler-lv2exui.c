@@ -90,6 +90,7 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
     case ZONE_START:
     case ZONE_LEFT:
     case ZONE_RIGHT:
+    case ZONE_CROSSFADE:
       lv2_atom_forge_int(&ui->forge, atoi(p));
       break;
     case ZONE_PITCH:
@@ -100,9 +101,6 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
     case ZONE_DECAY:
     case ZONE_RELEASE:
       lv2_atom_forge_int(&ui->forge, atof(p) * SAMPLE_RATE);
-      break;
-    case ZONE_CROSSFADE:
-      lv2_atom_forge_int(&ui->forge, atof(p) * SAMPLE_RATE / 1000.);
       break;
   }
   lv2_atom_forge_pop(&ui->forge, &tuple_frame);
@@ -379,8 +377,9 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       // crossfade
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
+      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
       // 0.5 epsilon to prevent truncation error
-      sprintf(p, "%i,", (int) (((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE * 1000. + 0.5));
+      //sprintf(p, "%i,", (int) (((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE * 1000. + 0.5));
       // group
       p += strlen(p);
       a = lv2_atom_tuple_next(a);

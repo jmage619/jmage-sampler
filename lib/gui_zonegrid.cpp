@@ -624,7 +624,8 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
         }
         break;
       case ZONE_CROSSFADE:
-        return zones[index.row()].crossfade;
+        // 0.5 epsilon to prevent truncation error
+        return (int) ((double) zones[index.row()].crossfade / SAMPLE_RATE * 1000. + 0.5);
       case ZONE_GROUP:
         return zones[index.row()].group;
       case ZONE_OFF_GROUP:
@@ -716,8 +717,8 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << zones[index.row()].mode;
         break;
       case ZONE_CROSSFADE:
-        zones[index.row()].crossfade = value.toDouble();
-        std::cout << value.toInt();
+        zones[index.row()].crossfade = (int) (value.toInt() * SAMPLE_RATE / 1000.);
+        std::cout << zones[index.row()].crossfade;
         break;
       case ZONE_GROUP:
         zones[index.row()].group = value.toString();
