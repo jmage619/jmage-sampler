@@ -28,7 +28,7 @@ void InputThread::run() {
       std::istringstream sin(input.substr(9));
       std::string field;
       std::getline(sin, field, ',');
-      z.wave_length = atof(field.c_str());
+      z.wave_length = atoi(field.c_str());
       std::getline(sin, field, ',');
       z.name = field.c_str();
       std::getline(sin, field, ',');

@@ -5,6 +5,8 @@
 #include "gui_components.h"
 #include "gui_zonegrid.h"
 
+#define SAMPLE_RATE 44100
+
 // some helper functions
 QString note_to_string(int note) {
   // first octave is -1, so subtract to translate to it
@@ -580,7 +582,7 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
       case ZONE_START:
       case ZONE_LEFT:
       case ZONE_RIGHT:
-        return zones[index.row()].wave_length;
+        return (float) zones[index.row()].wave_length / SAMPLE_RATE;
     }
   }
   else if (role == Qt::DisplayRole || role == Qt::EditRole) {

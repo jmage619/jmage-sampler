@@ -328,7 +328,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       // wave length
       p += strlen(p);
       LV2_Atom* a = lv2_atom_tuple_begin((LV2_Atom_Tuple*) params);
-      sprintf(p, "%f,", ((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
       // name
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
