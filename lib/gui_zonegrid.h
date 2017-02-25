@@ -27,9 +27,9 @@ struct zone {
   int low_vel;
   int high_vel;
   double pitch_corr;
-  double start;
-  double left;
-  double right;
+  int start;
+  int left;
+  int right;
   QString loop_mode;
   double crossfade;
   QString group;

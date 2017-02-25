@@ -606,11 +606,11 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
       case ZONE_PITCH:
         return zones[index.row()].pitch_corr;
       case ZONE_START:
-        return zones[index.row()].start;
+        return (float) zones[index.row()].start / SAMPLE_RATE;
       case ZONE_LEFT:
-        return zones[index.row()].left;
+        return (float) zones[index.row()].left / SAMPLE_RATE;
       case ZONE_RIGHT:
-        return zones[index.row()].right;
+        return (float) zones[index.row()].right / SAMPLE_RATE;
       case ZONE_LOOP_MODE:
         return zones[index.row()].loop_mode;
       case ZONE_CROSSFADE:
@@ -684,16 +684,16 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << value.toDouble();
         break;
       case ZONE_START:
-        zones[index.row()].start = value.toDouble();
-        std::cout << value.toDouble();
+        zones[index.row()].start = (int) (value.toFloat() * SAMPLE_RATE);
+        std::cout << zones[index.row()].start;
         break;
       case ZONE_LEFT:
-        zones[index.row()].left = value.toDouble();
-        std::cout << value.toDouble();
+        zones[index.row()].left = (int) (value.toFloat() * SAMPLE_RATE);
+        std::cout << zones[index.row()].left;
         break;
       case ZONE_RIGHT:
-        zones[index.row()].right = value.toDouble();
-        std::cout << value.toDouble();
+        zones[index.row()].right = (int) (value.toFloat() * SAMPLE_RATE);
+        std::cout << zones[index.row()].right;
         break;
       case ZONE_LOOP_MODE:
         zones[index.row()].loop_mode = value.toString();

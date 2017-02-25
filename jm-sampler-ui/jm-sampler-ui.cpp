@@ -47,11 +47,11 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.pitch_corr = atof(field.c_str());
       std::getline(sin, field, ',');
-      z.start = atof(field.c_str());
+      z.start = atoi(field.c_str());
       std::getline(sin, field, ',');
-      z.left = atof(field.c_str());
+      z.left = atoi(field.c_str());
       std::getline(sin, field, ',');
-      z.right = atof(field.c_str());
+      z.right = atoi(field.c_str());
 
       // loop mode
       std::getline(sin, field, ',');

@@ -87,14 +87,14 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
     case ZONE_LOOP_MODE:
     case ZONE_GROUP:
     case ZONE_OFF_GROUP:
+    case ZONE_START:
+    case ZONE_LEFT:
+    case ZONE_RIGHT:
       lv2_atom_forge_int(&ui->forge, atoi(p));
       break;
     case ZONE_PITCH:
       lv2_atom_forge_double(&ui->forge, atof(p));
       break;
-    case ZONE_START:
-    case ZONE_LEFT:
-    case ZONE_RIGHT:
     case ZONE_ATTACK:
     case ZONE_HOLD:
     case ZONE_DECAY:
@@ -363,15 +363,15 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       // start
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
-      sprintf(p, "%f,", ((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
       // left
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
-      sprintf(p, "%f,", ((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
       // right
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
-      sprintf(p, "%f,", ((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE);
+      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
       // loop mode
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
