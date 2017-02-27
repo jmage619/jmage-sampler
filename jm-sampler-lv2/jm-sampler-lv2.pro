@@ -6,4 +6,5 @@ CONFIG += no_plugin_name_prefix
 INCLUDEPATH += ../
 LIBS += -L../lib -llib
 
-SOURCES = jm-sampler-lv2.cpp
+HEADERS = plugin.h
+SOURCES = jm-sampler-lv2.cpp plugin.cpp
