@@ -16,35 +16,6 @@ enum roles {
   MAX_ROLE = Qt::UserRole
 };
 
-// don't forget whenever we add an item to increase size in NUM_ZONE_ATTRS 
-struct zone {
-  int wave_length; // don't count as ZONE_ATTR, not used in ui
-  char name[MAX_NAME];
-  float amp;
-  int origin;
-  int low_key;
-  int high_key;
-  int low_vel;
-  int high_vel;
-  double pitch_corr;
-  int start;
-  int left;
-  int right;
-  jm_loop_mode mode;
-  int crossfade;
-  int group;
-  int off_group;
-  int attack;
-  int hold;
-  int decay;
-  float sustain;
-  int release;
-  int long_tail;
-  char path[MAX_PATH];
-};
-
-Q_DECLARE_METATYPE(zone)
-
 // some helper functions
 QString note_to_string(int note);
 int string_to_note(const QString& str);
@@ -102,7 +73,7 @@ class ZoneTableModel: public QAbstractTableModel {
   Q_OBJECT
 
   private:
-    std::vector<zone> zones;
+    std::vector<jm_zone> zones;
   public:
     int rowCount(const QModelIndex& parent = QModelIndex()) const;
     int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -112,7 +83,7 @@ class ZoneTableModel: public QAbstractTableModel {
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
-    void setZone(int row, const zone& z);
+    void setZone(int row, const jm_zone& z);
 };
 
 #endif

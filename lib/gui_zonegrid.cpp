@@ -487,8 +487,8 @@ Qt::ItemFlags ZoneTableModel::flags(const QModelIndex &index) const {
 bool ZoneTableModel::insertRows(int row, int count, const QModelIndex&) {
   beginInsertRows(QModelIndex(), row, row + count - 1);
 
-  std::vector<zone>::iterator first = zones.begin() + row;
-  zones.insert(first, count, zone());
+  std::vector<jm_zone>::iterator first = zones.begin() + row;
+  zones.insert(first, count, jm_zone());
 
   endInsertRows();
   return true;
@@ -497,7 +497,7 @@ bool ZoneTableModel::insertRows(int row, int count, const QModelIndex&) {
 bool ZoneTableModel::removeRows(int row, int count, const QModelIndex&) {
   beginRemoveRows(QModelIndex(), row, row + count - 1);
 
-  std::vector<zone>::iterator first = zones.begin() + row;
+  std::vector<jm_zone>::iterator first = zones.begin() + row;
 
   zones.erase(first, first + count);
 
@@ -769,7 +769,7 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
   return false;
 }
 
-void ZoneTableModel::setZone(int row, const zone& z) {
+void ZoneTableModel::setZone(int row, const jm_zone& z) {
   zones[row] = z;
   emit dataChanged(index(row, 0), index(row, NUM_ZONE_ATTRS - 1));
 }
