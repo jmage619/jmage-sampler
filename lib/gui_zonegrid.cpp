@@ -757,7 +757,7 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << zones[index.row()].release;
         break;
       case ZONE_PATH:
-        zones[index.row()].path = value.toString();
+        strcpy(zones[index.row()].path, value.toString().toStdString().c_str());
         std::cout << value.toString().toStdString();
         break;
     }

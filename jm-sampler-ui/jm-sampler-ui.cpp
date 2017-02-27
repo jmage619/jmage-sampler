@@ -76,7 +76,7 @@ void InputThread::run() {
       z.long_tail = z.decay > 2 * SAMPLE_RATE || z.release > 2 * SAMPLE_RATE ? Qt::Checked: Qt::Unchecked;
 
       std::getline(sin, field, ',');
-      z.path = field.c_str();
+      strcpy(z.path, field.c_str());
 
       emit receivedAddZone(z);
     }

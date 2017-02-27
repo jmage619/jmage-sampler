@@ -40,7 +40,7 @@ struct zone {
   float sustain;
   int release;
   int long_tail;
-  QString path;
+  char path[MAX_PATH];
 };
 
 Q_DECLARE_METATYPE(zone)
