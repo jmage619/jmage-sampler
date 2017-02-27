@@ -25,7 +25,6 @@
 
 #include "plugin.h"
 
-#define SAMPLE_RATE 44100
 #define VOL_STEPS 17
 
 enum {
@@ -58,7 +57,7 @@ static inline float get_amp(int index) {
 
 static LV2_Handle instantiate(const LV2_Descriptor*, double, const char*,
     const LV2_Feature* const* features) {
-  jm_sampler_plugin* plugin = new jm_sampler_plugin;
+  jm::sampler_plugin* plugin = new jm::sampler_plugin;
 
   // Scan host features for URID map
   LV2_URID_Map* map = NULL;
@@ -102,7 +101,7 @@ static LV2_Handle instantiate(const LV2_Descriptor*, double, const char*,
 }
 
 static void cleanup(LV2_Handle instance) {
-  jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
+  jm::sampler_plugin* plugin = static_cast<jm::sampler_plugin*>(instance);
 
   delete plugin->sampler;
 
@@ -117,7 +116,7 @@ static void cleanup(LV2_Handle instance) {
 }
 
 static void connect_port(LV2_Handle instance, uint32_t port, void* data) {
-  jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
+  jm::sampler_plugin* plugin = static_cast<jm::sampler_plugin*>(instance);
   switch (port) {
     case SAMPLER_CONTROL:
       plugin->control_port = static_cast<const LV2_Atom_Sequence*>(data);
@@ -144,7 +143,7 @@ static void connect_port(LV2_Handle instance, uint32_t port, void* data) {
 
 static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function respond,
     LV2_Worker_Respond_Handle handle, uint32_t, const void* data) {
-  jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
+  jm::sampler_plugin* plugin = static_cast<jm::sampler_plugin*>(instance);
 
   const worker_msg* msg = static_cast<const worker_msg*>(data);
   if (msg->type == WORKER_LOAD_PATH_WAV) {
@@ -236,20 +235,20 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
 }
 
 static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void* data) {
-  jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
+  jm::sampler_plugin* plugin = static_cast<jm::sampler_plugin*>(instance);
   const worker_msg* msg = static_cast<const worker_msg*>(data);
 
   if (msg->type == WORKER_LOAD_PATH_WAV) {
     //LV2_Atom_Forge_Frame seq_frame;
     //lv2_atom_forge_sequence_head(&plugin->forge, &seq_frame, 0);
-    add_zone_from_wave(plugin, msg->data.str);
+    jm::add_zone_from_wave(plugin, msg->data.str);
     //lv2_atom_forge_pop(&plugin->forge, &seq_frame);
     //fprintf(stderr, "SAMPLER: response completed; added: %s\n", path);
   }
   else if (msg->type == WORKER_LOAD_REGION_WAV) {
     fprintf(stderr, "SAMPLER load region wav response!!\n");
     std::map<std::string, SFZValue>& reg = plugin->patch->regions.at(msg->data.i);
-    add_zone_from_region(plugin, reg);
+    jm::add_zone_from_region(plugin, reg);
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
     fprintf(stderr, "SAMPLER load patch response!! num regions: %i\n", (int) plugin->patch->regions.size());
@@ -257,19 +256,19 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
     int num_zones = (int) plugin->zones.size();
 
     for (int i = 0; i < num_zones; ++i)
-      send_remove_zone(plugin, 0);
+      jm::send_remove_zone(plugin, 0);
 
     plugin->zone_number = 1;
 
     std::map<std::string, SFZValue>::iterator c_it = plugin->patch->control.find("jm_vol");
     if (c_it != plugin->patch->control.end()) {
-      send_update_vol(plugin, c_it->second.get_int());
-      send_update_chan(plugin, plugin->patch->control["jm_chan"].get_int() - 1);
+      jm::send_update_vol(plugin, c_it->second.get_int());
+      jm::send_update_chan(plugin, plugin->patch->control["jm_chan"].get_int() - 1);
     }
     // reset to reasonable defaults if not defined
     else {
-      send_update_vol(plugin, 16);
-      send_update_chan(plugin, 0);
+      jm::send_update_vol(plugin, 16);
+      jm::send_update_chan(plugin, 0);
     }
 
     plugin->zones.erase(plugin->zones.begin(), plugin->zones.end());
@@ -282,7 +281,7 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
         plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &reg_msg);
       }
       else
-        add_zone_from_region(plugin, *it);
+        jm::add_zone_from_region(plugin, *it);
     }
   }
 
@@ -292,7 +291,7 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
 // later most of this opaque logic should be moved to member funs
 // consider everything in common w/ stand alone jack audio callback when we re-implement that version
 static void run(LV2_Handle instance, uint32_t n_samples) {
-  jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
+  jm::sampler_plugin* plugin = static_cast<jm::sampler_plugin*>(instance);
 
   memset(plugin->out1, 0, sizeof(float) * n_samples);
   memset(plugin->out2, 0, sizeof(float) * n_samples);
@@ -318,12 +317,12 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         //fprintf(stderr, "SAMPLER: get zones received!!\n");
         std::vector<jm_zone>::iterator it;
         for (it = plugin->zones.begin(); it != plugin->zones.end(); ++it) {
-          send_add_zone(plugin, *it);
+          jm::send_add_zone(plugin, *it);
         }
       }
       else if (obj->body.otype == plugin->uris.jm_updateZone) {
         //fprintf(stderr, "SAMPLER: update zone received!!\n");
-        update_zone(plugin, obj);
+        jm::update_zone(plugin, obj);
       }
       else if (obj->body.otype == plugin->uris.jm_addZone) {
         //fprintf(stderr, "SAMPLER: add zone received!!\n");
@@ -339,7 +338,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
           plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &msg);
         }
         else
-          add_zone_from_wave(plugin, path);
+          jm::add_zone_from_wave(plugin, path);
       }
       else if (obj->body.otype == plugin->uris.jm_loadPatch) {
         //fprintf(stderr, "SAMPLER: load patch received!!\n");
@@ -408,7 +407,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
 
 static LV2_State_Status save(LV2_Handle instance, LV2_State_Store_Function store,
     LV2_State_Handle handle, uint32_t, const LV2_Feature* const* features) {
-  jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
+  jm::sampler_plugin* plugin = static_cast<jm::sampler_plugin*>(instance);
 
   if (plugin->patch_path[0] == '\0')
     return LV2_STATE_SUCCESS;
@@ -435,7 +434,7 @@ static LV2_State_Status save(LV2_Handle instance, LV2_State_Store_Function store
 
 static LV2_State_Status restore(LV2_Handle instance, LV2_State_Retrieve_Function retrieve,
     LV2_State_Handle handle, uint32_t, const LV2_Feature* const* features) {
-  jm_sampler_plugin* plugin = static_cast<jm_sampler_plugin*>(instance);
+  jm::sampler_plugin* plugin = static_cast<jm::sampler_plugin*>(instance);
 
   size_t   size;
   uint32_t type;
@@ -505,7 +504,7 @@ static LV2_State_Status restore(LV2_Handle instance, LV2_State_Retrieve_Function
       std::string wav_path = (*it)["sample"].get_str();
       plugin->waves[wav_path] = jm::parse_wave(wav_path.c_str());
     }
-    add_zone_from_region(plugin, *it);
+    jm::add_zone_from_region(plugin, *it);
   }
 
   return LV2_STATE_SUCCESS;
