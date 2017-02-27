@@ -42,7 +42,7 @@ class SoundGenerator {
     virtual ~SoundGenerator(){}
     void init(const jm_zone& zone, int pitch) {
       note_off = false;
-      one_shot = (zone.mode == LOOP_ONE_SHOT) ? true : false;
+      one_shot = (zone.loop_mode == LOOP_ONE_SHOT) ? true : false;
       off_group = zone.off_group;
       this->pitch = pitch;
     }

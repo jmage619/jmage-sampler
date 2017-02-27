@@ -179,7 +179,7 @@ static void send_add_zone(jm_sampler_plugin* plugin, const jm_zone& zone) {
   lv2_atom_forge_int(&plugin->forge, zone.start);
   lv2_atom_forge_int(&plugin->forge, zone.left);
   lv2_atom_forge_int(&plugin->forge, zone.right);
-  lv2_atom_forge_int(&plugin->forge, zone.mode);
+  lv2_atom_forge_int(&plugin->forge, zone.loop_mode);
   lv2_atom_forge_int(&plugin->forge, zone.crossfade);
   lv2_atom_forge_int(&plugin->forge, zone.group);
   lv2_atom_forge_int(&plugin->forge, zone.off_group);
@@ -272,7 +272,7 @@ static void update_zone(jm_sampler_plugin* plugin, const LV2_Atom_Object* obj) {
       plugin->zones.at(index).right = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
     case ZONE_LOOP_MODE:
-      plugin->zones.at(index).mode = (jm_loop_mode) reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      plugin->zones.at(index).loop_mode = (jm_loop_mode) reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
     case ZONE_CROSSFADE:
       plugin->zones.at(index).crossfade = reinterpret_cast<LV2_Atom_Int*>(a)->body;
@@ -314,7 +314,7 @@ static void add_zone_from_wave(jm_sampler_plugin* plugin, const char* path) {
   zone.left = wav.left;
   zone.right = wav.length;
   if (wav.has_loop)
-    zone.mode = LOOP_CONTINUOUS;
+    zone.loop_mode = LOOP_CONTINUOUS;
   sprintf(zone.name, "Zone %i", plugin->zone_number++);
   strcpy(zone.path, path);
   plugin->zones.push_back(zone);
@@ -332,7 +332,7 @@ static void add_zone_from_region(jm_sampler_plugin* plugin, const std::map<std::
   zone.left = wav.left;
   zone.right = wav.length;
   if (wav.has_loop)
-    zone.mode = LOOP_CONTINUOUS;
+    zone.loop_mode = LOOP_CONTINUOUS;
 
   std::map<std::string, SFZValue>::const_iterator it = region.find("jm_name");
   if (it != region.end())
@@ -352,7 +352,7 @@ static void add_zone_from_region(jm_sampler_plugin* plugin, const std::map<std::
 
   jm_loop_mode mode = (jm_loop_mode) region.find("loop_mode")->second.get_int();
   if (mode != LOOP_UNSET)
-    zone.mode = mode;
+    zone.loop_mode = mode;
 
   int loop_start = region.find("loop_start")->second.get_int();
   if (loop_start >= 0)
@@ -442,7 +442,7 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
       region["hivel"] = it->high_vel;
       region["tune"] = (int) (100. * it->pitch_corr);
       region["offset"] = it->start;
-      region["loop_mode"] = it->mode;
+      region["loop_mode"] = it->loop_mode;
       region["loop_start"] = it->left;
       region["loop_end"] = it->right;
       region["loop_crossfade"] = (double) it->crossfade / SAMPLE_RATE;

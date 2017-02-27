@@ -61,7 +61,7 @@ typedef struct {
   int release;
   int long_tail;
   double pitch_corr;
-  jm_loop_mode mode;
+  jm_loop_mode loop_mode;
   int group;
   int off_group;
   int crossfade;
@@ -86,7 +86,7 @@ inline void jm_init_zone(jm_zone* zone) {
   zone->release = 0;
   zone->long_tail = 0;
   zone->pitch_corr = 0.0;
-  zone->mode = LOOP_OFF;
+  zone->loop_mode = LOOP_OFF;
   zone->group = 0;
   zone->off_group = 0;
   zone->crossfade = 0;

@@ -14,7 +14,7 @@
 #define VELOCITY_BOOST 1.0f
 
 void AudioStream::init(const jm_zone& zone) {
-  loop_on = (zone.mode == LOOP_CONTINUOUS) ? true : false;
+  loop_on = (zone.loop_mode == LOOP_CONTINUOUS) ? true : false;
   crossfading = false;
   cf_timer = 0;
   wave = zone.wave;
