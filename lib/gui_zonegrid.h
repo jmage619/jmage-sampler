@@ -34,11 +34,11 @@ struct zone {
   int crossfade;
   int group;
   int off_group;
-  double attack;
-  double hold;
-  double decay;
+  int attack;
+  int hold;
+  int decay;
   double sustain;
-  double release;
+  int release;
   int long_tail;
   QString path;
 };

@@ -631,15 +631,15 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
       case ZONE_OFF_GROUP:
         return zones[index.row()].off_group == 0 ? "none": QString::number(zones[index.row()].off_group);
       case ZONE_ATTACK:
-        return zones[index.row()].attack;
+        return (float) zones[index.row()].attack / SAMPLE_RATE;
       case ZONE_HOLD:
-        return zones[index.row()].hold;
+        return (float) zones[index.row()].hold / SAMPLE_RATE;
       case ZONE_DECAY:
-        return zones[index.row()].decay;
+        return (float) zones[index.row()].decay / SAMPLE_RATE;
       case ZONE_SUSTAIN:
         return zones[index.row()].sustain;
       case ZONE_RELEASE:
-        return zones[index.row()].release;
+        return (float) zones[index.row()].release / SAMPLE_RATE;
       case ZONE_PATH:
         return zones[index.row()].path;
     }
@@ -737,24 +737,24 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << zones[index.row()].off_group;
         break;
       case ZONE_ATTACK:
-        zones[index.row()].attack = value.toDouble();
-        std::cout << value.toDouble();
+        zones[index.row()].attack = value.toFloat() * SAMPLE_RATE;
+        std::cout << zones[index.row()].attack;
         break;
       case ZONE_HOLD:
-        zones[index.row()].hold = value.toDouble();
-        std::cout << value.toDouble();
+        zones[index.row()].hold = value.toFloat() * SAMPLE_RATE;
+        std::cout << zones[index.row()].hold;
         break;
       case ZONE_DECAY:
-        zones[index.row()].decay = value.toDouble();
-        std::cout << value.toDouble();
+        zones[index.row()].decay = value.toFloat() * SAMPLE_RATE;
+        std::cout << zones[index.row()].decay;
         break;
       case ZONE_SUSTAIN:
         zones[index.row()].sustain = value.toDouble();
         std::cout << value.toDouble();
         break;
       case ZONE_RELEASE:
-        zones[index.row()].release = value.toDouble();
-        std::cout << value.toDouble();
+        zones[index.row()].release = value.toFloat() * SAMPLE_RATE;
+        std::cout << zones[index.row()].release;
         break;
       case ZONE_PATH:
         zones[index.row()].path = value.toString();

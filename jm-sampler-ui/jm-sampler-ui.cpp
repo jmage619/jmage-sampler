@@ -11,6 +11,8 @@
 
 #include "jm-sampler-ui.h"
 
+#define SAMPLE_RATE 44100
+
 void InputThread::run() {
   //char input[256];
   std::string input;
@@ -61,17 +63,17 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.off_group = atoi(field.c_str());
       std::getline(sin, field, ',');
-      z.attack = atof(field.c_str());
+      z.attack = atoi(field.c_str());
       std::getline(sin, field, ',');
-      z.hold = atof(field.c_str());
+      z.hold = atoi(field.c_str());
       std::getline(sin, field, ',');
-      z.decay = atof(field.c_str());
+      z.decay = atoi(field.c_str());
       std::getline(sin, field, ',');
       z.sustain = atof(field.c_str());
       std::getline(sin, field, ',');
-      z.release = atof(field.c_str());
+      z.release = atoi(field.c_str());
 
-      z.long_tail = z.decay > 2.0 || z.release > 2.0 ? Qt::Checked: Qt::Unchecked;
+      z.long_tail = z.decay > 2 * SAMPLE_RATE || z.release > 2 * SAMPLE_RATE ? Qt::Checked: Qt::Unchecked;
 
       std::getline(sin, field, ',');
       z.path = field.c_str();
