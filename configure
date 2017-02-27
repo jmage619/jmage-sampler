@@ -1,7 +1,0 @@
-#!/bin/bash
-
-sed \
--e "s|@CXXFLAGS@|${CXXFLAGS}|" \
--e "s|@CPPFLAGS@|${CPPFLAGS}|" \
--e "s|@LDFLAGS@|${LDFLAGS}|" \
-Makefile.in > Makefile
