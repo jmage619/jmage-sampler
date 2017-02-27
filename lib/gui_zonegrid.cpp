@@ -749,8 +749,8 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << zones[index.row()].decay;
         break;
       case ZONE_SUSTAIN:
-        zones[index.row()].sustain = value.toDouble();
-        std::cout << value.toDouble();
+        zones[index.row()].sustain = value.toFloat();
+        std::cout << zones[index.row()].sustain;
         break;
       case ZONE_RELEASE:
         zones[index.row()].release = value.toFloat() * SAMPLE_RATE;

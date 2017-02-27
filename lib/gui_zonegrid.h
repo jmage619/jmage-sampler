@@ -37,7 +37,7 @@ struct zone {
   int attack;
   int hold;
   int decay;
-  double sustain;
+  float sustain;
   int release;
   int long_tail;
   QString path;
