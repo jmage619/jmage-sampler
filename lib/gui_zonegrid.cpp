@@ -627,9 +627,9 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
         // 0.5 epsilon to prevent truncation error
         return (int) ((double) zones[index.row()].crossfade / SAMPLE_RATE * 1000. + 0.5);
       case ZONE_GROUP:
-        return zones[index.row()].group;
+        return zones[index.row()].group == 0 ? "none": QString::number(zones[index.row()].group);
       case ZONE_OFF_GROUP:
-        return zones[index.row()].off_group;
+        return zones[index.row()].off_group == 0 ? "none": QString::number(zones[index.row()].off_group);
       case ZONE_ATTACK:
         return zones[index.row()].attack;
       case ZONE_HOLD:
@@ -721,18 +721,20 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << zones[index.row()].crossfade;
         break;
       case ZONE_GROUP:
-        zones[index.row()].group = value.toString();
         if (value.toString() == "none")
-          std::cout << "0";
+          zones[index.row()].group = 0;
         else
-          std::cout << value.toString().toStdString();
+          zones[index.row()].group = value.toString().toInt();
+        
+        std::cout << zones[index.row()].group;
         break;
       case ZONE_OFF_GROUP:
-        zones[index.row()].off_group = value.toString();
         if (value.toString() == "none")
-          std::cout << "0";
+          zones[index.row()].off_group = 0;
         else
-          std::cout << value.toString().toStdString();
+          zones[index.row()].off_group = value.toString().toInt();
+        
+        std::cout << zones[index.row()].off_group;
         break;
       case ZONE_ATTACK:
         zones[index.row()].attack = value.toDouble();

@@ -57,9 +57,9 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.crossfade = atoi(field.c_str());
       std::getline(sin, field, ',');
-      z.group = field == "0" ? "none": field.c_str();
+      z.group = atoi(field.c_str());
       std::getline(sin, field, ',');
-      z.off_group = field == "0" ? "none": field.c_str();
+      z.off_group = atoi(field.c_str());
       std::getline(sin, field, ',');
       z.attack = atof(field.c_str());
       std::getline(sin, field, ',');

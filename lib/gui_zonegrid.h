@@ -32,8 +32,8 @@ struct zone {
   int right;
   jm_loop_mode mode;
   int crossfade;
-  QString group;
-  QString off_group;
+  int group;
+  int off_group;
   double attack;
   double hold;
   double decay;

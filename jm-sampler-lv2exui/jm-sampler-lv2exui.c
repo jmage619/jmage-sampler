@@ -378,8 +378,6 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
       sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // 0.5 epsilon to prevent truncation error
-      //sprintf(p, "%i,", (int) (((double) ((LV2_Atom_Int*) a)->body) / SAMPLE_RATE * 1000. + 0.5));
       // group
       p += strlen(p);
       a = lv2_atom_tuple_next(a);
