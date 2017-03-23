@@ -14,7 +14,10 @@ Q_DECLARE_METATYPE(jm_zone)
 class InputThread: public QThread {
   Q_OBJECT
 
+  private:
+    int sample_rate;
   public:
+    InputThread(int sample_rate, QObject* parent = Q_NULLPTR): QThread(parent), sample_rate(sample_rate) {}
     void run();
   signals:
     //void receivedValue(int val);
@@ -35,7 +38,7 @@ class SamplerUI: public QWidget {
     ZoneTableModel zone_model;
 
   public:
-    SamplerUI();
+    SamplerUI(int sample_rate, QWidget* parent = Q_NULLPTR);
 
   public slots:
     void showAndRaise();

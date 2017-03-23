@@ -11,8 +11,6 @@
 
 #include "jm-sampler-ui.h"
 
-#define SAMPLE_RATE 44100
-
 void InputThread::run() {
   //char input[256];
   std::string input;
@@ -73,7 +71,7 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.release = atoi(field.c_str());
 
-      z.long_tail = z.decay > 2 * SAMPLE_RATE || z.release > 2 * SAMPLE_RATE ? Qt::Checked: Qt::Unchecked;
+      z.long_tail = z.decay > 2 * sample_rate || z.release > 2 * sample_rate ? Qt::Checked: Qt::Unchecked;
 
       std::getline(sin, field, ',');
       strcpy(z.path, field.c_str());
@@ -89,7 +87,7 @@ void InputThread::run() {
   }
 }
 
-SamplerUI::SamplerUI() {
+SamplerUI::SamplerUI(int sample_rate, QWidget* parent): QWidget(parent), zone_model(sample_rate) {
   QVBoxLayout* v_layout = new QVBoxLayout;
 
   QHBoxLayout* h_layout = new QHBoxLayout;
@@ -136,7 +134,7 @@ SamplerUI::SamplerUI() {
 
   setLayout(v_layout);
 
-  InputThread* in_thread = new InputThread;
+  InputThread* in_thread = new InputThread(sample_rate);
   qRegisterMetaType<jm_zone>();
   connect(in_thread, &InputThread::receivedShow, this, &SamplerUI::showAndRaise);
   connect(in_thread, &InputThread::receivedHide, this, &QWidget::hide);

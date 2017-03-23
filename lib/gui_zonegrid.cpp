@@ -7,8 +7,6 @@
 #include "gui_components.h"
 #include "gui_zonegrid.h"
 
-#define SAMPLE_RATE 44100
-
 // some helper functions
 QString note_to_string(int note) {
   // first octave is -1, so subtract to translate to it
@@ -584,7 +582,7 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
       case ZONE_START:
       case ZONE_LEFT:
       case ZONE_RIGHT:
-        return (float) zones[index.row()].wave_length / SAMPLE_RATE;
+        return (float) zones[index.row()].wave_length / sample_rate;
     }
   }
   else if (role == Qt::DisplayRole || role == Qt::EditRole) {
@@ -606,11 +604,11 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
       case ZONE_PITCH:
         return zones[index.row()].pitch_corr;
       case ZONE_START:
-        return (float) zones[index.row()].start / SAMPLE_RATE;
+        return (float) zones[index.row()].start / sample_rate;
       case ZONE_LEFT:
-        return (float) zones[index.row()].left / SAMPLE_RATE;
+        return (float) zones[index.row()].left / sample_rate;
       case ZONE_RIGHT:
-        return (float) zones[index.row()].right / SAMPLE_RATE;
+        return (float) zones[index.row()].right / sample_rate;
       case ZONE_LOOP_MODE:
         switch (zones[index.row()].loop_mode) {
           case LOOP_OFF:
@@ -625,21 +623,21 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
         break;
       case ZONE_CROSSFADE:
         // 0.5 epsilon to prevent truncation error
-        return (int) ((double) zones[index.row()].crossfade / SAMPLE_RATE * 1000. + 0.5);
+        return (int) ((double) zones[index.row()].crossfade / sample_rate * 1000. + 0.5);
       case ZONE_GROUP:
         return zones[index.row()].group == 0 ? "none": QString::number(zones[index.row()].group);
       case ZONE_OFF_GROUP:
         return zones[index.row()].off_group == 0 ? "none": QString::number(zones[index.row()].off_group);
       case ZONE_ATTACK:
-        return (float) zones[index.row()].attack / SAMPLE_RATE;
+        return (float) zones[index.row()].attack / sample_rate;
       case ZONE_HOLD:
-        return (float) zones[index.row()].hold / SAMPLE_RATE;
+        return (float) zones[index.row()].hold / sample_rate;
       case ZONE_DECAY:
-        return (float) zones[index.row()].decay / SAMPLE_RATE;
+        return (float) zones[index.row()].decay / sample_rate;
       case ZONE_SUSTAIN:
         return zones[index.row()].sustain;
       case ZONE_RELEASE:
-        return (float) zones[index.row()].release / SAMPLE_RATE;
+        return (float) zones[index.row()].release / sample_rate;
       case ZONE_PATH:
         return zones[index.row()].path;
     }
@@ -695,15 +693,15 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << value.toDouble();
         break;
       case ZONE_START:
-        zones[index.row()].start = (int) (value.toFloat() * SAMPLE_RATE);
+        zones[index.row()].start = (int) (value.toFloat() * sample_rate);
         std::cout << zones[index.row()].start;
         break;
       case ZONE_LEFT:
-        zones[index.row()].left = (int) (value.toFloat() * SAMPLE_RATE);
+        zones[index.row()].left = (int) (value.toFloat() * sample_rate);
         std::cout << zones[index.row()].left;
         break;
       case ZONE_RIGHT:
-        zones[index.row()].right = (int) (value.toFloat() * SAMPLE_RATE);
+        zones[index.row()].right = (int) (value.toFloat() * sample_rate);
         std::cout << zones[index.row()].right;
         break;
       case ZONE_LOOP_MODE:
@@ -717,7 +715,7 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << zones[index.row()].loop_mode;
         break;
       case ZONE_CROSSFADE:
-        zones[index.row()].crossfade = (int) (value.toInt() * SAMPLE_RATE / 1000.);
+        zones[index.row()].crossfade = (int) (value.toInt() * sample_rate / 1000.);
         std::cout << zones[index.row()].crossfade;
         break;
       case ZONE_GROUP:
@@ -737,15 +735,15 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << zones[index.row()].off_group;
         break;
       case ZONE_ATTACK:
-        zones[index.row()].attack = value.toFloat() * SAMPLE_RATE;
+        zones[index.row()].attack = value.toFloat() * sample_rate;
         std::cout << zones[index.row()].attack;
         break;
       case ZONE_HOLD:
-        zones[index.row()].hold = value.toFloat() * SAMPLE_RATE;
+        zones[index.row()].hold = value.toFloat() * sample_rate;
         std::cout << zones[index.row()].hold;
         break;
       case ZONE_DECAY:
-        zones[index.row()].decay = value.toFloat() * SAMPLE_RATE;
+        zones[index.row()].decay = value.toFloat() * sample_rate;
         std::cout << zones[index.row()].decay;
         break;
       case ZONE_SUSTAIN:
@@ -753,7 +751,7 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         std::cout << zones[index.row()].sustain;
         break;
       case ZONE_RELEASE:
-        zones[index.row()].release = value.toFloat() * SAMPLE_RATE;
+        zones[index.row()].release = value.toFloat() * sample_rate;
         std::cout << zones[index.row()].release;
         break;
       case ZONE_PATH:

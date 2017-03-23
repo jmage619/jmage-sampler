@@ -73,8 +73,10 @@ class ZoneTableModel: public QAbstractTableModel {
   Q_OBJECT
 
   private:
+    int sample_rate;
     std::vector<jm_zone> zones;
   public:
+    ZoneTableModel(int sample_rate, QObject* parent = Q_NULLPTR): QAbstractTableModel(parent), sample_rate(sample_rate) {}
     int rowCount(const QModelIndex& parent = QModelIndex()) const;
     int columnCount(const QModelIndex& parent = QModelIndex()) const;
     Qt::ItemFlags flags(const QModelIndex &index) const;
