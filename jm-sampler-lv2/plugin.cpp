@@ -215,14 +215,14 @@ void jm::add_zone_from_region(sampler_plugin* plugin, const std::map<std::string
   if (loop_end >= 0)
     zone.right = loop_end;
 
-  zone.crossfade = SAMPLE_RATE * region.find("loop_crossfade")->second.get_double();
+  zone.crossfade = plugin->sample_rate * region.find("loop_crossfade")->second.get_double();
   zone.group = region.find("group")->second.get_int();
   zone.off_group = region.find("off_group")->second.get_int();
-  zone.attack = SAMPLE_RATE * region.find("ampeg_attack")->second.get_double();
-  zone.hold = SAMPLE_RATE * region.find("ampeg_hold")->second.get_double();
-  zone.decay = SAMPLE_RATE * region.find("ampeg_decay")->second.get_double();
+  zone.attack = plugin->sample_rate * region.find("ampeg_attack")->second.get_double();
+  zone.hold = plugin->sample_rate * region.find("ampeg_hold")->second.get_double();
+  zone.decay = plugin->sample_rate * region.find("ampeg_decay")->second.get_double();
   zone.sustain = region.find("ampeg_sustain")->second.get_double() / 100.;
-  zone.release = SAMPLE_RATE * region.find("ampeg_release")->second.get_double();
+  zone.release = plugin->sample_rate * region.find("ampeg_release")->second.get_double();
   plugin->zones.push_back(zone);
 
   send_add_zone(plugin, zone);

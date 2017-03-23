@@ -55,9 +55,10 @@ static inline float get_amp(int index) {
   return index == 0 ? 0.f: 1 / 100.f * pow(10.f, 2 * index / (VOL_STEPS - 1.0f));
 }
 
-static LV2_Handle instantiate(const LV2_Descriptor*, double, const char*,
+static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const char*,
     const LV2_Feature* const* features) {
   jm::sampler_plugin* plugin = new jm::sampler_plugin;
+  plugin->sample_rate = sample_rate;
 
   // Scan host features for URID map
   LV2_URID_Map* map = NULL;
@@ -211,14 +212,14 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
       region["loop_mode"] = it->loop_mode;
       region["loop_start"] = it->left;
       region["loop_end"] = it->right;
-      region["loop_crossfade"] = (double) it->crossfade / SAMPLE_RATE;
+      region["loop_crossfade"] = (double) it->crossfade / plugin->sample_rate;
       region["group"] = it->group;
       region["off_group"] = it->off_group;
-      region["ampeg_attack"] = (double) it->attack / SAMPLE_RATE;
-      region["ampeg_hold"] = (double) it->hold / SAMPLE_RATE;
-      region["ampeg_decay"] = (double) it->decay / SAMPLE_RATE;
+      region["ampeg_attack"] = (double) it->attack / plugin->sample_rate;
+      region["ampeg_hold"] = (double) it->hold / plugin->sample_rate;
+      region["ampeg_decay"] = (double) it->decay / plugin->sample_rate;
       region["ampeg_sustain"] = 100. * it->sustain;
-      region["ampeg_release"] = (double) it->release / SAMPLE_RATE;
+      region["ampeg_release"] = (double) it->release / plugin->sample_rate;
 
       save_patch.regions.push_back(region);
     }

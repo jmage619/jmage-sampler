@@ -14,10 +14,9 @@
 #include <lib/sfzparser.h>
 #include <lib/jmsampler.h>
 
-#define SAMPLE_RATE 44100
-
 namespace jm {
   struct sampler_plugin {
+    int sample_rate;
     const LV2_Atom_Sequence* control_port;
     LV2_Atom_Sequence* notify_port;
     float* out1;
