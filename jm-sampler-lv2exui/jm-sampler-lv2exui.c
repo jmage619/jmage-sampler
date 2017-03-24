@@ -298,12 +298,12 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor* descriptor,
   LV2_Atom* obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_getSampleRate);
   lv2_atom_forge_pop(&ui->forge, &obj_frame);
 
-	ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
+  ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
 
   obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_getZones);
   lv2_atom_forge_pop(&ui->forge, &obj_frame);
 
-	ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
+  ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
 
   set_time_str(time_str);
   fprintf(stderr, "%s UI: ui instantiated\n", time_str);
