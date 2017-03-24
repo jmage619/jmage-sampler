@@ -95,7 +95,7 @@ static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const c
   // pre-allocate vector to prevent allocations later in RT thread
   plugin->zones.reserve(100);
 
-  plugin->sampler = new JMSampler(plugin->zones);
+  plugin->sampler = new JMSampler(sample_rate, plugin->zones);
 
   fprintf(stderr, "sampler instantiated.\n");
   return plugin;

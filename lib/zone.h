@@ -44,6 +44,7 @@ typedef enum {
 typedef struct {
   float* wave;
   int num_channels;
+  int sample_rate;
   int wave_length;
   int start;
   int left;

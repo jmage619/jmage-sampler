@@ -18,6 +18,8 @@ jm::wave jm::parse_wave(const char* path) {
   wave wav;
   wav.length = sf_info.frames;
   wav.num_channels = sf_info.channels;
+  wav.sample_rate = sf_info.samplerate;
+  
   wav.wave = new float[wav.num_channels * wav.length];
   sf_read_float(sf_wav, wav.wave, wav.num_channels * wav.length);
 

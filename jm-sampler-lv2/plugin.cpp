@@ -174,6 +174,7 @@ void jm::add_zone_from_wave(sampler_plugin* plugin, const char* path) {
   jm_init_zone(&zone);
   zone.wave = wav.wave;
   zone.num_channels = wav.num_channels;
+  zone.sample_rate = wav.sample_rate;
   zone.wave_length = wav.length;
   zone.left = wav.left;
   zone.right = wav.length;
@@ -192,6 +193,7 @@ void jm::add_zone_from_region(sampler_plugin* plugin, const std::map<std::string
   jm_init_zone(&zone);
   zone.wave = wav.wave;
   zone.num_channels = wav.num_channels;
+  zone.sample_rate = wav.sample_rate;
   zone.wave_length = wav.length;
   zone.left = wav.left;
   zone.right = wav.length;

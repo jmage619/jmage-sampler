@@ -12,7 +12,8 @@
 // HACK until we figure out where to find this in LV2 instantiate!!
 #define AUDIO_BUF_SIZE 4096
 
-JMSampler::JMSampler(const std::vector<jm_zone>& zones):
+JMSampler::JMSampler(int sample_rate, const std::vector<jm_zone>& zones):
+    sample_rate(sample_rate),
     zones(zones),
     sustain_on(false),
     sound_gens(POLYPHONY),
@@ -82,7 +83,7 @@ void JMSampler::handle_note_on(const unsigned char* midi_msg, size_t nframes, si
       // create sound gen
       AmpEnvGenerator* ag = amp_gen_pool.pop();
       Playhead* ph = playhead_pool.pop();
-      ph->init(*it, midi_msg[1]);
+      ph->init(sample_rate, *it, midi_msg[1]);
       ag->init(ph, *it, midi_msg[1], midi_msg[2]);
       fprintf(stderr, "pre process start\n");
       ag->pre_process(nframes - curframe);

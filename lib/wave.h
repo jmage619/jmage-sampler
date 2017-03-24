@@ -5,6 +5,7 @@ namespace jm {
   struct wave {
     float* wave;
     int num_channels;
+    int sample_rate;
     int length;
     int left;
     int right;

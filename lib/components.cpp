@@ -135,7 +135,8 @@ Playhead::~Playhead() {
   delete [] pitch_buf;
 }
 
-void Playhead::init(const jm_zone& zone, int pitch) {
+void Playhead::init(int sample_rate, const jm_zone& zone, int pitch) {
+  src_ratio = sample_rate / (double) zone.sample_rate;
   SoundGenerator::init(zone, pitch);
   as.init(zone);
   num_channels = zone.num_channels;
@@ -166,7 +167,8 @@ void Playhead::pre_process(size_t nframes) {
   out_offset = 0;
 
   SRC_DATA data;
-  data.src_ratio = 1 / speed;
+  data.src_ratio = 1 / speed * src_ratio;
+  //data.src_ratio = 1 / speed;
   data.end_of_input = 0;
 
   while (out_offset < nframes) {
