@@ -20,7 +20,11 @@ void InputThread::run() {
     if (std::cin.eof())
       break;
 
-    if (input == "show:1")
+    if (!input.compare(0, 16, "set_sample_rate:")) {
+      sample_rate = atoi(input.substr(16).c_str());
+      emit receivedSampleRate(sample_rate);
+    }
+    else if (input == "show:1")
       emit receivedShow();
     else if (input == "show:0")
       emit receivedHide();
@@ -87,7 +91,7 @@ void InputThread::run() {
   }
 }
 
-SamplerUI::SamplerUI(int sample_rate, QWidget* parent): QWidget(parent), zone_model(sample_rate) {
+SamplerUI::SamplerUI() {
   QVBoxLayout* v_layout = new QVBoxLayout;
 
   QHBoxLayout* h_layout = new QHBoxLayout;
@@ -134,8 +138,9 @@ SamplerUI::SamplerUI(int sample_rate, QWidget* parent): QWidget(parent), zone_mo
 
   setLayout(v_layout);
 
-  InputThread* in_thread = new InputThread(sample_rate);
+  InputThread* in_thread = new InputThread;
   qRegisterMetaType<jm_zone>();
+  connect(in_thread, &InputThread::receivedSampleRate, this, &SamplerUI::setSampleRate);
   connect(in_thread, &InputThread::receivedShow, this, &SamplerUI::showAndRaise);
   connect(in_thread, &InputThread::receivedHide, this, &QWidget::hide);
   connect(in_thread, &InputThread::receivedAddZone, this, &SamplerUI::addNewZone);
@@ -146,6 +151,10 @@ SamplerUI::SamplerUI(int sample_rate, QWidget* parent): QWidget(parent), zone_mo
   connect(in_thread, &QThread::finished, this, &QWidget::close);
   connect(in_thread, &QThread::finished, &QApplication::quit);
   in_thread->start();
+}
+
+void SamplerUI::setSampleRate(int sample_rate) {
+  zone_model.setSampleRate(sample_rate);
 }
 
 void SamplerUI::showAndRaise() {

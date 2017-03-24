@@ -36,6 +36,7 @@ namespace jm {
     JMSampler* sampler;
   };
 
+  void send_sample_rate(sampler_plugin* plugin);
   void send_add_zone(sampler_plugin* plugin, const jm_zone& zone);
   void send_remove_zone(sampler_plugin* plugin, int index);
   void send_update_vol(sampler_plugin* plugin, float vol);

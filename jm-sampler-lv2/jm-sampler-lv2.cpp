@@ -314,7 +314,10 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
   LV2_ATOM_SEQUENCE_FOREACH(plugin->control_port, ev) {
     if (ev->body.type == plugin->uris.atom_Object) {
       const LV2_Atom_Object* obj = (const LV2_Atom_Object*)&ev->body;
-      if (obj->body.otype == plugin->uris.jm_getZones) {
+      if (obj->body.otype == plugin->uris.jm_getSampleRate) {
+        jm::send_sample_rate(plugin);
+      }
+      else if (obj->body.otype == plugin->uris.jm_getZones) {
         //fprintf(stderr, "SAMPLER: get zones received!!\n");
         std::vector<jm_zone>::iterator it;
         for (it = plugin->zones.begin(); it != plugin->zones.end(); ++it) {

@@ -17,10 +17,10 @@ class InputThread: public QThread {
   private:
     int sample_rate;
   public:
-    InputThread(int sample_rate, QObject* parent = Q_NULLPTR): QThread(parent), sample_rate(sample_rate) {}
     void run();
   signals:
     //void receivedValue(int val);
+    void receivedSampleRate(int sample_rate);
     void receivedShow();
     void receivedHide();
     void receivedAddZone(const jm_zone& z);
@@ -38,9 +38,10 @@ class SamplerUI: public QWidget {
     ZoneTableModel zone_model;
 
   public:
-    SamplerUI(int sample_rate, QWidget* parent = Q_NULLPTR);
+    SamplerUI();
 
   public slots:
+    void setSampleRate(int sample_rate);
     void showAndRaise();
     void addNewZone(const jm_zone& z);
     void removeZone(int i);

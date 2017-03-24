@@ -13,6 +13,7 @@
 #include <lv2/lv2plug.in/ns/ext/atom/util.h>
 #include <lv2/lv2plug.in/ns/extensions/ui/ui.h>
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
+//#include <lv2/lv2plug.in/ns/ext/options/options.h>
 
 #include <lib/zone.h>
 #include <lib/lv2_uris.h>
@@ -198,17 +199,44 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor* descriptor,
 
   // Scan host features for URID map
   LV2_URID_Map* map = NULL;
+  //LV2_URID_Unmap* unmap = NULL;
+  //LV2_Options_Option* opt = NULL;
+
   int i;
   for (i = 0; features[i]; ++i) {
-    if (!strcmp(features[i]->URI, LV2_URID__map)) {
+    if (!strcmp(features[i]->URI, LV2_URID__map))
       map = (LV2_URID_Map*)features[i]->data;
-    }
+    /*else if (!strcmp(features[i]->URI, LV2_URID__unmap))
+      unmap = (LV2_URID_Unmap*)features[i]->data;
+    else if (!strcmp(features[i]->URI, LV2_OPTIONS__options))
+      opt = (LV2_Options_Option*)features[i]->data;
+    */
   }
   if (!map) {
     fprintf(stderr, "Host does not support urid:map.\n");
     free(ui);
     return NULL;
   }
+  /*if (!unmap) {
+    fprintf(stderr, "Host does not support urid:unmap.\n");
+    free(ui);
+    return NULL;
+  }
+  if (!opt) {
+    fprintf(stderr, "Host does not support options:options\n");
+    free(ui);
+    return NULL;
+  }
+
+  int index = 0;
+  while (1) {
+    if (opt[index].key == 0)
+      break;
+
+    fprintf(stderr, "UI host option: %s\n", unmap->unmap(unmap->handle, opt[index].key));
+    ++index;    
+  }
+  */
 
   // Map URIS
   ui->map = map;
@@ -267,12 +295,15 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor* descriptor,
 
   lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
   LV2_Atom_Forge_Frame obj_frame;
-  LV2_Atom* obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_getZones);
+  LV2_Atom* obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_getSampleRate);
   lv2_atom_forge_pop(&ui->forge, &obj_frame);
 
-	ui->write(ui->controller, 0, lv2_atom_total_size(obj),
-	          ui->uris.atom_eventTransfer,
-	          obj);
+	ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
+
+  obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_getZones);
+  lv2_atom_forge_pop(&ui->forge, &obj_frame);
+
+	ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
 
   set_time_str(time_str);
   fprintf(stderr, "%s UI: ui instantiated\n", time_str);
@@ -310,7 +341,17 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
   }
   else if (format == ui->uris.atom_eventTransfer && (atom->type == ui->uris.atom_Blank || atom->type == ui->uris.atom_Object)) {
     const LV2_Atom_Object* obj = (const LV2_Atom_Object*) atom;
-    if (obj->body.otype == ui->uris.jm_addZone) {
+    if (obj->body.otype == ui->uris.jm_getSampleRate) {
+      LV2_Atom* params = NULL;
+
+      lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
+
+      int sample_rate = ((LV2_Atom_Int*) params)->body;
+      fprintf(stderr, "UI: received sample rate!! %i\n", sample_rate);
+      fprintf(ui->fout, "set_sample_rate:%i\n", sample_rate);
+      fflush(ui->fout);
+    }
+    else if (obj->body.otype == ui->uris.jm_addZone) {
       LV2_Atom* params = NULL;
 
       lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);

@@ -13,6 +13,17 @@
 
 #include "plugin.h"
 
+void jm::send_sample_rate(sampler_plugin* plugin) {
+  lv2_atom_forge_frame_time(&plugin->forge, 0);
+  LV2_Atom_Forge_Frame obj_frame;
+  lv2_atom_forge_object(&plugin->forge, &obj_frame, 0, plugin->uris.jm_getSampleRate);
+  lv2_atom_forge_key(&plugin->forge, plugin->uris.jm_params);
+  lv2_atom_forge_int(&plugin->forge, plugin->sample_rate);
+  lv2_atom_forge_pop(&plugin->forge, &obj_frame);
+
+  fprintf(stderr, "SAMPLER: sample rate sent!! %i\n", plugin->sample_rate);
+}
+
 void jm::send_add_zone(sampler_plugin* plugin, const jm_zone& zone) {
   lv2_atom_forge_frame_time(&plugin->forge, 0);
   LV2_Atom_Forge_Frame obj_frame;
