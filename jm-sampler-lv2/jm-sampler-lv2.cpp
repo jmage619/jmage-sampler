@@ -97,17 +97,33 @@ static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const c
   jm_map_uris(plugin->map, &plugin->uris);
   lv2_atom_forge_init(&plugin->forge, plugin->map);
 
+  int max_block_len = -1;
+  int nominal_block_len = -1;
+
   int index = 0;
   while (1) {
     if (opt[index].key == 0)
       break;
 
-    if (opt[index].key == plugin->uris.bufsize_maxBlockLength)
-      fprintf(stderr, "SAMPLER max block len: %i\n", *((int*) opt[index].value));
-    else if (opt[index].key == plugin->uris.bufsize_nominalBlockLength)
-      fprintf(stderr, "SAMPLER nominal block len: %i\n", *((int*) opt[index].value));
+    if (opt[index].key == plugin->uris.bufsize_maxBlockLength) {
+      max_block_len = *((int*) opt[index].value);
+      fprintf(stderr, "SAMPLER max block len: %i\n", max_block_len);
+    }
+    else if (opt[index].key == plugin->uris.bufsize_nominalBlockLength) {
+      nominal_block_len = *((int*) opt[index].value);
+      fprintf(stderr, "SAMPLER nominal block len: %i\n", nominal_block_len);
+    }
     ++index;    
   }
+
+  if (max_block_len < 0) {
+    fprintf(stderr, "Host did not set bufsz:maxBlockLength.\n");
+    delete plugin;
+    return NULL;
+  }
+
+  if (nominal_block_len < 0)
+    nominal_block_len = max_block_len;
 
   plugin->zone_number = 1;
   plugin->patch = NULL;
@@ -116,7 +132,9 @@ static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const c
   // pre-allocate vector to prevent allocations later in RT thread
   plugin->zones.reserve(100);
 
-  plugin->sampler = new JMSampler(sample_rate, plugin->zones);
+  // src output buf just needs to hold up to nframes so max is sufficient
+  // but set src input buf to nominal for efficiency
+  plugin->sampler = new JMSampler(plugin->zones, sample_rate, nominal_block_len, max_block_len);
 
   fprintf(stderr, "sampler instantiated.\n");
   return plugin;

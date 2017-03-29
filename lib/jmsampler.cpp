@@ -9,10 +9,7 @@
 #include "components.h"
 #include "jmsampler.h"
 
-// HACK until we figure out where to find this in LV2 instantiate!!
-#define AUDIO_BUF_SIZE 4096
-
-JMSampler::JMSampler(int sample_rate, const std::vector<jm_zone>& zones):
+JMSampler::JMSampler(const std::vector<jm_zone>& zones, int sample_rate, size_t in_nframes, size_t out_nframes):
     zones(zones),
     sustain_on(false),
     sound_gens(POLYPHONY),
@@ -23,7 +20,7 @@ JMSampler::JMSampler(int sample_rate, const std::vector<jm_zone>& zones):
 
   for (size_t i = 0; i < POLYPHONY; ++i) {
     amp_gen_pool.push(new AmpEnvGenerator(amp_gen_pool));
-    playhead_pool.push(new Playhead(playhead_pool, sample_rate, AUDIO_BUF_SIZE));
+    playhead_pool.push(new Playhead(playhead_pool, sample_rate, in_nframes, out_nframes));
   }
 }
 

@@ -119,10 +119,11 @@ crossfading:
   }
 }
 
-Playhead::Playhead(JMStack<Playhead*>& playhead_pool, int sample_rate, size_t pitch_buf_size):
-    playhead_pool(playhead_pool), sample_rate(sample_rate) {
+Playhead::Playhead(JMStack<Playhead*>& playhead_pool, int sample_rate, size_t in_nframes, size_t out_nframes):
+    playhead_pool(playhead_pool), sample_rate(sample_rate), in_nframes(in_nframes) {
   // buf size * 2 to make room for stereo
-  pitch_buf = new float[pitch_buf_size * 2];
+  in_buf = new float[in_nframes * 2];
+  out_buf = new float[out_nframes * 2];
   int error;
   // have to always make it stereo since they are allocated in advance
   //resampler = src_new(SRC_SINC_FASTEST, 2, &error);
@@ -132,7 +133,8 @@ Playhead::Playhead(JMStack<Playhead*>& playhead_pool, int sample_rate, size_t pi
 
 Playhead::~Playhead() {
   src_delete(resampler);
-  delete [] pitch_buf;
+  delete [] in_buf;
+  delete [] out_buf;
 }
 
 void Playhead::init(const jm_zone& zone, int pitch) {
@@ -144,7 +146,7 @@ void Playhead::init(const jm_zone& zone, int pitch) {
   speed = pow(2, (pitch + zone.pitch_corr - zone.origin) / 12.);
   in_offset = 0;
 
-  num_read = as.read(in_buf, PH_BUF_SIZE / 2);
+  num_read = as.read(in_buf, in_nframes);
   // if mono, just duplicate and interleave values
   // note above read is still valid, for mono we just read half the buffer
   if (num_channels == 1) {
@@ -162,7 +164,7 @@ void Playhead::init(const jm_zone& zone, int pitch) {
 }
 
 void Playhead::pre_process(size_t nframes) {
-  memset(pitch_buf, 0,  2 * nframes * sizeof(float));
+  memset(out_buf, 0,  2 * nframes * sizeof(float));
 
   out_offset = 0;
 
@@ -174,7 +176,7 @@ void Playhead::pre_process(size_t nframes) {
   while (out_offset < nframes) {
     data.data_in = in_buf + 2 * in_offset;
     data.input_frames = num_read - in_offset;
-    data.data_out = pitch_buf + 2 * out_offset;
+    data.data_out = out_buf + 2 * out_offset;
     data.output_frames = nframes - out_offset;
 
     src_process(resampler, &data);
@@ -189,7 +191,7 @@ void Playhead::pre_process(size_t nframes) {
     */
 
     if (in_offset >= num_read) {
-      num_read = as.read(in_buf, PH_BUF_SIZE / 2);
+      num_read = as.read(in_buf, in_nframes);
 
       if (num_read == 0) {
         last_iteration = true;
@@ -218,8 +220,8 @@ void Playhead::inc() {
 }
 
 void Playhead::get_values(float* values) {
-  values[0] = pitch_buf[2 * cur_frame];
-  values[1] = pitch_buf[2 * cur_frame + 1];
+  values[0] = out_buf[2 * cur_frame];
+  values[1] = out_buf[2 * cur_frame + 1];
 }
 
 void AmpEnvGenerator::init(SoundGenerator* sg, const jm_zone& zone, int pitch, int velocity) {

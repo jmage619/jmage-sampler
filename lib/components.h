@@ -6,9 +6,6 @@
 #include "zone.h"
 #include "collections.h"
 
-// arbitrarily sized to max 16 bit int just because 16 bit is awesome
-#define PH_BUF_SIZE 32768
-
 class AudioStream {
   private:
     bool loop_on;
@@ -63,10 +60,11 @@ class Playhead: public SoundGenerator {
     double src_ratio;
     JMStack<Playhead*>& playhead_pool;
     int sample_rate;
+    size_t in_nframes;
     AudioStream as;
     SRC_STATE* resampler;
-    float in_buf[PH_BUF_SIZE];
-    float* pitch_buf;
+    float* in_buf;
+    float* out_buf;
     double speed;
     int num_channels; // only implemented to handle 1 or 2 channels
     int in_offset;
@@ -76,7 +74,7 @@ class Playhead: public SoundGenerator {
     size_t cur_frame;
 
   public:
-    Playhead(JMStack<Playhead*>& playhead_pool, int sample_rate, size_t pitch_buf_size);
+    Playhead(JMStack<Playhead*>& playhead_pool, int sample_rate, size_t in_nframes, size_t out_nframes);
     ~Playhead();
     void init(const jm_zone& zone, int pitch);
     void pre_process(size_t nframes);
