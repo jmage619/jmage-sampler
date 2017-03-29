@@ -5,6 +5,12 @@
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
 #include <lv2/lv2plug.in/ns/ext/midi/midi.h>
+#include <lv2/lv2plug.in/ns/ext/buf-size/buf-size.h>
+
+// nominal not defined until 1.14
+#ifndef LV2_BUF_SIZE__nominalBlockLength
+#define LV2_BUF_SIZE__nominalBlockLength LV2_BUF_SIZE_PREFIX "nominalBlockLength"
+#endif
 
 #define JM_SAMPLER_URI "http://lv2plug.in/plugins/jm-sampler"
 #define JM_SAMPLER__getSampleRate JM_SAMPLER_URI "#setSampleRate"
@@ -25,6 +31,8 @@ typedef struct {
   LV2_URID atom_Object;
   LV2_URID atom_String;
   LV2_URID midi_Event;
+  LV2_URID bufsize_maxBlockLength;
+  LV2_URID bufsize_nominalBlockLength;
   LV2_URID jm_getSampleRate;
   LV2_URID jm_addZone;
   LV2_URID jm_removeZone;
@@ -44,6 +52,8 @@ static inline void jm_map_uris(LV2_URID_Map* map, jm_uris* uris) {
   uris->atom_Object = map->map(map->handle, LV2_ATOM__Object);
   uris->atom_String = map->map(map->handle, LV2_ATOM__String);
   uris->midi_Event = map->map(map->handle, LV2_MIDI__MidiEvent);
+  uris->bufsize_maxBlockLength = map->map(map->handle, LV2_BUF_SIZE__maxBlockLength);
+  uris->bufsize_nominalBlockLength = map->map(map->handle, LV2_BUF_SIZE__nominalBlockLength);
   uris->jm_getSampleRate = map->map(map->handle, JM_SAMPLER__getSampleRate);
   uris->jm_addZone = map->map(map->handle, JM_SAMPLER__addZone);
   uris->jm_removeZone = map->map(map->handle, JM_SAMPLER__removeZone);

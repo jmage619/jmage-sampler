@@ -16,6 +16,7 @@
 #include <lv2/lv2plug.in/ns/ext/midi/midi.h>
 #include <lv2/lv2plug.in/ns/ext/worker/worker.h>
 #include <lv2/lv2plug.in/ns/ext/state/state.h>
+#include <lv2/lv2plug.in/ns/ext/options/options.h>
 
 #include <lib/lv2_uris.h>
 #include <lib/zone.h>
@@ -63,12 +64,15 @@ static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const c
   // Scan host features for URID map
   LV2_URID_Map* map = NULL;
   LV2_Worker_Schedule* schedule = NULL;
+  LV2_Options_Option* opt = NULL;
 
   for (int i = 0; features[i]; ++i) {
     if (!strcmp(features[i]->URI, LV2_URID__map))
       map = static_cast<LV2_URID_Map*>(features[i]->data);
     else if (!strcmp(features[i]->URI, LV2_WORKER__schedule))
       schedule = static_cast<LV2_Worker_Schedule*>(features[i]->data);
+    else if (!strcmp(features[i]->URI, LV2_OPTIONS__options))
+      opt = (LV2_Options_Option*)features[i]->data;
   }
   if (!map) {
     fprintf(stderr, "Host does not support urid:map.\n");
@@ -80,6 +84,11 @@ static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const c
     delete plugin;
     return NULL;
   }
+  if (!opt) {
+    fprintf(stderr, "Host does not support opt:options.\n");
+    delete plugin;
+    return NULL;
+  }
 
   plugin->schedule = schedule;
 
@@ -87,6 +96,18 @@ static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const c
   plugin->map = map;
   jm_map_uris(plugin->map, &plugin->uris);
   lv2_atom_forge_init(&plugin->forge, plugin->map);
+
+  int index = 0;
+  while (1) {
+    if (opt[index].key == 0)
+      break;
+
+    if (opt[index].key == plugin->uris.bufsize_maxBlockLength)
+      fprintf(stderr, "SAMPLER max block len: %i\n", *((int*) opt[index].value));
+    else if (opt[index].key == plugin->uris.bufsize_nominalBlockLength)
+      fprintf(stderr, "SAMPLER nominal block len: %i\n", *((int*) opt[index].value));
+    ++index;    
+  }
 
   plugin->zone_number = 1;
   plugin->patch = NULL;
