@@ -13,7 +13,6 @@
 #define AUDIO_BUF_SIZE 4096
 
 JMSampler::JMSampler(int sample_rate, const std::vector<jm_zone>& zones):
-    sample_rate(sample_rate),
     zones(zones),
     sustain_on(false),
     sound_gens(POLYPHONY),
@@ -24,7 +23,7 @@ JMSampler::JMSampler(int sample_rate, const std::vector<jm_zone>& zones):
 
   for (size_t i = 0; i < POLYPHONY; ++i) {
     amp_gen_pool.push(new AmpEnvGenerator(amp_gen_pool));
-    playhead_pool.push(new Playhead(playhead_pool, AUDIO_BUF_SIZE));
+    playhead_pool.push(new Playhead(playhead_pool, sample_rate, AUDIO_BUF_SIZE));
   }
 }
 
@@ -83,7 +82,7 @@ void JMSampler::handle_note_on(const unsigned char* midi_msg, size_t nframes, si
       // create sound gen
       AmpEnvGenerator* ag = amp_gen_pool.pop();
       Playhead* ph = playhead_pool.pop();
-      ph->init(sample_rate, *it, midi_msg[1]);
+      ph->init(*it, midi_msg[1]);
       ag->init(ph, *it, midi_msg[1], midi_msg[2]);
       fprintf(stderr, "pre process start\n");
       ag->pre_process(nframes - curframe);

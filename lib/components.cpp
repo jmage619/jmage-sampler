@@ -119,8 +119,8 @@ crossfading:
   }
 }
 
-Playhead::Playhead(JMStack<Playhead*>& playhead_pool, size_t pitch_buf_size):
-    playhead_pool(playhead_pool) {
+Playhead::Playhead(JMStack<Playhead*>& playhead_pool, int sample_rate, size_t pitch_buf_size):
+    playhead_pool(playhead_pool), sample_rate(sample_rate) {
   // buf size * 2 to make room for stereo
   pitch_buf = new float[pitch_buf_size * 2];
   int error;
@@ -135,7 +135,7 @@ Playhead::~Playhead() {
   delete [] pitch_buf;
 }
 
-void Playhead::init(int sample_rate, const jm_zone& zone, int pitch) {
+void Playhead::init(const jm_zone& zone, int pitch) {
   src_ratio = sample_rate / (double) zone.sample_rate;
   SoundGenerator::init(zone, pitch);
   as.init(zone);

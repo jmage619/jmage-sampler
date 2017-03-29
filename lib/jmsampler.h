@@ -9,8 +9,6 @@
 
 class JMSampler {
   private:
-    int sample_rate;
-    
     const std::vector<jm_zone>& zones;
     // state
     bool sustain_on;

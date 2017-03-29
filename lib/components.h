@@ -62,6 +62,7 @@ class Playhead: public SoundGenerator {
     } state;
     double src_ratio;
     JMStack<Playhead*>& playhead_pool;
+    int sample_rate;
     AudioStream as;
     SRC_STATE* resampler;
     float in_buf[PH_BUF_SIZE];
@@ -75,9 +76,9 @@ class Playhead: public SoundGenerator {
     size_t cur_frame;
 
   public:
-    Playhead(JMStack<Playhead*>& playhead_pool, size_t pitch_buf_size);
+    Playhead(JMStack<Playhead*>& playhead_pool, int sample_rate, size_t pitch_buf_size);
     ~Playhead();
-    void init(int sample_rate, const jm_zone& zone, int pitch);
+    void init(const jm_zone& zone, int pitch);
     void pre_process(size_t nframes);
     void inc();
     void get_values(float* values);
