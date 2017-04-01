@@ -136,6 +136,15 @@ static void run(LV2_External_UI_Widget* widget) {
         if (!strncmp(ui->buf, "update_zone:", 12)) {
           obj = handle_update_zone(ui, ui->buf + 12);
         }
+        else if (!strncmp(ui->buf, "remove_zone:", 12)) {
+          //fprintf(stderr, "UI: ui remove zone: %s\n", ui->buf + 12);
+          LV2_Atom_Forge_Frame obj_frame;
+          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_removeZone);
+          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
+          int index = atoi(ui->buf + 12);
+          lv2_atom_forge_int(&ui->forge, index);
+          lv2_atom_forge_pop(&ui->forge, &obj_frame);
+        }
         else if (!strncmp(ui->buf, "add_zone:", 9)) {
           //fprintf(stderr, "UI: ui add zone: %s; len: %i\n", ui->buf + 9, strlen(ui->buf + 9));
           LV2_Atom_Forge_Frame obj_frame;

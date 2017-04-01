@@ -367,6 +367,15 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         //fprintf(stderr, "SAMPLER: update zone received!!\n");
         jm::update_zone(plugin, obj);
       }
+      else if (obj->body.otype == plugin->uris.jm_removeZone) {
+        LV2_Atom* params = NULL;
+
+        lv2_atom_object_get(obj, plugin->uris.jm_params, &params, 0);
+        int index = ((LV2_Atom_Int*) params)->body;
+        //fprintf(stderr, "SAMPLER: remove zone received!! index: %i\n", index);
+        plugin->zones.erase(plugin->zones.begin() + index);
+        jm::send_remove_zone(plugin, index);
+      }
       else if (obj->body.otype == plugin->uris.jm_addZone) {
         //fprintf(stderr, "SAMPLER: add zone received!!\n");
         LV2_Atom* params = NULL;

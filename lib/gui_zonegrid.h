@@ -48,6 +48,7 @@ class ZoneTableView: public SingleClickView {
     void updateSectionWidth(int logicalIndex, int oldSize, int newSize);
     void updateFrozenSectionWidth(int logicalIndex, int oldSize, int newSize);
     void updateSectionHeight(int logicalIndex, int oldSize, int newSize);
+    void handleVertHeaderClick(const QPoint& pos);
 };
 
 class ZoneTableDelegate: public QStyledItemDelegate {

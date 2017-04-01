@@ -144,6 +144,10 @@ ZoneTableView::ZoneTableView(QAbstractItemModel* model) {
 
   init();
 
+  frozen_view->verticalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
+
+  connect(frozen_view->verticalHeader(), &QWidget::customContextMenuRequested, this, &ZoneTableView::handleVertHeaderClick);
+
   //connect the headers and scrollbars of both tableviews together
   connect(horizontalHeader(),&QHeaderView::sectionResized, this,
     &ZoneTableView::updateFrozenSectionWidth);
@@ -201,6 +205,15 @@ void ZoneTableView::updateFrozenSectionWidth(int logicalIndex, int /* oldSize */
 
 void ZoneTableView::updateSectionHeight(int logicalIndex, int /* oldSize */, int newSize) {
   setRowHeight(logicalIndex, newSize);
+}
+
+void ZoneTableView::handleVertHeaderClick(const QPoint& pos) {
+  QMenu menu;
+  menu.addAction(tr("remove"));
+  QAction* action = menu.exec(verticalHeader()->mapToGlobal(pos));
+  if (action != 0) {
+    std::cout << "remove_zone:" << verticalHeader()->logicalIndexAt(pos) << std::endl;
+  }
 }
 
 /************
