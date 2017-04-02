@@ -183,12 +183,14 @@ void jm::add_zone_from_wave(sampler_plugin* plugin, int index, const char* path)
     zone.loop_mode = LOOP_CONTINUOUS;
   sprintf(zone.name, "Zone %i", plugin->zone_number++);
   strcpy(zone.path, path);
-  if (index >= 0)
+  if (index >= 0) {
     plugin->zones.insert(plugin->zones.begin() + index, zone);
-  else
+    send_add_zone(plugin, index, zone);
+  }
+  else {
     plugin->zones.push_back(zone);
-
-  send_add_zone(plugin, plugin->zones.size() - 1, zone);
+    send_add_zone(plugin, plugin->zones.size() - 1, zone);
+  }
 }
 
 void jm::add_zone_from_region(sampler_plugin* plugin, const std::map<std::string, SFZValue>& region) {

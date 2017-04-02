@@ -209,10 +209,17 @@ void ZoneTableView::updateSectionHeight(int logicalIndex, int /* oldSize */, int
 
 void ZoneTableView::handleVertHeaderClick(const QPoint& pos) {
   QMenu menu;
-  menu.addAction(tr("remove"));
+  menu.addAction(tr("delete"));
+  menu.addAction(tr("new zone before"));
   QAction* action = menu.exec(verticalHeader()->mapToGlobal(pos));
   if (action != 0) {
-    std::cout << "remove_zone:" << verticalHeader()->logicalIndexAt(pos) << std::endl;
+    if (action->text() == "delete")
+      std::cout << "remove_zone:" << verticalHeader()->logicalIndexAt(pos) << std::endl;
+    else if (action->text() == "new zone before") {
+      QString path = QFileDialog::getOpenFileName(this, tr("Open a FUCKING WAV already!!"), "", tr("Sound Files (*.wav *.aiff *.flac)"));
+      if (!path.isNull())
+        std::cout << "add_zone:" << verticalHeader()->logicalIndexAt(pos) << "," << path.toStdString() << std::endl;
+    }
   }
 }
 
