@@ -33,6 +33,8 @@ void InputThread::run() {
       std::istringstream sin(input.substr(9));
       std::string field;
       std::getline(sin, field, ',');
+      int index = atoi(field.c_str());
+      std::getline(sin, field, ',');
       z.wave_length = atoi(field.c_str());
       std::getline(sin, field, ',');
       strcpy(z.name, field.c_str());
@@ -80,7 +82,7 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       strcpy(z.path, field.c_str());
 
-      emit receivedAddZone(z);
+      emit receivedAddZone(index, z);
     }
     else if (!input.compare(0, 12, "remove_zone:"))
       emit receivedRemoveZone(atoi(input.substr(12).c_str()));
@@ -163,8 +165,7 @@ void SamplerUI::showAndRaise() {
   activateWindow();
 }
 
-void SamplerUI::addNewZone(const jm_zone& z) {
-  int i = zone_model.rowCount();
+void SamplerUI::addNewZone(int i, const jm_zone& z) {
   zone_model.insertRows(i, 1);
   zone_model.setZone(i, z);
 }
