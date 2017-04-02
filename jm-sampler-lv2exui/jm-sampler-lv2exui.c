@@ -376,9 +376,13 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       memset(outstr, 0, 256);
       char* p = outstr;
       sprintf(p, "add_zone:");
-      // wave length
+      // index
       p += strlen(p);
       LV2_Atom* a = lv2_atom_tuple_begin((LV2_Atom_Tuple*) params);
+      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
+      // wave length
+      p += strlen(p);
+      a = lv2_atom_tuple_next(a);
       sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
       // name
       p += strlen(p);
