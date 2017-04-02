@@ -150,7 +150,14 @@ static void run(LV2_External_UI_Widget* widget) {
           LV2_Atom_Forge_Frame obj_frame;
           obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_addZone);
           lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
-          lv2_atom_forge_string(&ui->forge, ui->buf + 9, strlen(ui->buf + 9));
+          LV2_Atom_Forge_Frame tuple_frame;
+          lv2_atom_forge_tuple(&ui->forge, &tuple_frame);
+          char* p = strtok(ui->buf + 9, ",");
+          int index = atoi(p);
+          lv2_atom_forge_int(&ui->forge, index);
+          p = strtok(NULL, ",");
+          lv2_atom_forge_string(&ui->forge, p, strlen(p));
+          lv2_atom_forge_pop(&ui->forge, &tuple_frame);
           lv2_atom_forge_pop(&ui->forge, &obj_frame);
         }
         else if (!strncmp(ui->buf, "load_patch:", 11)) {

@@ -279,7 +279,7 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
   if (msg->type == WORKER_LOAD_PATH_WAV) {
     //LV2_Atom_Forge_Frame seq_frame;
     //lv2_atom_forge_sequence_head(&plugin->forge, &seq_frame, 0);
-    jm::add_zone_from_wave(plugin, msg->str);
+    jm::add_zone_from_wave(plugin, msg->i, msg->str);
     //lv2_atom_forge_pop(&plugin->forge, &seq_frame);
     //fprintf(stderr, "SAMPLER: response completed; added: %s\n", path);
   }
@@ -379,16 +379,20 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         LV2_Atom* params = NULL;
 
         lv2_atom_object_get(obj, plugin->uris.jm_params, &params, 0);
-        char* path = (char*)(params + 1);
+        LV2_Atom* a = lv2_atom_tuple_begin((LV2_Atom_Tuple*) params);
+        int index = ((LV2_Atom_Int*) a)->body;
+        a = lv2_atom_tuple_next(a);
+        char* path = (char*)(a + 1);
  
         if (plugin->waves.find(path) == plugin->waves.end()) {
           worker_msg msg;
           msg.type =  WORKER_LOAD_PATH_WAV;
+          msg.i = index;
           strcpy(msg.str, path);
           plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &msg);
         }
         else
-          jm::add_zone_from_wave(plugin, path);
+          jm::add_zone_from_wave(plugin, index, path);
       }
       else if (obj->body.otype == plugin->uris.jm_loadPatch) {
         //fprintf(stderr, "SAMPLER: load patch received!!\n");

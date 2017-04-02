@@ -168,7 +168,7 @@ void jm::update_zone(sampler_plugin* plugin, const LV2_Atom_Object* obj) {
   }
 }
 
-void jm::add_zone_from_wave(sampler_plugin* plugin, const char* path) {
+void jm::add_zone_from_wave(sampler_plugin* plugin, int index, const char* path) {
   jm::wave& wav = plugin->waves[path];
   jm_zone zone;
   jm_init_zone(&zone);
@@ -182,7 +182,10 @@ void jm::add_zone_from_wave(sampler_plugin* plugin, const char* path) {
     zone.loop_mode = LOOP_CONTINUOUS;
   sprintf(zone.name, "Zone %i", plugin->zone_number++);
   strcpy(zone.path, path);
-  plugin->zones.push_back(zone);
+  if (index >= 0)
+    plugin->zones.insert(plugin->zones.begin() + index, zone);
+  else
+    plugin->zones.push_back(zone);
 
   send_add_zone(plugin, zone);
 }
