@@ -265,6 +265,7 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
 
     sfz::write(&save_patch, fout);
     fout.close();
+    strcpy(plugin->patch_path, msg->str);
 
     // probably should notify UI here that we finished!
   }
