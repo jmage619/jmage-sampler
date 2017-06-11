@@ -46,7 +46,6 @@ enum worker_msg_type {
 
 struct worker_msg {
   worker_msg_type type;
-  char str[256];
   int i;
 };
 
@@ -185,7 +184,7 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
 
   const worker_msg* msg = static_cast<const worker_msg*>(data);
   if (msg->type == WORKER_LOAD_PATH_WAV) {
-    plugin->waves[msg->str] = jm::parse_wave(msg->str);
+    plugin->waves[plugin->wav_path] = jm::parse_wave(plugin->wav_path);
 
     respond(handle, sizeof(worker_msg), msg); 
     //fprintf(stderr, "SAMPLER: work completed; parsed: %s\n", path);
@@ -201,30 +200,28 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
     SFZParser* parser;
-    int len = strlen(msg->str);
-    if (!strcmp(msg->str + len - 4, ".jmz"))
-      parser = new JMZParser(msg->str);
+    int len = strlen(plugin->patch_path);
+    if (!strcmp(plugin->patch_path + len - 4, ".jmz"))
+      parser = new JMZParser(plugin->patch_path);
     // assumed it could ony eitehr be jmz or sfz
     else
-      parser = new SFZParser(msg->str);
+      parser = new SFZParser(plugin->patch_path);
 
-    fprintf(stderr, "SAMPLER: work loading patch: %s\n", msg->str);
+    fprintf(stderr, "SAMPLER: work loading patch: %s\n", plugin->patch_path);
     if (plugin->patch != NULL)
       delete plugin->patch;
 
     plugin->patch = parser->parse();
     delete parser;
 
-    strcpy(plugin->patch_path, msg->str);
-
     respond(handle, sizeof(worker_msg), msg); 
   }
   else if (msg->type == WORKER_SAVE_PATCH) {
-    int len = strlen(msg->str);
+    int len = strlen(plugin->patch_path);
 
     sfz::sfz save_patch;
 
-    bool is_jmz = !strcmp(msg->str + len - 4, ".jmz");
+    bool is_jmz = !strcmp(plugin->patch_path + len - 4, ".jmz");
     if (is_jmz) {
       save_patch.control["jm_vol"] = (int) *plugin->level;
       save_patch.control["jm_chan"] = (int) *plugin->channel + 1;
@@ -261,11 +258,10 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
       save_patch.regions.push_back(region);
     }
 
-    std::ofstream fout(msg->str);
+    std::ofstream fout(plugin->patch_path);
 
     sfz::write(&save_patch, fout);
     fout.close();
-    strcpy(plugin->patch_path, msg->str);
 
     // probably should notify UI here that we finished!
   }
@@ -280,7 +276,7 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
   if (msg->type == WORKER_LOAD_PATH_WAV) {
     //LV2_Atom_Forge_Frame seq_frame;
     //lv2_atom_forge_sequence_head(&plugin->forge, &seq_frame, 0);
-    jm::add_zone_from_wave(plugin, msg->i, msg->str);
+    jm::add_zone_from_wave(plugin, msg->i, plugin->wav_path);
     //lv2_atom_forge_pop(&plugin->forge, &seq_frame);
     //fprintf(stderr, "SAMPLER: response completed; added: %s\n", path);
   }
@@ -389,7 +385,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
           worker_msg msg;
           msg.type =  WORKER_LOAD_PATH_WAV;
           msg.i = index;
-          strcpy(msg.str, path);
+          strcpy(plugin->wav_path, path);
           plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &msg);
         }
         else
@@ -403,7 +399,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         char* path = (char*)(params + 1);
         worker_msg msg;
         msg.type =  WORKER_LOAD_PATCH;
-        strcpy(msg.str, path);
+        strcpy(plugin->patch_path, path);
         plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &msg);
       }
       else if (obj->body.otype == plugin->uris.jm_savePatch) {
@@ -413,7 +409,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         char* path = (char*)(params + 1);
         worker_msg msg;
         msg.type =  WORKER_SAVE_PATCH;
-        strcpy(msg.str, path);
+        strcpy(plugin->patch_path, path);
         plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &msg);
       }
     }

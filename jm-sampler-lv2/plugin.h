@@ -31,6 +31,7 @@ namespace jm {
     std::vector<jm_zone> zones;
     std::map<std::string, jm::wave> waves;
     char patch_path[256];
+    char wav_path[256];
     float* channel;
     float* level;
     JMSampler* sampler;
