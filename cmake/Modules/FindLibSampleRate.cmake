@@ -6,7 +6,7 @@ find_library(LIBSAMPLERATE_LIBRARY samplerate)
 
 include(FindPackageHandleStandardArgs)
 
-find_package_handle_standard_args(LIBSAMPLERATE DEFAULT_MSG
+find_package_handle_standard_args(LibSampleRate DEFAULT_MSG
   LIBSAMPLERATE_INCLUDE_DIR LIBSAMPLERATE_LIBRARY)
 
 mark_as_advanced(LIBSAMPLERATE_INCLUDE_DIR LIBSAMPLERATE_LIBRARY)
