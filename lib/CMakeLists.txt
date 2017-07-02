@@ -7,15 +7,16 @@ include_directories(${LIBSAMPLERATE_INCLUDE_DIRS} ${LIBSNDFILE_INCLUDE_DIRS})
 find_package(Qt5Widgets REQUIRED)
 
 add_library(components OBJECT components.cpp)
-#set_property(TARGET components PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET components PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(sfzparser OBJECT sfzparser.cpp)
+set_property(TARGET sfzparser PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(wave OBJECT wave.cpp)
-#target_link_libraries(wave ${LIBSNDFILE_LIBRARIES})
+set_property(TARGET wave PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(jmsampler OBJECT jmsampler.cpp)
-#target_link_libraries(jmsampler ${LIBSAMPLERATE_LIBRARIES})
+set_property(TARGET jmsampler PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(gui_zonegrid OBJECT gui_zonegrid.cpp)
 target_include_directories(gui_zonegrid PRIVATE

@@ -1,7 +1,6 @@
 #ifndef LV2_URIS_H
 #define LV2_URIS_H
 
-#include <stdio.h>
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
 #include <lv2/lv2plug.in/ns/ext/midi/midi.h>

@@ -9,3 +9,5 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 add_subdirectory(lib)
 add_subdirectory(jm-sampler-ui)
+add_subdirectory(jm-sampler-lv2exui)
+add_subdirectory(jm-sampler-lv2)
