@@ -3,12 +3,12 @@
 @prefix ui:   <http://lv2plug.in/ns/extensions/ui#> .
 @prefix exui: <http://kxstudio.sf.net/ns/lv2ext/external-ui#> .
 
-<http://lv2plug.in/plugins/jm-sampler>
+<https://github.com/jmage619/jmage-sampler>
 	a lv2:Plugin ;
-	lv2:binary <jm-sampler-lv2/jm-sampler-lv2.so>  ;
+	lv2:binary <jm-sampler-lv2.so>  ;
 	rdfs:seeAlso <jm-sampler.ttl> .
 
-<http://lv2plug.in/plugins/jm-sampler#ui>
+<https://github.com/jmage619/jmage-sampler#ui>
 	a exui:Widget ;
-	ui:binary <jm-sampler-lv2exui/jm-sampler-lv2exui.so> ;
+	ui:binary <jm-sampler-lv2exui.so> ;
 	rdfs:seeAlso <jm-sampler.ttl> .

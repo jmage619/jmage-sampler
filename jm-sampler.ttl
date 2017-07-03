@@ -10,7 +10,7 @@
 @prefix bufsz: <http://lv2plug.in/ns/ext/buf-size#> .
 @prefix rsz:  <http://lv2plug.in/ns/ext/resize-port#> .
 
-<http://lv2plug.in/plugins/jm-sampler>
+<https://github.com/jmage619/jmage-sampler>
 	a lv2:Plugin;
   doap:name "JMAGE Sampler" ;
   doap:license <http://opensource.org/licenses/isc> ;
@@ -73,7 +73,7 @@
 		lv2:name "Out R"
 	] .
 
-<http://lv2plug.in/plugins/jm-sampler#ui>
+<https://github.com/jmage619/jmage-sampler#ui>
 	a exui:Widget ;
 	lv2:requiredFeature urid:map ;
 	ui:portNotification [

@@ -11,7 +11,7 @@
 #define LV2_BUF_SIZE__nominalBlockLength LV2_BUF_SIZE_PREFIX "nominalBlockLength"
 #endif
 
-#define JM_SAMPLER_URI "http://lv2plug.in/plugins/jm-sampler"
+#define JM_SAMPLER_URI "https://github.com/jmage619/jmage-sampler"
 #define JM_SAMPLER__getSampleRate JM_SAMPLER_URI "#setSampleRate"
 #define JM_SAMPLER__addZone JM_SAMPLER_URI "#addZone"
 #define JM_SAMPLER__removeZone JM_SAMPLER_URI "#removeZone"
