@@ -286,8 +286,6 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor* descriptor,
     dup2(to_child_pipe[0], 0);
     close(to_child_pipe[1]);
 
-    // until we install just use execlp and make sure PATH includes dir containing jm-sampler-ui
-    // probably should have smarter error checking in case it is not found..
     execl(CONFIG_INSTALL_PREFIX "/libexec/jm-sampler-ui", "jm-sampler-ui", NULL);
   }
   // i'm the parent
