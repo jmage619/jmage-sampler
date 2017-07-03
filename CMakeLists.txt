@@ -14,3 +14,5 @@ add_subdirectory(lib)
 add_subdirectory(jm-sampler-ui)
 add_subdirectory(jm-sampler-lv2exui)
 add_subdirectory(jm-sampler-lv2)
+
+install(FILES manifest.ttl jm-sampler.ttl DESTINATION lib${LIB_SUFFIX}/lv2/jmage-sampler.lv2)
