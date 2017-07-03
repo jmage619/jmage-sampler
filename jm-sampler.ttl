@@ -21,7 +21,7 @@
   opts:supportedOption bufsz:nominalBlockLength ;
   lv2:extensionData work:interface ,
     state:interface ;
-	ui:ui <http://lv2plug.in/plugins/jm-sampler#ui> ;
+	ui:ui <https://github.com/jmage619/jmage-sampler#ui> ;
 	lv2:port [
 		a lv2:InputPort ,
 			atom:AtomPort ;
@@ -77,15 +77,15 @@
 	a exui:Widget ;
 	lv2:requiredFeature urid:map ;
 	ui:portNotification [
-		ui:plugin <http://lv2plug.in/plugins/jm-sampler> ;
+		ui:plugin <https://github.com/jmage619/jmage-sampler> ;
 		lv2:symbol "notify" ;
 		ui:notifyType atom:Blank
 	] , [
-		ui:plugin <http://lv2plug.in/plugins/jm-sampler> ;
+		ui:plugin <https://github.com/jmage619/jmage-samplerr> ;
 		lv2:symbol "volume" ;
 		ui:portProtocol ui:floatProtocol
 	] , [
-		ui:plugin <http://lv2plug.in/plugins/jm-sampler> ;
+		ui:plugin <https://github.com/jmage619/jmage-sampler> ;
 		lv2:symbol "channel" ;
 		ui:portProtocol ui:floatProtocol
   ] .
