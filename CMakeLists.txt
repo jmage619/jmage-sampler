@@ -7,6 +7,9 @@ set(ctest_VERSION_PATCH 0)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
+configure_file("${PROJECT_SOURCE_DIR}/lib/config.h.in"
+  "${PROJECT_BINARY_DIR}/config.h")
+
 add_subdirectory(lib)
 add_subdirectory(jm-sampler-ui)
 add_subdirectory(jm-sampler-lv2exui)

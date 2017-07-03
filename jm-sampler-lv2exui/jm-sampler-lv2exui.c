@@ -15,6 +15,7 @@
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
 //#include <lv2/lv2plug.in/ns/ext/options/options.h>
 
+#include <config.h>
 #include <lib/zone.h>
 #include <lib/lv2_uris.h>
 #include "lv2_external_ui.h"
@@ -287,7 +288,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor* descriptor,
 
     // until we install just use execlp and make sure PATH includes dir containing jm-sampler-ui
     // probably should have smarter error checking in case it is not found..
-    execlp("jm-sampler-ui", "jm-sampler-ui", NULL);
+    execl(CONFIG_INSTALL_PREFIX "/libexec/jm-sampler-ui", "jm-sampler-ui", NULL);
   }
   // i'm the parent
   close(from_child_pipe[1]);
