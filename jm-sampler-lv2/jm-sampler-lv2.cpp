@@ -91,7 +91,7 @@ static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const c
 
   // Map URIS
   plugin->map = map;
-  jm_map_uris(plugin->map, &plugin->uris);
+  jm::map_uris(plugin->map, &plugin->uris);
   lv2_atom_forge_init(&plugin->forge, plugin->map);
 
   int max_block_len = -1;

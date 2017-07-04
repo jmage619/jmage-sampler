@@ -22,7 +22,7 @@ namespace jm {
     float* out1;
     float* out2;
     LV2_URID_Map* map;
-    jm_uris uris;
+    jm::uris uris;
     LV2_Worker_Schedule* schedule;
     LV2_Atom_Forge forge;
     LV2_Atom_Forge_Frame seq_frame;

@@ -31,7 +31,7 @@
 struct jm_sampler_ui {
   LV2_External_UI_Widget widget;
   LV2_URID_Map* map;
-  jm_uris uris;
+  jm::uris uris;
   LV2UI_Write_Function write;
   LV2UI_Controller controller;
   LV2_Atom_Forge forge;
@@ -253,7 +253,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
 
   // Map URIS
   ui->map = map;
-  jm_map_uris(ui->map, &ui->uris);
+  jm::map_uris(ui->map, &ui->uris);
 
   ui->write = write_function;
   ui->controller = controller;
