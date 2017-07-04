@@ -29,7 +29,7 @@ void InputThread::run() {
     else if (input == "show:0")
       emit receivedHide();
     else if (!input.compare(0, 9, "add_zone:")) {
-      jm_zone z;
+      jm::zone z;
       std::istringstream sin(input.substr(9));
       std::string field;
       std::getline(sin, field, ',');
@@ -59,7 +59,7 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.right = atoi(field.c_str());
       std::getline(sin, field, ',');
-      z.loop_mode = (jm_loop_mode) atoi(field.c_str());
+      z.loop_mode = (jm::loop_mode) atoi(field.c_str());
       std::getline(sin, field, ',');
       z.crossfade = atoi(field.c_str());
       std::getline(sin, field, ',');
@@ -141,7 +141,7 @@ SamplerUI::SamplerUI() {
   setLayout(v_layout);
 
   InputThread* in_thread = new InputThread;
-  qRegisterMetaType<jm_zone>();
+  qRegisterMetaType<jm::zone>();
   connect(in_thread, &InputThread::receivedSampleRate, this, &SamplerUI::setSampleRate);
   connect(in_thread, &InputThread::receivedShow, this, &SamplerUI::showAndRaise);
   connect(in_thread, &InputThread::receivedHide, this, &QWidget::hide);
@@ -165,7 +165,7 @@ void SamplerUI::showAndRaise() {
   activateWindow();
 }
 
-void SamplerUI::addNewZone(int i, const jm_zone& z) {
+void SamplerUI::addNewZone(int i, const jm::zone& z) {
   zone_model.insertRows(i, 1);
   zone_model.setZone(i, z);
 }

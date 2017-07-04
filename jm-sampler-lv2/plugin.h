@@ -28,7 +28,7 @@ namespace jm {
     LV2_Atom_Forge_Frame seq_frame;
     int zone_number; // only for naming
     sfz::sfz* patch;
-    std::vector<jm_zone> zones;
+    std::vector<jm::zone> zones;
     std::map<std::string, jm::wave> waves;
     char patch_path[256];
     char wav_path[256];
@@ -38,7 +38,7 @@ namespace jm {
   };
 
   void send_sample_rate(sampler_plugin* plugin);
-  void send_add_zone(sampler_plugin* plugin, int index, const jm_zone& zone);
+  void send_add_zone(sampler_plugin* plugin, int index, const jm::zone& zone);
   void send_remove_zone(sampler_plugin* plugin, int index);
   void send_update_vol(sampler_plugin* plugin, float vol);
   void send_update_chan(sampler_plugin* plugin, float chan);

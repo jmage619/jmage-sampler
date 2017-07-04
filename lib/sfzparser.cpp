@@ -50,13 +50,13 @@ void sfz::write(const sfz* s, std::ostream& out) {
       }
       else if (it->first == "loop_mode") {
         switch (it->second.get_int()) {
-          case LOOP_OFF:
+          case jm::LOOP_OFF:
             out << "no_loop";
             break;
-          case LOOP_CONTINUOUS:
+          case jm::LOOP_CONTINUOUS:
             out << "loop_continuous";
             break;
-          case LOOP_ONE_SHOT:
+          case jm::LOOP_ONE_SHOT:
             out << "one_shot";
             break;
         }
@@ -119,7 +119,7 @@ void SFZParser::set_region_defaults(std::map<std::string, SFZValue>& region) {
   // -1 to say not defined since may be defined in wav
   region["loop_start"] = -1;
   region["loop_end"] = -1;
-  region["loop_mode"] = LOOP_UNSET;
+  region["loop_mode"] = jm::LOOP_UNSET;
   region["loop_crossfade"] = 0.;
   region["group"] = 0;
   region["off_group"] = 0;
@@ -157,11 +157,11 @@ void SFZParser::update_region(std::map<std::string, SFZValue>& region, const std
   // loop mode
   else if (field == "loop_mode") {
     if (data == "no_loop")
-      region[field] = LOOP_OFF;
+      region[field] = jm::LOOP_OFF;
     else if (data == "loop_continuous")
-      region[field] = LOOP_CONTINUOUS;
+      region[field] = jm::LOOP_CONTINUOUS;
     else if (data == "one_shot")
-      region[field] = LOOP_ONE_SHOT;
+      region[field] = jm::LOOP_ONE_SHOT;
     else
       throw std::runtime_error("loop_mode must be \"no_loop\", \"loop_continuous\", or \"one_shot\"");
   }

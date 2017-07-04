@@ -78,33 +78,33 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
   p = strtok(NULL, ",");
 
   switch (type) {
-    case ZONE_NAME:
-    case ZONE_PATH:
+    case jm::ZONE_NAME:
+    case jm::ZONE_PATH:
       lv2_atom_forge_string(&ui->forge, p, strlen(p));
       break;
-    case ZONE_AMP:
-    case ZONE_SUSTAIN:
+    case jm::ZONE_AMP:
+    case jm::ZONE_SUSTAIN:
       lv2_atom_forge_float(&ui->forge, atof(p));
       break;
-    case ZONE_ORIGIN:
-    case ZONE_LOW_KEY:
-    case ZONE_HIGH_KEY:
-    case ZONE_LOW_VEL:
-    case ZONE_HIGH_VEL:
-    case ZONE_LOOP_MODE:
-    case ZONE_GROUP:
-    case ZONE_OFF_GROUP:
-    case ZONE_START:
-    case ZONE_LEFT:
-    case ZONE_RIGHT:
-    case ZONE_CROSSFADE:
-    case ZONE_ATTACK:
-    case ZONE_HOLD:
-    case ZONE_DECAY:
-    case ZONE_RELEASE:
+    case jm::ZONE_ORIGIN:
+    case jm::ZONE_LOW_KEY:
+    case jm::ZONE_HIGH_KEY:
+    case jm::ZONE_LOW_VEL:
+    case jm::ZONE_HIGH_VEL:
+    case jm::ZONE_LOOP_MODE:
+    case jm::ZONE_GROUP:
+    case jm::ZONE_OFF_GROUP:
+    case jm::ZONE_START:
+    case jm::ZONE_LEFT:
+    case jm::ZONE_RIGHT:
+    case jm::ZONE_CROSSFADE:
+    case jm::ZONE_ATTACK:
+    case jm::ZONE_HOLD:
+    case jm::ZONE_DECAY:
+    case jm::ZONE_RELEASE:
       lv2_atom_forge_int(&ui->forge, atoi(p));
       break;
-    case ZONE_PITCH:
+    case jm::ZONE_PITCH:
       lv2_atom_forge_double(&ui->forge, atof(p));
       break;
   }

@@ -75,7 +75,7 @@ class ZoneTableModel: public QAbstractTableModel {
 
   private:
     int sample_rate;
-    std::vector<jm_zone> zones;
+    std::vector<jm::zone> zones;
   public:
     void setSampleRate(int sample_rate) {this->sample_rate = sample_rate;}
     int rowCount(const QModelIndex& parent = QModelIndex()) const;
@@ -86,7 +86,7 @@ class ZoneTableModel: public QAbstractTableModel {
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
-    void setZone(int row, const jm_zone& z);
+    void setZone(int row, const jm::zone& z);
 };
 
 #endif

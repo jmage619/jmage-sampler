@@ -227,7 +227,7 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
       save_patch.control["jm_chan"] = (int) *plugin->channel + 1;
     }
 
-    std::vector<jm_zone>::iterator it;
+    std::vector<jm::zone>::iterator it;
     for (it = plugin->zones.begin(); it != plugin->zones.end(); ++it) {
       std::map<std::string, SFZValue> region;
 
@@ -353,7 +353,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
       }
       else if (obj->body.otype == plugin->uris.jm_getZones) {
         //fprintf(stderr, "SAMPLER: get zones received!!\n");
-        std::vector<jm_zone>::iterator it;
+        std::vector<jm::zone>::iterator it;
         for (it = plugin->zones.begin(); it != plugin->zones.end(); ++it) {
           jm::send_add_zone(plugin, it - plugin->zones.begin(), *it);
         }

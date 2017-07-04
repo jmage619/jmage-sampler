@@ -9,7 +9,7 @@
 
 class JMSampler {
   private:
-    const std::vector<jm_zone>& zones;
+    const std::vector<jm::zone>& zones;
     // state
     bool sustain_on;
     SoundGenList sound_gens;
@@ -18,7 +18,7 @@ class JMSampler {
     JMStack<AmpEnvGenerator*> amp_gen_pool;
 
   public:
-    JMSampler(const std::vector<jm_zone>& zones, int sample_rate, size_t in_nframes, size_t out_nframes);
+    JMSampler(const std::vector<jm::zone>& zones, int sample_rate, size_t in_nframes, size_t out_nframes);
     ~JMSampler();
     void pre_process(size_t nframes);
     void handle_note_on(const unsigned char* midi_msg, size_t nframes, size_t curframe);

@@ -24,7 +24,7 @@ void jm::send_sample_rate(sampler_plugin* plugin) {
   fprintf(stderr, "SAMPLER: sample rate sent!! %i\n", plugin->sample_rate);
 }
 
-void jm::send_add_zone(sampler_plugin* plugin, int index, const jm_zone& zone) {
+void jm::send_add_zone(sampler_plugin* plugin, int index, const jm::zone& zone) {
   lv2_atom_forge_frame_time(&plugin->forge, 0);
   LV2_Atom_Forge_Frame obj_frame;
   lv2_atom_forge_object(&plugin->forge, &obj_frame, 0, plugin->uris.jm_addZone);
@@ -137,7 +137,7 @@ void jm::update_zone(sampler_plugin* plugin, const LV2_Atom_Object* obj) {
       plugin->zones.at(index).right = reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
     case ZONE_LOOP_MODE:
-      plugin->zones.at(index).loop_mode = (jm_loop_mode) reinterpret_cast<LV2_Atom_Int*>(a)->body;
+      plugin->zones.at(index).loop_mode = (jm::loop_mode) reinterpret_cast<LV2_Atom_Int*>(a)->body;
       break;
     case ZONE_CROSSFADE:
       plugin->zones.at(index).crossfade = reinterpret_cast<LV2_Atom_Int*>(a)->body;
@@ -171,8 +171,8 @@ void jm::update_zone(sampler_plugin* plugin, const LV2_Atom_Object* obj) {
 
 void jm::add_zone_from_wave(sampler_plugin* plugin, int index, const char* path) {
   jm::wave& wav = plugin->waves[path];
-  jm_zone zone;
-  jm_init_zone(&zone);
+  jm::zone zone;
+  jm::init_zone(&zone);
   zone.wave = wav.wave;
   zone.num_channels = wav.num_channels;
   zone.sample_rate = wav.sample_rate;
@@ -195,8 +195,8 @@ void jm::add_zone_from_wave(sampler_plugin* plugin, int index, const char* path)
 
 void jm::add_zone_from_region(sampler_plugin* plugin, const std::map<std::string, SFZValue>& region) {
   jm::wave& wav = plugin->waves[region.find("sample")->second.get_str()];
-  jm_zone zone;
-  jm_init_zone(&zone);
+  jm::zone zone;
+  jm::init_zone(&zone);
   zone.wave = wav.wave;
   zone.num_channels = wav.num_channels;
   zone.sample_rate = wav.sample_rate;
@@ -222,7 +222,7 @@ void jm::add_zone_from_region(sampler_plugin* plugin, const std::map<std::string
   zone.pitch_corr = region.find("tune")->second.get_int() / 100.;
   zone.start = region.find("offset")->second.get_int();
 
-  jm_loop_mode mode = (jm_loop_mode) region.find("loop_mode")->second.get_int();
+  jm::loop_mode mode = (jm::loop_mode) region.find("loop_mode")->second.get_int();
   if (mode != LOOP_UNSET)
     zone.loop_mode = mode;
 

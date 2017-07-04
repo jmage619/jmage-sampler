@@ -9,7 +9,7 @@
 #include "components.h"
 #include "jmsampler.h"
 
-JMSampler::JMSampler(const std::vector<jm_zone>& zones, int sample_rate, size_t in_nframes, size_t out_nframes):
+JMSampler::JMSampler(const std::vector<jm::zone>& zones, int sample_rate, size_t in_nframes, size_t out_nframes):
     zones(zones),
     sustain_on(false),
     sound_gens(POLYPHONY),
@@ -57,9 +57,9 @@ void JMSampler::handle_note_on(const unsigned char* midi_msg, size_t nframes, si
     }
   }
   // pick out zones midi event matches against and add sound gens to queue
-  std::vector<jm_zone>::const_iterator it;
+  std::vector<jm::zone>::const_iterator it;
   for (it = zones.begin(); it != zones.end(); ++it) {
-    if (jm_zone_contains(&*it, midi_msg[1], midi_msg[2])) {
+    if (jm::zone_contains(&*it, midi_msg[1], midi_msg[2])) {
       fprintf(stderr, "sg num: %li\n", sound_gens.size());
       // oops we hit polyphony, remove oldest sound gen in the queue to make room
       if (sound_gens.size() >= POLYPHONY) {

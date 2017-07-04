@@ -235,7 +235,7 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
   DragBox* dbox;
   QComboBox* combo;
   switch (index.column()) {
-    case ZONE_AMP:
+    case jm::ZONE_AMP:
       dbox = new DragBox(parent, -144, 6, 151);
       // update model immediately on text change
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
@@ -244,32 +244,32 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
 
       //std::cout << "editor created\n";
       return dbox;
-    case ZONE_ORIGIN:
-    case ZONE_LOW_KEY:
-    case ZONE_HIGH_KEY: {
+    case jm::ZONE_ORIGIN:
+    case jm::ZONE_LOW_KEY:
+    case jm::ZONE_HIGH_KEY: {
       NotePopup* popup = new NotePopup(parent);
       connect(popup, &NotePopup::selected, this, &ZoneTableDelegate::commitAndCloseEditor);
       return popup;
     }
-    case ZONE_LOW_VEL:
-    case ZONE_HIGH_VEL:
+    case jm::ZONE_LOW_VEL:
+    case jm::ZONE_HIGH_VEL:
       dbox = new DragBox(parent, 0, 127, 128);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
-    case ZONE_PITCH:
+    case jm::ZONE_PITCH:
       dbox = new DragBox(parent, -.5, .5);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
-    case ZONE_START:
-    case ZONE_LEFT:
-    case ZONE_RIGHT:
+    case jm::ZONE_START:
+    case jm::ZONE_LEFT:
+    case jm::ZONE_RIGHT:
       dbox = new DragBox(parent, 0.0, index.data(MAX_ROLE).toDouble());
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
-    case ZONE_LOOP_MODE:
+    case jm::ZONE_LOOP_MODE:
       combo = new QComboBox(parent);
       combo->addItem(tr("off"));
       combo->addItem(tr("on"));
@@ -278,8 +278,8 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
       // still get a combo box if click outside border or hit escape..
       connect(combo, static_cast<void (QComboBox::*)(int)>(&QComboBox::activated), this, &ZoneTableDelegate::commitAndCloseEditor);
       return combo;
-    case ZONE_GROUP:
-    case ZONE_OFF_GROUP:
+    case jm::ZONE_GROUP:
+    case jm::ZONE_OFF_GROUP:
       combo = new QComboBox(parent);
       combo->addItem(tr("none"));
       for (int i = 1; i <= 16; ++i)
@@ -287,21 +287,21 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
 
       connect(combo, static_cast<void (QComboBox::*)(int)>(&QComboBox::activated), this, &ZoneTableDelegate::commitAndCloseEditor);
       return combo;
-    case ZONE_CROSSFADE:
+    case jm::ZONE_CROSSFADE:
       dbox = new DragBox(parent, 0, 1000);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
-    case ZONE_ATTACK:
-    case ZONE_HOLD:
+    case jm::ZONE_ATTACK:
+    case jm::ZONE_HOLD:
       dbox = new DragBox(parent, 0.0, 2.0);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
-    case ZONE_DECAY:
-    case ZONE_RELEASE: {
+    case jm::ZONE_DECAY:
+    case jm::ZONE_RELEASE: {
       const QAbstractItemModel* model = index.model();
-      QModelIndex i = model->index(index.row(), ZONE_LONG_TAIL);
+      QModelIndex i = model->index(index.row(), jm::ZONE_LONG_TAIL);
       if (i.data(Qt::CheckStateRole).toInt() == Qt::Checked)
         dbox = new DragBox(parent, 0.0, 20.0);
       else
@@ -310,7 +310,7 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
     }
-    case ZONE_SUSTAIN:
+    case jm::ZONE_SUSTAIN:
       dbox = new DragBox(parent, 0.0, 1.0);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
@@ -323,35 +323,35 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
 void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
     const QStyleOptionViewItem& option, const QModelIndex& index) const {
   switch (index.column()) {
-    case ZONE_AMP:
-    case ZONE_LOW_VEL:
-    case ZONE_HIGH_VEL:
-    case ZONE_PITCH:
-    case ZONE_START:
-    case ZONE_LEFT:
-    case ZONE_RIGHT:
-    case ZONE_CROSSFADE:
-    case ZONE_ATTACK:
-    case ZONE_HOLD:
-    case ZONE_DECAY:
-    case ZONE_SUSTAIN:
-    case ZONE_RELEASE: {
+    case jm::ZONE_AMP:
+    case jm::ZONE_LOW_VEL:
+    case jm::ZONE_HIGH_VEL:
+    case jm::ZONE_PITCH:
+    case jm::ZONE_START:
+    case jm::ZONE_LEFT:
+    case jm::ZONE_RIGHT:
+    case jm::ZONE_CROSSFADE:
+    case jm::ZONE_ATTACK:
+    case jm::ZONE_HOLD:
+    case jm::ZONE_DECAY:
+    case jm::ZONE_SUSTAIN:
+    case jm::ZONE_RELEASE: {
       DragBox* dbox = static_cast<DragBox*>(editor);
       dbox->setGeometry(option.rect); // have to cast because setGeometry isn't virtual
       dbox->showPopup();
       break;
     }
-    case ZONE_ORIGIN:
-    case ZONE_LOW_KEY:
-    case ZONE_HIGH_KEY: {
+    case jm::ZONE_ORIGIN:
+    case jm::ZONE_LOW_KEY:
+    case jm::ZONE_HIGH_KEY: {
       NotePopup* popup = static_cast<NotePopup*>(editor);
       popup->setGeometry(option.rect);
       popup->showPopup();
       break;
     }
-    case ZONE_LOOP_MODE:
-    case ZONE_GROUP:
-    case ZONE_OFF_GROUP: {
+    case jm::ZONE_LOOP_MODE:
+    case jm::ZONE_GROUP:
+    case jm::ZONE_OFF_GROUP: {
       QComboBox* combo = static_cast<QComboBox*>(editor);
       // base new y off centers since current cell may have been resized
       int y = option.rect.y() + (option.rect.height() - combo->height()) / 2;
@@ -370,19 +370,19 @@ void ZoneTableDelegate::setEditorData(QWidget* editor, const QModelIndex& index)
   //std::cout << "begin editor update\n";
   
   switch (index.column()) {
-    case ZONE_AMP:
-    case ZONE_LOW_VEL:
-    case ZONE_HIGH_VEL:
-    case ZONE_PITCH:
-    case ZONE_START:
-    case ZONE_LEFT:
-    case ZONE_RIGHT:
-    case ZONE_CROSSFADE:
-    case ZONE_ATTACK:
-    case ZONE_HOLD:
-    case ZONE_DECAY:
-    case ZONE_SUSTAIN:
-    case ZONE_RELEASE: {
+    case jm::ZONE_AMP:
+    case jm::ZONE_LOW_VEL:
+    case jm::ZONE_HIGH_VEL:
+    case jm::ZONE_PITCH:
+    case jm::ZONE_START:
+    case jm::ZONE_LEFT:
+    case jm::ZONE_RIGHT:
+    case jm::ZONE_CROSSFADE:
+    case jm::ZONE_ATTACK:
+    case jm::ZONE_HOLD:
+    case jm::ZONE_DECAY:
+    case jm::ZONE_SUSTAIN:
+    case jm::ZONE_RELEASE: {
       DragBox* dbox = static_cast<DragBox*>(editor);
 
       double val = index.data(Qt::EditRole).toDouble();
@@ -390,16 +390,16 @@ void ZoneTableDelegate::setEditorData(QWidget* editor, const QModelIndex& index)
       dbox->setValue(val);
       break;
     }
-    case ZONE_ORIGIN:
-    case ZONE_LOW_KEY:
-    case ZONE_HIGH_KEY: {
+    case jm::ZONE_ORIGIN:
+    case jm::ZONE_LOW_KEY:
+    case jm::ZONE_HIGH_KEY: {
       NotePopup* popup = static_cast<NotePopup*>(editor);
       popup->setCurrentText(index.data(Qt::EditRole).toString());
       break;
     }
-    case ZONE_LOOP_MODE:
-    case ZONE_GROUP:
-    case ZONE_OFF_GROUP: {
+    case jm::ZONE_LOOP_MODE:
+    case jm::ZONE_GROUP:
+    case jm::ZONE_OFF_GROUP: {
       QComboBox* combo = static_cast<QComboBox*>(editor);
       combo->setCurrentText(index.data(Qt::EditRole).toString());
       // must show popup here instead of update geometry because it
@@ -418,34 +418,34 @@ void ZoneTableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model,
   //std::cout << "begin model update\n";
 
   switch (index.column()) {
-    case ZONE_AMP:
-    case ZONE_LOW_VEL:
-    case ZONE_HIGH_VEL:
-    case ZONE_PITCH:
-    case ZONE_START:
-    case ZONE_LEFT:
-    case ZONE_RIGHT:
-    case ZONE_CROSSFADE:
-    case ZONE_ATTACK:
-    case ZONE_HOLD:
-    case ZONE_DECAY:
-    case ZONE_SUSTAIN:
-    case ZONE_RELEASE: {
+    case jm::ZONE_AMP:
+    case jm::ZONE_LOW_VEL:
+    case jm::ZONE_HIGH_VEL:
+    case jm::ZONE_PITCH:
+    case jm::ZONE_START:
+    case jm::ZONE_LEFT:
+    case jm::ZONE_RIGHT:
+    case jm::ZONE_CROSSFADE:
+    case jm::ZONE_ATTACK:
+    case jm::ZONE_HOLD:
+    case jm::ZONE_DECAY:
+    case jm::ZONE_SUSTAIN:
+    case jm::ZONE_RELEASE: {
       DragBox* dbox = static_cast<DragBox*>(editor);
 
       model->setData(index, dbox->value(), Qt::EditRole);
       break;
     }
-    case ZONE_ORIGIN:
-    case ZONE_LOW_KEY:
-    case ZONE_HIGH_KEY: {
+    case jm::ZONE_ORIGIN:
+    case jm::ZONE_LOW_KEY:
+    case jm::ZONE_HIGH_KEY: {
       NotePopup* popup = static_cast<NotePopup*>(editor);
       model->setData(index, popup->currentText(), Qt::EditRole);
       break;
     }
-    case ZONE_LOOP_MODE:
-    case ZONE_GROUP:
-    case ZONE_OFF_GROUP: {
+    case jm::ZONE_LOOP_MODE:
+    case jm::ZONE_GROUP:
+    case jm::ZONE_OFF_GROUP: {
       QComboBox* combo = static_cast<QComboBox*>(editor);
       model->setData(index, combo->currentText(), Qt::EditRole);
       break;
@@ -499,14 +499,14 @@ Qt::ItemFlags ZoneTableModel::flags(const QModelIndex &index) const {
   if (!index.isValid())
     return Qt::ItemIsEnabled;
 
-  return QAbstractItemModel::flags(index) | (index.column() == ZONE_LONG_TAIL ? Qt::ItemIsUserCheckable: Qt::ItemIsEditable);
+  return QAbstractItemModel::flags(index) | (index.column() == jm::ZONE_LONG_TAIL ? Qt::ItemIsUserCheckable: Qt::ItemIsEditable);
 }
 
 bool ZoneTableModel::insertRows(int row, int count, const QModelIndex&) {
   beginInsertRows(QModelIndex(), row, row + count - 1);
 
-  std::vector<jm_zone>::iterator first = zones.begin() + row;
-  zones.insert(first, count, jm_zone());
+  std::vector<jm::zone>::iterator first = zones.begin() + row;
+  zones.insert(first, count, jm::zone());
 
   endInsertRows();
   return true;
@@ -515,7 +515,7 @@ bool ZoneTableModel::insertRows(int row, int count, const QModelIndex&) {
 bool ZoneTableModel::removeRows(int row, int count, const QModelIndex&) {
   beginRemoveRows(QModelIndex(), row, row + count - 1);
 
-  std::vector<jm_zone>::iterator first = zones.begin() + row;
+  std::vector<jm::zone>::iterator first = zones.begin() + row;
 
   zones.erase(first, first + count);
 
@@ -527,49 +527,49 @@ QVariant ZoneTableModel::headerData(int section, Qt::Orientation orientation, in
   if (orientation == Qt::Horizontal) {
     if (role == Qt::DisplayRole) {
       switch (section) {
-        case ZONE_NAME:
+        case jm::ZONE_NAME:
           return "Name";
-        case ZONE_AMP:
+        case jm::ZONE_AMP:
           return "Vol (db)";
-        case ZONE_ORIGIN:
+        case jm::ZONE_ORIGIN:
           return "Origin";
-        case ZONE_LOW_KEY:
+        case jm::ZONE_LOW_KEY:
           return "Lower";
-        case ZONE_HIGH_KEY:
+        case jm::ZONE_HIGH_KEY:
           return "Upper";
-        case ZONE_LOW_VEL:
+        case jm::ZONE_LOW_VEL:
           return "Lo Vel";
-        case ZONE_HIGH_VEL:
+        case jm::ZONE_HIGH_VEL:
           return "Hi Vel";
-        case ZONE_PITCH:
+        case jm::ZONE_PITCH:
           return "Pitch";
-        case ZONE_START:
+        case jm::ZONE_START:
           return "Start";
-        case ZONE_LEFT:
+        case jm::ZONE_LEFT:
           return "Left";
-        case ZONE_RIGHT:
+        case jm::ZONE_RIGHT:
           return "Right";
-        case ZONE_LOOP_MODE:
+        case jm::ZONE_LOOP_MODE:
           return "Loop";
-        case ZONE_CROSSFADE:
+        case jm::ZONE_CROSSFADE:
           return "CF";
-        case ZONE_GROUP:
+        case jm::ZONE_GROUP:
           return "Group";
-        case ZONE_OFF_GROUP:
+        case jm::ZONE_OFF_GROUP:
           return "Off Group";
-        case ZONE_ATTACK:
+        case jm::ZONE_ATTACK:
           return "Attack";
-        case ZONE_HOLD:
+        case jm::ZONE_HOLD:
           return "Hold";
-        case ZONE_DECAY:
+        case jm::ZONE_DECAY:
           return "Decay";
-        case ZONE_SUSTAIN:
+        case jm::ZONE_SUSTAIN:
           return "Sustain";
-        case ZONE_RELEASE:
+        case jm::ZONE_RELEASE:
           return "Release";
-        case ZONE_LONG_TAIL:
+        case jm::ZONE_LONG_TAIL:
           return "20s Tail";
-        case ZONE_PATH:
+        case jm::ZONE_PATH:
           return "Path";
         default:
           return section;
@@ -593,72 +593,72 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
 
   if (role == Qt::CheckStateRole) {
     switch (index.column()) {
-      case ZONE_LONG_TAIL:
+      case jm::ZONE_LONG_TAIL:
         return zones[index.row()].long_tail;
     }
   }
   else if (role == MAX_ROLE) {
     switch (index.column()) {
-      case ZONE_START:
-      case ZONE_LEFT:
-      case ZONE_RIGHT:
+      case jm::ZONE_START:
+      case jm::ZONE_LEFT:
+      case jm::ZONE_RIGHT:
         return (float) zones[index.row()].wave_length / sample_rate;
     }
   }
   else if (role == Qt::DisplayRole || role == Qt::EditRole) {
     switch (index.column()) {
-      case ZONE_NAME:
+      case jm::ZONE_NAME:
         return zones[index.row()].name;
-      case ZONE_AMP:
+      case jm::ZONE_AMP:
         return 20.f * log10f(zones[index.row()].amp);
-      case ZONE_ORIGIN:
+      case jm::ZONE_ORIGIN:
         return note_to_string(zones[index.row()].origin);
-      case ZONE_LOW_KEY:
+      case jm::ZONE_LOW_KEY:
         return note_to_string(zones[index.row()].low_key);
-      case ZONE_HIGH_KEY:
+      case jm::ZONE_HIGH_KEY:
         return note_to_string(zones[index.row()].high_key);
-      case ZONE_LOW_VEL:
+      case jm::ZONE_LOW_VEL:
         return zones[index.row()].low_vel;
-      case ZONE_HIGH_VEL:
+      case jm::ZONE_HIGH_VEL:
         return zones[index.row()].high_vel;
-      case ZONE_PITCH:
+      case jm::ZONE_PITCH:
         return zones[index.row()].pitch_corr;
-      case ZONE_START:
+      case jm::ZONE_START:
         return (float) zones[index.row()].start / sample_rate;
-      case ZONE_LEFT:
+      case jm::ZONE_LEFT:
         return (float) zones[index.row()].left / sample_rate;
-      case ZONE_RIGHT:
+      case jm::ZONE_RIGHT:
         return (float) zones[index.row()].right / sample_rate;
-      case ZONE_LOOP_MODE:
+      case jm::ZONE_LOOP_MODE:
         switch (zones[index.row()].loop_mode) {
-          case LOOP_OFF:
+          case jm::LOOP_OFF:
             return "off";
-          case LOOP_CONTINUOUS:
+          case jm::LOOP_CONTINUOUS:
             return "on";
-          case LOOP_ONE_SHOT:
+          case jm::LOOP_ONE_SHOT:
             return "one shot";
           default:
             break;
         }
         break;
-      case ZONE_CROSSFADE:
+      case jm::ZONE_CROSSFADE:
         // 0.5 epsilon to prevent truncation error
         return (int) ((double) zones[index.row()].crossfade / sample_rate * 1000. + 0.5);
-      case ZONE_GROUP:
+      case jm::ZONE_GROUP:
         return zones[index.row()].group == 0 ? "none": QString::number(zones[index.row()].group);
-      case ZONE_OFF_GROUP:
+      case jm::ZONE_OFF_GROUP:
         return zones[index.row()].off_group == 0 ? "none": QString::number(zones[index.row()].off_group);
-      case ZONE_ATTACK:
+      case jm::ZONE_ATTACK:
         return (float) zones[index.row()].attack / sample_rate;
-      case ZONE_HOLD:
+      case jm::ZONE_HOLD:
         return (float) zones[index.row()].hold / sample_rate;
-      case ZONE_DECAY:
+      case jm::ZONE_DECAY:
         return (float) zones[index.row()].decay / sample_rate;
-      case ZONE_SUSTAIN:
+      case jm::ZONE_SUSTAIN:
         return zones[index.row()].sustain;
-      case ZONE_RELEASE:
+      case jm::ZONE_RELEASE:
         return (float) zones[index.row()].release / sample_rate;
-      case ZONE_PATH:
+      case jm::ZONE_PATH:
         return zones[index.row()].path;
     }
   }
@@ -670,7 +670,7 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
   if (index.isValid() && role == Qt::CheckStateRole) {
     switch (index.column()) {
       // long tail special case; used for UI only, don't send a message out
-      case ZONE_LONG_TAIL:
+      case jm::ZONE_LONG_TAIL:
         zones[index.row()].long_tail = value.toInt();
         break;
     }
@@ -680,65 +680,65 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
   else if (index.isValid() && role == Qt::EditRole) {
     std::cout << "update_zone:" << index.row() << "," << index.column() << ",";
     switch (index.column()) {
-      case ZONE_NAME:
+      case jm::ZONE_NAME:
         strcpy(zones[index.row()].name, value.toString().toStdString().c_str());
         std::cout << value.toString().toStdString();
         break;
-      case ZONE_AMP:
+      case jm::ZONE_AMP:
         zones[index.row()].amp = powf(10.f, value.toFloat() / 20.f);
         std::cout << zones[index.row()].amp;
         break;
-      case ZONE_ORIGIN:
+      case jm::ZONE_ORIGIN:
         zones[index.row()].origin = string_to_note(value.toString());
         std::cout << zones[index.row()].origin;
         break;
-      case ZONE_LOW_KEY:
+      case jm::ZONE_LOW_KEY:
         zones[index.row()].low_key = string_to_note(value.toString());
         std::cout << zones[index.row()].low_key;
         break;
-      case ZONE_HIGH_KEY:
+      case jm::ZONE_HIGH_KEY:
         zones[index.row()].high_key = string_to_note(value.toString());
         std::cout << zones[index.row()].high_key;
         break;
-      case ZONE_LOW_VEL:
+      case jm::ZONE_LOW_VEL:
         zones[index.row()].low_vel = value.toInt();
         std::cout << value.toInt();
         break;
-      case ZONE_HIGH_VEL:
+      case jm::ZONE_HIGH_VEL:
         zones[index.row()].high_vel = value.toInt();
         std::cout << value.toInt();
         break;
-      case ZONE_PITCH:
+      case jm::ZONE_PITCH:
         zones[index.row()].pitch_corr = value.toDouble();
         std::cout << value.toDouble();
         break;
-      case ZONE_START:
+      case jm::ZONE_START:
         zones[index.row()].start = (int) (value.toFloat() * sample_rate);
         std::cout << zones[index.row()].start;
         break;
-      case ZONE_LEFT:
+      case jm::ZONE_LEFT:
         zones[index.row()].left = (int) (value.toFloat() * sample_rate);
         std::cout << zones[index.row()].left;
         break;
-      case ZONE_RIGHT:
+      case jm::ZONE_RIGHT:
         zones[index.row()].right = (int) (value.toFloat() * sample_rate);
         std::cout << zones[index.row()].right;
         break;
-      case ZONE_LOOP_MODE:
+      case jm::ZONE_LOOP_MODE:
         if (value.toString() == "off")
-          zones[index.row()].loop_mode = LOOP_OFF;
+          zones[index.row()].loop_mode = jm::LOOP_OFF;
         else if (value.toString() == "on")
-          zones[index.row()].loop_mode = LOOP_CONTINUOUS;
+          zones[index.row()].loop_mode = jm::LOOP_CONTINUOUS;
         else if (value.toString() == "one shot")
-          zones[index.row()].loop_mode = LOOP_ONE_SHOT;
+          zones[index.row()].loop_mode = jm::LOOP_ONE_SHOT;
 
         std::cout << zones[index.row()].loop_mode;
         break;
-      case ZONE_CROSSFADE:
+      case jm::ZONE_CROSSFADE:
         zones[index.row()].crossfade = (int) (value.toInt() * sample_rate / 1000.);
         std::cout << zones[index.row()].crossfade;
         break;
-      case ZONE_GROUP:
+      case jm::ZONE_GROUP:
         if (value.toString() == "none")
           zones[index.row()].group = 0;
         else
@@ -746,7 +746,7 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         
         std::cout << zones[index.row()].group;
         break;
-      case ZONE_OFF_GROUP:
+      case jm::ZONE_OFF_GROUP:
         if (value.toString() == "none")
           zones[index.row()].off_group = 0;
         else
@@ -754,27 +754,27 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
         
         std::cout << zones[index.row()].off_group;
         break;
-      case ZONE_ATTACK:
+      case jm::ZONE_ATTACK:
         zones[index.row()].attack = value.toFloat() * sample_rate;
         std::cout << zones[index.row()].attack;
         break;
-      case ZONE_HOLD:
+      case jm::ZONE_HOLD:
         zones[index.row()].hold = value.toFloat() * sample_rate;
         std::cout << zones[index.row()].hold;
         break;
-      case ZONE_DECAY:
+      case jm::ZONE_DECAY:
         zones[index.row()].decay = value.toFloat() * sample_rate;
         std::cout << zones[index.row()].decay;
         break;
-      case ZONE_SUSTAIN:
+      case jm::ZONE_SUSTAIN:
         zones[index.row()].sustain = value.toFloat();
         std::cout << zones[index.row()].sustain;
         break;
-      case ZONE_RELEASE:
+      case jm::ZONE_RELEASE:
         zones[index.row()].release = value.toFloat() * sample_rate;
         std::cout << zones[index.row()].release;
         break;
-      case ZONE_PATH:
+      case jm::ZONE_PATH:
         strcpy(zones[index.row()].path, value.toString().toStdString().c_str());
         std::cout << value.toString().toStdString();
         break;
@@ -787,7 +787,7 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
   return false;
 }
 
-void ZoneTableModel::setZone(int row, const jm_zone& z) {
+void ZoneTableModel::setZone(int row, const jm::zone& z) {
   zones[row] = z;
   emit dataChanged(index(row, 0), index(row, NUM_ZONE_ATTRS - 1));
 }
