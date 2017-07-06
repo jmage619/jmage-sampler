@@ -38,7 +38,6 @@ namespace jm {
     LV2_URID jm_addZone;
     LV2_URID jm_removeZone;
     LV2_URID jm_params;
-    LV2_URID jm_getZones;
     LV2_URID jm_updateZone;
     LV2_URID jm_loadPatch;
     LV2_URID jm_savePatch;
@@ -60,7 +59,6 @@ namespace jm {
     uris->jm_addZone = map->map(map->handle, JM_SAMPLER__addZone);
     uris->jm_removeZone = map->map(map->handle, JM_SAMPLER__removeZone);
     uris->jm_params = map->map(map->handle, JM_SAMPLER__params);
-    uris->jm_getZones = map->map(map->handle, JM_SAMPLER__getZones);
     uris->jm_updateZone = map->map(map->handle, JM_SAMPLER__updateZone);
     uris->jm_loadPatch = map->map(map->handle, JM_SAMPLER__loadPatch);
     uris->jm_savePatch = map->map(map->handle, JM_SAMPLER__savePatch);
