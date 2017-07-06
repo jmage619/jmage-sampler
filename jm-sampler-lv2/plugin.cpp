@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cmath>
 #include <map>
+#include <vector>
 
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
 #include <lv2/lv2plug.in/ns/ext/atom/forge.h>
@@ -13,6 +14,17 @@
 
 #include "plugin.h"
 
+void jm::send_zone_vect(sampler_plugin* plugin) {
+  lv2_atom_forge_frame_time(&plugin->forge, 0);
+  LV2_Atom_Forge_Frame obj_frame;
+  lv2_atom_forge_object(&plugin->forge, &obj_frame, 0, plugin->uris.jm_getZoneVect);
+  lv2_atom_forge_key(&plugin->forge, plugin->uris.jm_params);
+  lv2_atom_forge_long(&plugin->forge, reinterpret_cast<long>(&plugin->zones));
+  lv2_atom_forge_pop(&plugin->forge, &obj_frame);
+
+  fprintf(stderr, "SAMPLER: zone vector sent!!%li\n", &plugin->zones);
+}
+
 void jm::send_sample_rate(sampler_plugin* plugin) {
   lv2_atom_forge_frame_time(&plugin->forge, 0);
   LV2_Atom_Forge_Frame obj_frame;
@@ -24,40 +36,15 @@ void jm::send_sample_rate(sampler_plugin* plugin) {
   fprintf(stderr, "SAMPLER: sample rate sent!! %i\n", plugin->sample_rate);
 }
 
-void jm::send_add_zone(sampler_plugin* plugin, int index, const jm::zone& zone) {
+void jm::send_add_zone(sampler_plugin* plugin, int index) {
   lv2_atom_forge_frame_time(&plugin->forge, 0);
   LV2_Atom_Forge_Frame obj_frame;
   lv2_atom_forge_object(&plugin->forge, &obj_frame, 0, plugin->uris.jm_addZone);
   lv2_atom_forge_key(&plugin->forge, plugin->uris.jm_params);
-  LV2_Atom_Forge_Frame tuple_frame;
-  lv2_atom_forge_tuple(&plugin->forge, &tuple_frame);
   lv2_atom_forge_int(&plugin->forge, index);
-  lv2_atom_forge_int(&plugin->forge, zone.wave_length);
-  lv2_atom_forge_string(&plugin->forge, zone.name, strlen(zone.name));
-  lv2_atom_forge_float(&plugin->forge, zone.amp);
-  lv2_atom_forge_int(&plugin->forge, zone.origin);
-  lv2_atom_forge_int(&plugin->forge, zone.low_key);
-  lv2_atom_forge_int(&plugin->forge, zone.high_key);
-  lv2_atom_forge_int(&plugin->forge, zone.low_vel);
-  lv2_atom_forge_int(&plugin->forge, zone.high_vel);
-  lv2_atom_forge_double(&plugin->forge, zone.pitch_corr);
-  lv2_atom_forge_int(&plugin->forge, zone.start);
-  lv2_atom_forge_int(&plugin->forge, zone.left);
-  lv2_atom_forge_int(&plugin->forge, zone.right);
-  lv2_atom_forge_int(&plugin->forge, zone.loop_mode);
-  lv2_atom_forge_int(&plugin->forge, zone.crossfade);
-  lv2_atom_forge_int(&plugin->forge, zone.group);
-  lv2_atom_forge_int(&plugin->forge, zone.off_group);
-  lv2_atom_forge_int(&plugin->forge, zone.attack);
-  lv2_atom_forge_int(&plugin->forge, zone.hold);
-  lv2_atom_forge_int(&plugin->forge, zone.decay);
-  lv2_atom_forge_float(&plugin->forge, zone.sustain);
-  lv2_atom_forge_int(&plugin->forge, zone.release);
-  lv2_atom_forge_string(&plugin->forge, zone.path, strlen(zone.path));
-  lv2_atom_forge_pop(&plugin->forge, &tuple_frame);
   lv2_atom_forge_pop(&plugin->forge, &obj_frame);
 
-  fprintf(stderr, "SAMPLER: add zone sent!! %i: %s\n", index, zone.name);
+  fprintf(stderr, "SAMPLER: add zone sent!! %i: %s\n", index, plugin->zones[index].name);
 }
 
 void jm::send_remove_zone(sampler_plugin* plugin, int index) {
@@ -185,11 +172,11 @@ void jm::add_zone_from_wave(sampler_plugin* plugin, int index, const char* path)
   strcpy(zone.path, path);
   if (index >= 0) {
     plugin->zones.insert(plugin->zones.begin() + index, zone);
-    send_add_zone(plugin, index, zone);
+    send_add_zone(plugin, index);
   }
   else {
     plugin->zones.push_back(zone);
-    send_add_zone(plugin, plugin->zones.size() - 1, zone);
+    send_add_zone(plugin, plugin->zones.size() - 1);
   }
 }
 
@@ -244,5 +231,5 @@ void jm::add_zone_from_region(sampler_plugin* plugin, const std::map<std::string
   zone.release = plugin->sample_rate * region.find("ampeg_release")->second.get_double();
   plugin->zones.push_back(zone);
 
-  send_add_zone(plugin, plugin->zones.size() - 1, zone);
+  send_add_zone(plugin, plugin->zones.size() - 1);
 }

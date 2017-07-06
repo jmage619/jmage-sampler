@@ -392,7 +392,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
 
   ui->zones = NULL;
 
-  obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_getZones);
+  obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_getZoneVect);
   lv2_atom_forge_pop(&ui->forge, &obj_frame);
 
   ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
@@ -435,7 +435,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
 
       ui->zones = reinterpret_cast<const std::vector<jm::zone>*>(((LV2_Atom_Long*) params)->body);
-      std::cerr << "UI: received zone pointer!! " << std::endl;
+      std::cerr << "UI: received zone pointer!! " << ui->zones << std::endl;
       for (int i = 0; i < ui->zones->size(); ++i) {
         add_ui_zone(ui, i);
       }
@@ -456,8 +456,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
 
       // index
-      LV2_Atom* a = lv2_atom_tuple_begin((LV2_Atom_Tuple*) params);
-      int i = ((LV2_Atom_Int*) a)->body;
+      int i = ((LV2_Atom_Int*) params)->body;
 
       add_ui_zone(ui, i);
     }

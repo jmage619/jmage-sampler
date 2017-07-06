@@ -351,12 +351,8 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
       if (obj->body.otype == plugin->uris.jm_getSampleRate) {
         jm::send_sample_rate(plugin);
       }
-      else if (obj->body.otype == plugin->uris.jm_getZones) {
-        //fprintf(stderr, "SAMPLER: get zones received!!\n");
-        std::vector<jm::zone>::iterator it;
-        for (it = plugin->zones.begin(); it != plugin->zones.end(); ++it) {
-          jm::send_add_zone(plugin, it - plugin->zones.begin(), *it);
-        }
+      else if (obj->body.otype == plugin->uris.jm_getZoneVect) {
+        jm::send_zone_vect(plugin);
       }
       else if (obj->body.otype == plugin->uris.jm_updateZone) {
         //fprintf(stderr, "SAMPLER: update zone received!!\n");

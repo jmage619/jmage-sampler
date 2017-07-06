@@ -38,7 +38,8 @@ namespace jm {
   };
 
   void send_sample_rate(sampler_plugin* plugin);
-  void send_add_zone(sampler_plugin* plugin, int index, const jm::zone& zone);
+  void send_zone_vect(sampler_plugin* plugin);
+  void send_add_zone(sampler_plugin* plugin, int index);
   void send_remove_zone(sampler_plugin* plugin, int index);
   void send_update_vol(sampler_plugin* plugin, float vol);
   void send_update_chan(sampler_plugin* plugin, float chan);
