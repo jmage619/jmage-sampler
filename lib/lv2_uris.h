@@ -23,6 +23,7 @@
 #define JM_SAMPLER__patchFile JM_SAMPLER_URI "#patchFile"
 #define JM_SAMPLER__updateVol JM_SAMPLER_URI "#updateVol"
 #define JM_SAMPLER__updateChan JM_SAMPLER_URI "#updateChan"
+#define JM_SAMPLER__getZoneVect JM_SAMPLER_URI "#getZoneVect"
 
 namespace jm {
   struct uris {
@@ -44,6 +45,7 @@ namespace jm {
     LV2_URID jm_patchFile;
     LV2_URID jm_updateVol;
     LV2_URID jm_updateChan;
+    LV2_URID jm_getZoneVect;
   };
 
   static inline void map_uris(LV2_URID_Map* map, jm::uris* uris) {
@@ -65,6 +67,7 @@ namespace jm {
     uris->jm_patchFile = map->map(map->handle, JM_SAMPLER__patchFile);
     uris->jm_updateVol = map->map(map->handle, JM_SAMPLER__updateVol);
     uris->jm_updateChan = map->map(map->handle, JM_SAMPLER__updateChan);
+    uris->jm_getZoneVect = map->map(map->handle, JM_SAMPLER__getZoneVect);
   }
 };
 

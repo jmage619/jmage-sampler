@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
 #include <lv2/lv2plug.in/ns/ext/atom/forge.h>
@@ -42,6 +43,7 @@ struct jm_sampler_ui {
   pid_t pid;
   int tot_read;
   char buf[BUF_SIZE];
+  const std::vector<jm::zone>* zones;
 };
 
 static std::string get_time_str() {
@@ -112,6 +114,85 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
   lv2_atom_forge_pop(&ui->forge, &obj_frame);
 
   return obj;
+}
+
+static void add_ui_zone(jm_sampler_ui* ui, int i) {
+  char outstr[256];
+  memset(outstr, 0, 256);
+  char* p = outstr;
+  sprintf(p, "add_zone:");
+  // index
+  p += strlen(p);
+  sprintf(p, "%i,", i);
+  // wave length
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].wave_length);
+  // name
+  p += strlen(p);
+  sprintf(p, "%s,", (*ui->zones)[i].name);
+  std::cerr << "UI: adding ui zone!! " << (*ui->zones)[i].name << std::endl;
+  // amp
+  p += strlen(p);
+  sprintf(p, "%f,", (*ui->zones)[i].amp);
+  // origin
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].origin);
+  // low key
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].low_key);
+  // high key
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].high_key);
+  // low vel
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].low_vel);
+  // high vel
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].high_vel);
+  // pitch
+  p += strlen(p);
+  sprintf(p, "%f,", (*ui->zones)[i].pitch_corr);
+  // start
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].start);
+  // left
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].left);
+  // right
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].right);
+  // loop mode
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].loop_mode);
+  // crossfade
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].crossfade);
+  // group
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].group);
+  // off group
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].off_group);
+  // attack
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].attack);
+  // hold
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].hold);
+  // decay
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].decay);
+  // sustain
+  p += strlen(p);
+  sprintf(p, "%f,", (*ui->zones)[i].sustain);
+  // release
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[i].release);
+  // path
+  p += strlen(p);
+  sprintf(p, "%s\n", (*ui->zones)[i].path);
+  fprintf(ui->fout, outstr);
+  fflush(ui->fout);
 }
 
 static void run(LV2_External_UI_Widget* widget) {
@@ -309,6 +390,8 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
 
   ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
 
+  ui->zones = NULL;
+
   obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_getZones);
   lv2_atom_forge_pop(&ui->forge, &obj_frame);
 
@@ -346,7 +429,18 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
   }
   else if (format == ui->uris.atom_eventTransfer && (atom->type == ui->uris.atom_Blank || atom->type == ui->uris.atom_Object)) {
     const LV2_Atom_Object* obj = (const LV2_Atom_Object*) atom;
-    if (obj->body.otype == ui->uris.jm_getSampleRate) {
+    if (obj->body.otype == ui->uris.jm_getZoneVect) {
+      LV2_Atom* params = NULL;
+
+      lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
+
+      ui->zones = reinterpret_cast<const std::vector<jm::zone>*>(((LV2_Atom_Long*) params)->body);
+      std::cerr << "UI: received zone pointer!! " << std::endl;
+      for (int i = 0; i < ui->zones->size(); ++i) {
+        add_ui_zone(ui, i);
+      }
+    }
+    else if (obj->body.otype == ui->uris.jm_getSampleRate) {
       LV2_Atom* params = NULL;
 
       lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
@@ -361,105 +455,11 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
 
       lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
 
-      char outstr[256];
-      memset(outstr, 0, 256);
-      char* p = outstr;
-      sprintf(p, "add_zone:");
       // index
-      p += strlen(p);
       LV2_Atom* a = lv2_atom_tuple_begin((LV2_Atom_Tuple*) params);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // wave length
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // name
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%s,", (char*)(a + 1));
-      std::cerr << "UI: received add zone!! " << (char*)(a + 1) << std::endl;
-      // amp
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%f,", ((LV2_Atom_Float*) a)->body);
-      // origin
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // low key
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // high key
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // low vel
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // high vel
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // pitch
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%f,", ((LV2_Atom_Double*) a)->body);
-      // start
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // left
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // right
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // loop mode
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // crossfade
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // group
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // off group
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // attack
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // hold
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // decay
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // sustain
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%f,", ((LV2_Atom_Float*) a)->body);
-      // release
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%i,", ((LV2_Atom_Int*) a)->body);
-      // path
-      p += strlen(p);
-      a = lv2_atom_tuple_next(a);
-      sprintf(p, "%s\n", (char*)(a + 1));
-      fprintf(ui->fout, outstr);
-      fflush(ui->fout);
+      int i = ((LV2_Atom_Int*) a)->body;
+
+      add_ui_zone(ui, i);
     }
     else if (obj->body.otype == ui->uris.jm_removeZone) {
       LV2_Atom* params = NULL;
