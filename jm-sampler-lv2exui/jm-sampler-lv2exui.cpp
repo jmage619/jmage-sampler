@@ -42,6 +42,7 @@ struct jm_sampler_ui {
   int tot_read;
   char buf[BUF_SIZE];
   const std::vector<jm::zone>* zones;
+  bool spawned;
 };
 
 static std::string get_time_str() {
@@ -248,6 +249,8 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
 
   lv2_atom_forge_init(&ui->forge, ui->map);
 
+  ui->spawned = false;
+
   std::cerr << get_time_str() << " UI: ui instantiated" << std::endl;
 
   return ui;
@@ -268,11 +271,12 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
   const LV2_Atom* atom = (const LV2_Atom*) buffer;
 
   if (format == 0) {
-    if (port_index == 1)
+    /*if (port_index == 1)
       fprintf(ui->fout, "update_vol:%f\n", *(float*) buffer);
     else if (port_index == 2)
       fprintf(ui->fout, "update_chan:%f\n", *(float*) buffer);
     fflush(ui->fout);
+    */
   }
   else if (format == ui->uris.atom_eventTransfer && (atom->type == ui->uris.atom_Blank || atom->type == ui->uris.atom_Object)) {
     const LV2_Atom_Object* obj = (const LV2_Atom_Object*) atom;
@@ -338,6 +342,10 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
 
 static int ui_show(LV2UI_Handle handle) {
   jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
+  std::cerr << "UI: " << get_time_str() <<  " show called" << std::endl;
+  if (ui->spawned)
+    return 0;
+
 
   int from_child_pipe[2];
   int to_child_pipe[2];
@@ -389,6 +397,8 @@ static int ui_show(LV2UI_Handle handle) {
 
   ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
 
+  ui->spawned = true;
+
   std::cerr << get_time_str() << " UI: show completed" << std::endl;
   return 0;
 }
@@ -409,6 +419,7 @@ static int ui_hide(LV2UI_Handle handle) {
 static int ui_idle(LV2UI_Handle handle) {
   jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
 
+  //std::cerr << "UI: " << get_time_str() <<  " idle called" << std::endl;
   int num_read;
   while ((num_read = read(ui->fdin, ui->buf + ui->tot_read, BUF_SIZE - 1 - ui->tot_read)) > 0) {
     // add null char
