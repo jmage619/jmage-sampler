@@ -74,8 +74,12 @@
 	] .
 
 <https://github.com/jmage619/jmage-sampler#ui>
-	a exui:Widget ;
-	lv2:requiredFeature urid:map ;
+	a ui:UI ;
+	lv2:requiredFeature urid:map ,
+    ui:idleInterace ,
+    ui:showInterface ;
+  lv2:extensionData ui:idleInterface ,
+    ui:showInterface ;
 	ui:portNotification [
 		ui:plugin <https://github.com/jmage619/jmage-sampler> ;
 		lv2:symbol "notify" ;

@@ -9,6 +9,6 @@
 	rdfs:seeAlso <jm-sampler.ttl> .
 
 <https://github.com/jmage619/jmage-sampler#ui>
-	a exui:Widget ;
+	a ui:UI ;
 	ui:binary <jm-sampler-lv2exui.so> ;
 	rdfs:seeAlso <jm-sampler.ttl> .

@@ -22,7 +22,6 @@
 #include <config.h>
 #include <lib/zone.h>
 #include <lib/lv2_uris.h>
-#include "lv2_external_ui.h"
 
 #define BUF_SIZE 513
 #define SAMPLE_RATE 44100
@@ -30,7 +29,6 @@
 #define JM_SAMPLER_UI_URI JM_SAMPLER_URI "#ui"
 
 struct jm_sampler_ui {
-  LV2_External_UI_Widget widget;
   LV2_URID_Map* map;
   jm::uris uris;
   LV2UI_Write_Function write;
@@ -195,97 +193,6 @@ static void add_ui_zone(jm_sampler_ui* ui, int i) {
   fflush(ui->fout);
 }
 
-static void run(LV2_External_UI_Widget* widget) {
-  jm_sampler_ui* ui = reinterpret_cast<jm_sampler_ui*>(widget);
-
-  int num_read;
-  while ((num_read = read(ui->fdin, ui->buf + ui->tot_read, BUF_SIZE - 1 - ui->tot_read)) > 0) {
-    // add null char
-    ui->buf[ui->tot_read + num_read] = '\0';
-    char* new_line;
-    while ((new_line = strchr(ui->buf, '\n')) != NULL) {
-      *new_line = '\0';
-
-      if (!strncmp(ui->buf, "update_vol:", 11)) {
-        float val = atof(ui->buf + 11);
-        ui->write(ui->controller, 1, sizeof(float), 0, &val);
-      }
-      else if (!strncmp(ui->buf, "update_chan:", 12)) {
-        float val = atof(ui->buf + 12);
-        ui->write(ui->controller, 2, sizeof(float), 0, &val);
-      }
-      else {
-        uint8_t buf[128];
-        lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
-        //fprintf(stderr, "UI: ui stdout message: %s\n", ui->buf);
-        LV2_Atom* obj;
-        if (!strncmp(ui->buf, "update_zone:", 12)) {
-          obj = handle_update_zone(ui, ui->buf + 12);
-        }
-        else if (!strncmp(ui->buf, "remove_zone:", 12)) {
-          //fprintf(stderr, "UI: ui remove zone: %s\n", ui->buf + 12);
-          LV2_Atom_Forge_Frame obj_frame;
-          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_removeZone);
-          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
-          int index = atoi(ui->buf + 12);
-          lv2_atom_forge_int(&ui->forge, index);
-          lv2_atom_forge_pop(&ui->forge, &obj_frame);
-        }
-        else if (!strncmp(ui->buf, "add_zone:", 9)) {
-          //fprintf(stderr, "UI: ui add zone: %s; len: %i\n", ui->buf + 9, strlen(ui->buf + 9));
-          LV2_Atom_Forge_Frame obj_frame;
-          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_addZone);
-          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
-          LV2_Atom_Forge_Frame tuple_frame;
-          lv2_atom_forge_tuple(&ui->forge, &tuple_frame);
-          char* p = strtok(ui->buf + 9, ",");
-          int index = atoi(p);
-          lv2_atom_forge_int(&ui->forge, index);
-          p = strtok(NULL, ",");
-          lv2_atom_forge_string(&ui->forge, p, strlen(p));
-          lv2_atom_forge_pop(&ui->forge, &tuple_frame);
-          lv2_atom_forge_pop(&ui->forge, &obj_frame);
-        }
-        else if (!strncmp(ui->buf, "load_patch:", 11)) {
-          //fprintf(stderr, "UI: ui add zone: %s; len: %i\n", ui->buf + 9, strlen(ui->buf + 9));
-          LV2_Atom_Forge_Frame obj_frame;
-          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_loadPatch);
-          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
-          lv2_atom_forge_string(&ui->forge, ui->buf + 11, strlen(ui->buf + 11));
-          lv2_atom_forge_pop(&ui->forge, &obj_frame);
-        }
-        else if (!strncmp(ui->buf, "save_patch:", 11)) {
-          LV2_Atom_Forge_Frame obj_frame;
-          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_savePatch);
-          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
-          lv2_atom_forge_string(&ui->forge, ui->buf + 11, strlen(ui->buf + 11));
-          lv2_atom_forge_pop(&ui->forge, &obj_frame);
-        }
-        ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
-      }
-      // shift left to prepare next value
-      strmov(ui->buf, new_line + 1);
-      // correct for shift
-      ui->tot_read -= new_line + 1 - ui->buf;
-    }
-    ui->tot_read += num_read;
-  }
-}
-
-static void show(LV2_External_UI_Widget* widget) {
-  std::cerr << get_time_str() << " UI: show called" << std::endl;
-  jm_sampler_ui* ui = reinterpret_cast<jm_sampler_ui*>(widget);
-  fprintf(ui->fout, "show:1\n");
-  fflush(ui->fout);
-}
-
-static void hide(LV2_External_UI_Widget* widget) {
-  std::cerr << get_time_str() << " UI: hide called" << std::endl;
-  jm_sampler_ui* ui = reinterpret_cast<jm_sampler_ui*>(widget);
-  fprintf(ui->fout, "show:0\n");
-  fflush(ui->fout);
-}
-
 static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
     const char*, const char*,
     LV2UI_Write_Function write_function, LV2UI_Controller controller,
@@ -338,64 +245,8 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
 
   ui->write = write_function;
   ui->controller = controller;
-  ui->widget.run = run;
-  ui->widget.show = show;
-  ui->widget.hide = hide;
-  *widget = ui;
-
-  std::cerr << get_time_str() << " UI: ui instantiate called" << std::endl;
-
-  int from_child_pipe[2];
-  int to_child_pipe[2];
-
-  pipe(from_child_pipe);
-  pipe(to_child_pipe);
-
-  pid_t pid = fork();
-
-  // i'm the child
-  if (pid == 0) {
-    dup2(from_child_pipe[1], 1);
-    close(from_child_pipe[0]);
-
-    dup2(to_child_pipe[0], 0);
-    close(to_child_pipe[1]);
-
-    execl(CONFIG_INSTALL_PREFIX "/libexec/jm-sampler-ui", "jm-sampler-ui", NULL);
-  }
-  // i'm the parent
-  close(from_child_pipe[1]);
-  close(to_child_pipe[0]);
-
-  fcntl(from_child_pipe[0], F_SETFL, O_NONBLOCK); 
-
-  // close fd's subsequent children don't need on exec
-  fcntl(from_child_pipe[0], F_SETFD, FD_CLOEXEC); 
-  // this fd is important to close on exec so child properly gets EOF when parent closes fout
-  fcntl(to_child_pipe[1], F_SETFD, FD_CLOEXEC); 
-
-  ui->fdin = from_child_pipe[0];
-  ui->fout = fdopen(to_child_pipe[1], "w");
-  ui->pid = pid;
-  ui->tot_read = 0;
-
-  uint8_t buf[128];
 
   lv2_atom_forge_init(&ui->forge, ui->map);
-
-  lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
-  LV2_Atom_Forge_Frame obj_frame;
-  LV2_Atom* obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_getSampleRate);
-  lv2_atom_forge_pop(&ui->forge, &obj_frame);
-
-  ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
-
-  ui->zones = NULL;
-
-  obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_getZoneVect);
-  lv2_atom_forge_pop(&ui->forge, &obj_frame);
-
-  ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
 
   std::cerr << get_time_str() << " UI: ui instantiated" << std::endl;
 
@@ -407,10 +258,6 @@ static void cleanup(LV2UI_Handle handle) {
 
   std::cerr << "UI: " << get_time_str() <<  " cleanup called" << std::endl;
 
-  fclose(ui->fout);
-  waitpid(ui->pid, NULL, 0);
-
-  std::cerr << "UI: " << get_time_str() <<  " ui closed" << std::endl;
   delete ui;
 }
 
@@ -488,12 +335,177 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
     }
   }
 }
+
+static int ui_show(LV2UI_Handle handle) {
+  jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
+
+  int from_child_pipe[2];
+  int to_child_pipe[2];
+
+  pipe(from_child_pipe);
+  pipe(to_child_pipe);
+
+  pid_t pid = fork();
+
+  // i'm the child
+  if (pid == 0) {
+    dup2(from_child_pipe[1], 1);
+    close(from_child_pipe[0]);
+
+    dup2(to_child_pipe[0], 0);
+    close(to_child_pipe[1]);
+
+    execl(CONFIG_INSTALL_PREFIX "/libexec/jm-sampler-ui", "jm-sampler-ui", NULL);
+  }
+  // i'm the parent
+  close(from_child_pipe[1]);
+  close(to_child_pipe[0]);
+
+  fcntl(from_child_pipe[0], F_SETFL, O_NONBLOCK); 
+
+  // close fd's subsequent children don't need on exec
+  fcntl(from_child_pipe[0], F_SETFD, FD_CLOEXEC); 
+  // this fd is important to close on exec so child properly gets EOF when parent closes fout
+  fcntl(to_child_pipe[1], F_SETFD, FD_CLOEXEC); 
+
+  ui->fdin = from_child_pipe[0];
+  ui->fout = fdopen(to_child_pipe[1], "w");
+  ui->pid = pid;
+  ui->tot_read = 0;
+
+  uint8_t buf[128];
+
+  lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
+  LV2_Atom_Forge_Frame obj_frame;
+  LV2_Atom* obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_getSampleRate);
+  lv2_atom_forge_pop(&ui->forge, &obj_frame);
+
+  ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
+
+  ui->zones = NULL;
+
+  obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_getZoneVect);
+  lv2_atom_forge_pop(&ui->forge, &obj_frame);
+
+  ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
+
+  std::cerr << get_time_str() << " UI: show completed" << std::endl;
+  return 0;
+}
+
+static int ui_hide(LV2UI_Handle handle) {
+  jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
+
+  std::cerr << "UI: " << get_time_str() <<  " hide called" << std::endl;
+
+  fclose(ui->fout);
+  waitpid(ui->pid, NULL, 0);
+
+  std::cerr << "UI: " << get_time_str() <<  " ui closed" << std::endl;
+
+  return 0;
+}
+
+static int ui_idle(LV2UI_Handle handle) {
+  jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
+
+  int num_read;
+  while ((num_read = read(ui->fdin, ui->buf + ui->tot_read, BUF_SIZE - 1 - ui->tot_read)) > 0) {
+    // add null char
+    ui->buf[ui->tot_read + num_read] = '\0';
+    char* new_line;
+    while ((new_line = strchr(ui->buf, '\n')) != NULL) {
+      *new_line = '\0';
+
+      if (!strncmp(ui->buf, "update_vol:", 11)) {
+        float val = atof(ui->buf + 11);
+        ui->write(ui->controller, 1, sizeof(float), 0, &val);
+      }
+      else if (!strncmp(ui->buf, "update_chan:", 12)) {
+        float val = atof(ui->buf + 12);
+        ui->write(ui->controller, 2, sizeof(float), 0, &val);
+      }
+      else {
+        uint8_t buf[128];
+        lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
+        //fprintf(stderr, "UI: ui stdout message: %s\n", ui->buf);
+        LV2_Atom* obj;
+        if (!strncmp(ui->buf, "update_zone:", 12)) {
+          obj = handle_update_zone(ui, ui->buf + 12);
+        }
+        else if (!strncmp(ui->buf, "remove_zone:", 12)) {
+          //fprintf(stderr, "UI: ui remove zone: %s\n", ui->buf + 12);
+          LV2_Atom_Forge_Frame obj_frame;
+          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_removeZone);
+          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
+          int index = atoi(ui->buf + 12);
+          lv2_atom_forge_int(&ui->forge, index);
+          lv2_atom_forge_pop(&ui->forge, &obj_frame);
+        }
+        else if (!strncmp(ui->buf, "add_zone:", 9)) {
+          //fprintf(stderr, "UI: ui add zone: %s; len: %i\n", ui->buf + 9, strlen(ui->buf + 9));
+          LV2_Atom_Forge_Frame obj_frame;
+          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_addZone);
+          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
+          LV2_Atom_Forge_Frame tuple_frame;
+          lv2_atom_forge_tuple(&ui->forge, &tuple_frame);
+          char* p = strtok(ui->buf + 9, ",");
+          int index = atoi(p);
+          lv2_atom_forge_int(&ui->forge, index);
+          p = strtok(NULL, ",");
+          lv2_atom_forge_string(&ui->forge, p, strlen(p));
+          lv2_atom_forge_pop(&ui->forge, &tuple_frame);
+          lv2_atom_forge_pop(&ui->forge, &obj_frame);
+        }
+        else if (!strncmp(ui->buf, "load_patch:", 11)) {
+          //fprintf(stderr, "UI: ui add zone: %s; len: %i\n", ui->buf + 9, strlen(ui->buf + 9));
+          LV2_Atom_Forge_Frame obj_frame;
+          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_loadPatch);
+          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
+          lv2_atom_forge_string(&ui->forge, ui->buf + 11, strlen(ui->buf + 11));
+          lv2_atom_forge_pop(&ui->forge, &obj_frame);
+        }
+        else if (!strncmp(ui->buf, "save_patch:", 11)) {
+          LV2_Atom_Forge_Frame obj_frame;
+          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_savePatch);
+          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
+          lv2_atom_forge_string(&ui->forge, ui->buf + 11, strlen(ui->buf + 11));
+          lv2_atom_forge_pop(&ui->forge, &obj_frame);
+        }
+        ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
+      }
+      // shift left to prepare next value
+      strmov(ui->buf, new_line + 1);
+      // correct for shift
+      ui->tot_read -= new_line + 1 - ui->buf;
+    }
+    ui->tot_read += num_read;
+  }
+
+  // if exactly 0 the child stream is closed due to exiting
+  if (num_read == 0)
+    return 1;
+
+  return 0;
+}
+
+static const void* extension_data(const char* uri) {
+  static const LV2UI_Show_Interface show = { ui_show, ui_hide };
+  static const LV2UI_Idle_Interface idle = { ui_idle };
+  if (!strcmp(uri, LV2_UI__showInterface)) {
+    return &show;
+  } else if (!strcmp(uri, LV2_UI__idleInterface)) {
+    return &idle;
+  }
+  return NULL;
+}
+
 static const LV2UI_Descriptor descriptor = {
   JM_SAMPLER_UI_URI,
   instantiate,
   cleanup,
   port_event,
-  NULL // extension_data
+  extension_data
 };
 
 LV2_SYMBOL_EXPORT const LV2UI_Descriptor* lv2ui_descriptor(uint32_t index) {
