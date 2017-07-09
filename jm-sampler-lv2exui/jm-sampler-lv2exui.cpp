@@ -43,6 +43,8 @@ struct jm_sampler_ui {
   char buf[BUF_SIZE];
   const std::vector<jm::zone>* zones;
   bool spawned;
+  float level;
+  float channel;
 };
 
 static std::string get_time_str() {
@@ -250,6 +252,8 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
   lv2_atom_forge_init(&ui->forge, ui->map);
 
   ui->spawned = false;
+  ui->level = 16;
+  ui->channel = 0;
 
   std::cerr << get_time_str() << " UI: ui instantiated" << std::endl;
 
@@ -270,13 +274,22 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
   jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
   const LV2_Atom* atom = (const LV2_Atom*) buffer;
 
+  // store vals in case vol or chan sent before show called
   if (format == 0) {
-    /*if (port_index == 1)
-      fprintf(ui->fout, "update_vol:%f\n", *(float*) buffer);
-    else if (port_index == 2)
-      fprintf(ui->fout, "update_chan:%f\n", *(float*) buffer);
-    fflush(ui->fout);
-    */
+    if (port_index == 1) {
+      ui->level = *(float*) buffer;
+      if (ui->spawned) {
+        fprintf(ui->fout, "update_vol:%f\n", ui->level);
+        fflush(ui->fout);
+      }
+    }
+    else if (port_index == 2) {
+      ui->channel = *(float*) buffer;
+      if (ui->spawned) {
+        fprintf(ui->fout, "update_chan:%f\n", ui->channel);
+        fflush(ui->fout);
+      }
+    }
   }
   else if (format == ui->uris.atom_eventTransfer && (atom->type == ui->uris.atom_Blank || atom->type == ui->uris.atom_Object)) {
     const LV2_Atom_Object* obj = (const LV2_Atom_Object*) atom;
@@ -396,6 +409,8 @@ static int ui_show(LV2UI_Handle handle) {
   lv2_atom_forge_pop(&ui->forge, &obj_frame);
 
   ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
+  fprintf(ui->fout, "update_vol:%f\n", ui->level);
+  fprintf(ui->fout, "update_chan:%f\n", ui->channel);
 
   ui->spawned = true;
 
@@ -410,6 +425,8 @@ static int ui_hide(LV2UI_Handle handle) {
 
   fclose(ui->fout);
   waitpid(ui->pid, NULL, 0);
+
+  ui->spawned = false;
 
   std::cerr << "UI: " << get_time_str() <<  " ui closed" << std::endl;
 
