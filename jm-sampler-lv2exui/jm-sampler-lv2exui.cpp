@@ -411,6 +411,7 @@ static int ui_show(LV2UI_Handle handle) {
   ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
   fprintf(ui->fout, "update_vol:%f\n", ui->level);
   fprintf(ui->fout, "update_chan:%f\n", ui->channel);
+  fflush(ui->fout);
 
   ui->spawned = true;
 
