@@ -159,7 +159,7 @@ static void connect_port(LV2_Handle instance, uint32_t port, void* data) {
       plugin->control_port = static_cast<const LV2_Atom_Sequence*>(data);
       break;
     case SAMPLER_VOLUME:
-      plugin->level = (float*) data;
+      plugin->volume = (float*) data;
       break;
     case SAMPLER_CHANNEL:
       plugin->channel = (float*) data;
@@ -223,7 +223,7 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
 
     bool is_jmz = !strcmp(plugin->patch_path + len - 4, ".jmz");
     if (is_jmz) {
-      save_patch.control["jm_vol"] = (int) *plugin->level;
+      save_patch.control["jm_vol"] = (int) *plugin->volume;
       save_patch.control["jm_chan"] = (int) *plugin->channel + 1;
     }
 
@@ -445,7 +445,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
       }
     }
 
-    plugin->sampler->process_frame(n, get_amp(*plugin->level), plugin->out1, plugin->out2);
+    plugin->sampler->process_frame(n, get_amp(*plugin->volume), plugin->out1, plugin->out2);
   }
 
   //lv2_atom_forge_pop(&plugin->forge, &seq_frame);

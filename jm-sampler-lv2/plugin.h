@@ -32,8 +32,8 @@ namespace jm {
     std::map<std::string, jm::wave> waves;
     char patch_path[256];
     char wav_path[256];
+    float* volume;
     float* channel;
-    float* level;
     JMSampler* sampler;
   };
 

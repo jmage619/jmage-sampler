@@ -43,7 +43,7 @@ struct jm_sampler_ui {
   char buf[BUF_SIZE];
   const std::vector<jm::zone>* zones;
   bool spawned;
-  float level;
+  float volume;
   float channel;
 };
 
@@ -252,7 +252,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
   lv2_atom_forge_init(&ui->forge, ui->map);
 
   ui->spawned = false;
-  ui->level = 16;
+  ui->volume = 16;
   ui->channel = 0;
 
   std::cerr << get_time_str() << " UI: ui instantiated" << std::endl;
@@ -277,9 +277,9 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
   // store vals in case vol or chan sent before show called
   if (format == 0) {
     if (port_index == 1) {
-      ui->level = *(float*) buffer;
+      ui->volume = *(float*) buffer;
       if (ui->spawned) {
-        fprintf(ui->fout, "update_vol:%f\n", ui->level);
+        fprintf(ui->fout, "update_vol:%f\n", ui->volume);
         fflush(ui->fout);
       }
     }
@@ -409,7 +409,7 @@ static int ui_show(LV2UI_Handle handle) {
   lv2_atom_forge_pop(&ui->forge, &obj_frame);
 
   ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
-  fprintf(ui->fout, "update_vol:%f\n", ui->level);
+  fprintf(ui->fout, "update_vol:%f\n", ui->volume);
   fprintf(ui->fout, "update_chan:%f\n", ui->channel);
   fflush(ui->fout);
 
