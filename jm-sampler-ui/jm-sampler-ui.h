@@ -4,7 +4,7 @@
 #include <QWidget>
 
 #include <lib/zone.h>
-#include <lib/gui_zonegrid.h>
+#include "zonegrid.h"
 
 class HDoubleSlider;
 class QComboBox;

@@ -6,7 +6,7 @@
 #include <QStyledItemDelegate>
 #include <QAbstractTableModel>
 
-#include "zone.h"
+#include <lib/zone.h>
 
 class QString;
 

@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <QtWidgets>
 
-#include "gui_components.h"
+#include "components.h"
 
 /************
 *

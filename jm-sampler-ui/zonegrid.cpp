@@ -3,9 +3,9 @@
 #include <cmath>
 #include <QtWidgets>
 
-#include "zone.h"
-#include "gui_components.h"
-#include "gui_zonegrid.h"
+#include <lib/zone.h>
+#include "components.h"
+#include "zonegrid.h"
 
 // some helper functions
 QString note_to_string(int note) {

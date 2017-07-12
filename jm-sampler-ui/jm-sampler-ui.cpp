@@ -6,8 +6,8 @@
 #include <cstring>
 
 #include <lib/zone.h>
-#include <lib/gui_components.h>
-#include <lib/gui_zonegrid.h>
+#include "components.h"
+#include "zonegrid.h"
 
 #include "jm-sampler-ui.h"
 
