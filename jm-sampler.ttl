@@ -28,7 +28,7 @@
 		atom:bufferType atom:Sequence ;
 		lv2:designation lv2:control ;
 		atom:supports <http://lv2plug.in/ns/ext/midi#MidiEvent> ,
- 			atom:Blank ;
+			atom:Object ;
 		lv2:index 0 ;
 		lv2:symbol "control" ;
 		lv2:name "Control"
@@ -54,6 +54,7 @@
 		a lv2:OutputPort ,
 			atom:AtomPort ;
 		atom:bufferType atom:Sequence ;
+		atom:supports atom:Object ;
 		lv2:designation lv2:control ;
     rsz:minimumSize 20480 ;
 		lv2:index 3 ;
@@ -83,7 +84,7 @@
 	ui:portNotification [
 		ui:plugin <https://github.com/jmage619/jmage-sampler> ;
 		lv2:symbol "notify" ;
-		ui:notifyType atom:Blank
+		ui:notifyType atom:Object
 	] , [
 		ui:plugin <https://github.com/jmage619/jmage-samplerr> ;
 		lv2:symbol "volume" ;

@@ -28,7 +28,6 @@
 namespace jm {
   struct uris {
     LV2_URID atom_eventTransfer;
-    LV2_URID atom_Blank;
     LV2_URID atom_Object;
     LV2_URID atom_String;
     LV2_URID midi_Event;
@@ -49,7 +48,6 @@ namespace jm {
 
   static inline void map_uris(LV2_URID_Map* map, jm::uris* uris) {
     uris->atom_eventTransfer = map->map(map->handle, LV2_ATOM__eventTransfer);
-    uris->atom_Blank = map->map(map->handle, LV2_ATOM__Blank);
     uris->atom_Object = map->map(map->handle, LV2_ATOM__Object);
     uris->atom_String = map->map(map->handle, LV2_ATOM__String);
     uris->midi_Event = map->map(map->handle, LV2_MIDI__MidiEvent);

@@ -346,7 +346,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
   // must loop all atoms to find UI messages; not sure if qtractor bug
   // but they all occur at frame == n_samples (outside the range!)
   LV2_ATOM_SEQUENCE_FOREACH(plugin->control_port, ev) {
-    if (ev->body.type == plugin->uris.atom_Object) {
+    if (lv2_atom_forge_is_object_type(&plugin->forge, ev->body.type)) {
       const LV2_Atom_Object* obj = (const LV2_Atom_Object*)&ev->body;
       if (obj->body.otype == plugin->uris.jm_getSampleRate) {
         jm::send_sample_rate(plugin);

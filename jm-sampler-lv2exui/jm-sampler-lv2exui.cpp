@@ -291,7 +291,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       }
     }
   }
-  else if (format == ui->uris.atom_eventTransfer && (atom->type == ui->uris.atom_Blank || atom->type == ui->uris.atom_Object)) {
+  else if (format == ui->uris.atom_eventTransfer && lv2_atom_forge_is_object_type(&ui->forge, atom->type)) {
     const LV2_Atom_Object* obj = (const LV2_Atom_Object*) atom;
     if (obj->body.otype == ui->uris.jm_getZoneVect) {
       LV2_Atom* params = NULL;
