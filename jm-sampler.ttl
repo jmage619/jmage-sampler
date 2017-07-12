@@ -3,7 +3,6 @@
 @prefix urid:  <http://lv2plug.in/ns/ext/urid#> .
 @prefix atom:  <http://lv2plug.in/ns/ext/atom#> .
 @prefix ui:   <http://lv2plug.in/ns/extensions/ui#> .
-@prefix exui: <http://kxstudio.sf.net/ns/lv2ext/external-ui#> .
 @prefix work:  <http://lv2plug.in/ns/ext/worker#> .
 @prefix state: <http://lv2plug.in/ns/ext/state#> .
 @prefix opts: <http://lv2plug.in/ns/ext/options#> .
