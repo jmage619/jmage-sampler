@@ -2,7 +2,11 @@
 #include <jack/types.h>
 #include <jack/jack.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/wait.h>
 #include <cstring>
+
+#include <config.h>
 
 typedef jack_default_audio_sample_t sample_t;
 
@@ -45,7 +49,44 @@ int main() {
     return 1;
   }
   
-  sleep(10);
+  int from_child_pipe[2];
+  int to_child_pipe[2];
+
+  pipe(from_child_pipe);
+  pipe(to_child_pipe);
+
+  pid_t pid = fork();
+
+  // i'm the child
+  if (pid == 0) {
+    dup2(from_child_pipe[1], 1);
+    close(from_child_pipe[0]);
+
+    dup2(to_child_pipe[0], 0);
+    close(to_child_pipe[1]);
+
+    execl(CONFIG_INSTALL_PREFIX "/libexec/jm-sampler-ui", "jm-sampler-ui", NULL);
+  }
+  // i'm the parent
+  close(from_child_pipe[1]);
+  close(to_child_pipe[0]);
+
+  // close fd's subsequent children don't need on exec
+  fcntl(from_child_pipe[0], F_SETFD, FD_CLOEXEC); 
+  // this fd is important to close on exec so child properly gets EOF when parent closes fout
+  fcntl(to_child_pipe[1], F_SETFD, FD_CLOEXEC); 
+
+  FILE* fin = fdopen(from_child_pipe[0], "r");
+  FILE* fout = fdopen(to_child_pipe[1], "w");
+
+  char buf[256];
+
+  while (fgets(buf, 256, fin) != NULL) {
+    std::cout << "UI: " << buf;
+  }
+
+  fclose(fout);
+  waitpid(pid, NULL, 0);
 
   jack_deactivate(client);
   jack_port_unregister(client, sampler->output_port1);

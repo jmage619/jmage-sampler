@@ -1,6 +1,6 @@
 find_package(LibJack REQUIRED)
 
-include_directories(../ ${LIBJACK_INCLUDE_DIRS})
+include_directories(../ ${LIBJACK_INCLUDE_DIRS} ${PROJECT_BINARY_DIR})
 
 add_executable(jmage-sampler jmage-sampler.cpp)
 
