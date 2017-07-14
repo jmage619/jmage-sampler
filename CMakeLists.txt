@@ -12,6 +12,7 @@ configure_file("${PROJECT_SOURCE_DIR}/lib/config.h.in"
 
 add_subdirectory(lib)
 add_subdirectory(jm-sampler-ui)
+add_subdirectory(jmage-sampler)
 add_subdirectory(jm-sampler-lv2ui)
 add_subdirectory(jm-sampler-lv2)
 
