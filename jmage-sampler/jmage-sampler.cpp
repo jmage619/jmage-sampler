@@ -204,14 +204,9 @@ int main() {
       strcpy(zone.path, p);
 
       char outstr[256];
-      if (index >= 0) {
-        cli_data->zones.insert(cli_data->zones.begin() + index, zone);
-        build_zone_str(outstr, 256, cli_data, index);
-      }
-      else {
-        cli_data->zones.push_back(zone);
-        build_zone_str(outstr, 256, cli_data, cli_data->zones.size() - 1);
-      }
+      cli_data->zones.push_back(zone);
+      build_zone_str(outstr, 256, cli_data, cli_data->zones.size() - 1);
+
       fprintf(fout, outstr);
       fflush(fout);
     }
