@@ -134,6 +134,17 @@ int process_callback(jack_nframes_t nframes, void* arg) {
           if ((event.buffer[0] & 0xf0) == 0x90) {
             cli_data->sampler->handle_note_on(event.buffer, nframes, n);
           }
+          // process note off
+          else if ((event.buffer[0] & 0xf0) == 0x80) {
+            cli_data->sampler->handle_note_off(event.buffer);
+          }
+          // process sustain pedal
+          else if ((event.buffer[0] & 0xf0) == 0xb0 && event.buffer[1] == 0x40) {
+            cli_data->sampler->handle_sustain(event.buffer);
+          }
+          // just print messages we don't currently handle
+          else if (event.buffer[0] != 0xfe)
+            printf("event: 0x%x\n", event.buffer[0]);
         }
         // get next midi event or break if none left
         ++cur_event;
