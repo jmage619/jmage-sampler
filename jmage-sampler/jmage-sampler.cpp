@@ -254,9 +254,15 @@ int main() {
       sprintf(zone.name, "Zone %i", cli_data->zone_number++);
       strcpy(zone.path, p);
 
-      cli_data->zones.push_back(zone);
       char outstr[256];
-      build_zone_str(outstr, cli_data->zones, cli_data->zones.size() - 1);
+      if (index < 0) {
+        cli_data->zones.push_back(zone);
+        build_zone_str(outstr, cli_data->zones, cli_data->zones.size() - 1);
+      }
+      else {
+        cli_data->zones.insert(cli_data->zones.begin() + index, zone);
+        build_zone_str(outstr, cli_data->zones, index);
+      }
 
       fprintf(fout, outstr);
       fflush(fout);
