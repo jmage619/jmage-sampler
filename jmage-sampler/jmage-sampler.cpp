@@ -30,8 +30,7 @@ struct client_data {
   JMSampler* sampler;
 };
 
-void build_zone_str(char* outstr, int len, client_data* cli_data, int i) {
-  memset(outstr, 0, len);
+void build_zone_str(char* outstr, const std::vector<jm::zone>& zones, int i) {
   char* p = outstr;
   sprintf(p, "add_zone:");
   // index
@@ -39,71 +38,71 @@ void build_zone_str(char* outstr, int len, client_data* cli_data, int i) {
   sprintf(p, "%i,", i);
   // wave length
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].wave_length);
+  sprintf(p, "%i,", zones[i].wave_length);
   // name
   p += strlen(p);
-  sprintf(p, "%s,", cli_data->zones[i].name);
-  std::cerr << "UI: adding ui zone!! " << cli_data->zones[i].name << std::endl;
+  sprintf(p, "%s,", zones[i].name);
+  std::cerr << "UI: adding ui zone!! " << zones[i].name << std::endl;
   // amp
   p += strlen(p);
-  sprintf(p, "%f,", cli_data->zones[i].amp);
+  sprintf(p, "%f,", zones[i].amp);
   // origin
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].origin);
+  sprintf(p, "%i,", zones[i].origin);
   // low key
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].low_key);
+  sprintf(p, "%i,", zones[i].low_key);
   // high key
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].high_key);
+  sprintf(p, "%i,", zones[i].high_key);
   // low vel
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].low_vel);
+  sprintf(p, "%i,", zones[i].low_vel);
   // high vel
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].high_vel);
+  sprintf(p, "%i,", zones[i].high_vel);
   // pitch
   p += strlen(p);
-  sprintf(p, "%f,", cli_data->zones[i].pitch_corr);
+  sprintf(p, "%f,", zones[i].pitch_corr);
   // start
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].start);
+  sprintf(p, "%i,", zones[i].start);
   // left
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].left);
+  sprintf(p, "%i,", zones[i].left);
   // right
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].right);
+  sprintf(p, "%i,", zones[i].right);
   // loop mode
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].loop_mode);
+  sprintf(p, "%i,", zones[i].loop_mode);
   // crossfade
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].crossfade);
+  sprintf(p, "%i,", zones[i].crossfade);
   // group
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].group);
+  sprintf(p, "%i,", zones[i].group);
   // off group
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].off_group);
+  sprintf(p, "%i,", zones[i].off_group);
   // attack
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].attack);
+  sprintf(p, "%i,", zones[i].attack);
   // hold
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].hold);
+  sprintf(p, "%i,", zones[i].hold);
   // decay
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].decay);
+  sprintf(p, "%i,", zones[i].decay);
   // sustain
   p += strlen(p);
-  sprintf(p, "%f,", cli_data->zones[i].sustain);
+  sprintf(p, "%f,", zones[i].sustain);
   // release
   p += strlen(p);
-  sprintf(p, "%i,", cli_data->zones[i].release);
+  sprintf(p, "%i,", zones[i].release);
   // path
   p += strlen(p);
-  sprintf(p, "%s\n", cli_data->zones[i].path);
+  sprintf(p, "%s\n", zones[i].path);
 }
 
 int process_callback(jack_nframes_t nframes, void* arg) {
@@ -244,9 +243,9 @@ int main() {
       sprintf(zone.name, "Zone %i", cli_data->zone_number++);
       strcpy(zone.path, p);
 
-      char outstr[256];
       cli_data->zones.push_back(zone);
-      build_zone_str(outstr, 256, cli_data, cli_data->zones.size() - 1);
+      char outstr[256];
+      build_zone_str(outstr, cli_data->zones, cli_data->zones.size() - 1);
 
       fprintf(fout, outstr);
       fflush(fout);
