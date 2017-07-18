@@ -228,13 +228,13 @@ int main() {
   fflush(fout);
 
   while (fgets(buf, 256, fin) != NULL) {
-    std::cout << "UI: " << buf;
+    // kill newline char
+    buf[strlen(buf) - 1] = '\0';
+    std::cout << "UI: " << buf << std::endl;
     if (!strncmp(buf, "add_zone:", 9)) {
       char* p = strtok(buf + 9, ",");
       int index = atoi(p);
       p = strtok(NULL, ",");
-
-      p[strlen(p) - 1] = '\0';
 
       if (cli_data->waves.find(p) == cli_data->waves.end()) {
         cli_data->waves[p] = jm::parse_wave(p);
@@ -266,6 +266,23 @@ int main() {
 
       fprintf(fout, outstr);
       fflush(fout);
+    }
+    else if (!strncmp(buf, "update_zone:", 12)) {
+      char* p = strtok(buf + 12, ",");
+      int index = atoi(p);
+      p = strtok(NULL, ",");
+      int key = atoi(p);
+
+      p = strtok(NULL, ",");
+
+      switch (key) {
+        case jm::ZONE_NAME:
+          strcpy(cli_data->zones[index].name, p);
+          break;
+        case jm::ZONE_AMP:
+          cli_data->zones[index].amp = atof(p);
+          break;
+      }
     }
   }
 
