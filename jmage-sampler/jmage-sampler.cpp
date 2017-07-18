@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <pthread.h>
+
 #include <jack/types.h>
 #include <jack/jack.h>
 #include <jack/midiport.h>
@@ -20,14 +22,15 @@
 typedef jack_default_audio_sample_t sample_t;
 
 struct client_data {
+  std::map<std::string, jm::wave> waves;
+  std::vector<jm::zone> zones;
+  pthread_mutex_t zone_lock;
   jack_port_t* input_port;
   jack_port_t* output_port1;
   jack_port_t* output_port2;
-  std::map<std::string, jm::wave> waves;
-  std::vector<jm::zone> zones;
+  JMSampler* sampler;
   int zone_number;
   int channel;
-  JMSampler* sampler;
 };
 
 void build_zone_str(char* outstr, const std::vector<jm::zone>& zones, int i) {
@@ -132,7 +135,13 @@ int process_callback(jack_nframes_t nframes, void* arg) {
         if ((event.buffer[0] & 0x0f) == cli_data->channel) {
           // process note on
           if ((event.buffer[0] & 0xf0) == 0x90) {
+            // yes, using mutex here violates the laws of real time ..BUT..
+            // we don't expect a musician to tweak zones during an actual take!
+            // this allows for demoing zone changes in thread safe way in *almost* real time
+            // we can safely assume this mutex will be unlocked in a real take
+            pthread_mutex_lock(&cli_data->zone_lock);
             cli_data->sampler->handle_note_on(event.buffer, nframes, n);
+            pthread_mutex_unlock(&cli_data->zone_lock);
           }
           // process note off
           else if ((event.buffer[0] & 0xf0) == 0x80) {
@@ -178,6 +187,8 @@ int main() {
 
   cli_data->zones.reserve(100);
 
+  pthread_mutex_init(&cli_data->zone_lock, NULL);
+
   jack_nframes_t sample_rate = jack_get_sample_rate(client);
   // supposed to also implement jack_set_buffer_size_callback; for now assume rarely changes
   jack_nframes_t jack_buf_size = jack_get_buffer_size(client);
@@ -192,6 +203,7 @@ int main() {
     jack_port_unregister(client, cli_data->output_port2);
     jack_client_close(client);
     delete cli_data->sampler;
+    pthread_mutex_destroy(&cli_data->zone_lock);
     delete cli_data;
     std::cerr <<"cannot activate jack client" << std::endl;
     return 1;
@@ -256,11 +268,15 @@ int main() {
 
       char outstr[256];
       if (index < 0) {
+        pthread_mutex_lock(&cli_data->zone_lock);
         cli_data->zones.push_back(zone);
+        pthread_mutex_unlock(&cli_data->zone_lock);
         build_zone_str(outstr, cli_data->zones, cli_data->zones.size() - 1);
       }
       else {
+        pthread_mutex_lock(&cli_data->zone_lock);
         cli_data->zones.insert(cli_data->zones.begin() + index, zone);
+        pthread_mutex_unlock(&cli_data->zone_lock);
         build_zone_str(outstr, cli_data->zones, index);
       }
 
@@ -275,6 +291,7 @@ int main() {
 
       p = strtok(NULL, ",");
 
+      pthread_mutex_lock(&cli_data->zone_lock);
       switch (key) {
         case jm::ZONE_NAME:
           strcpy(cli_data->zones[index].name, p);
@@ -337,6 +354,7 @@ int main() {
           cli_data->zones[index].release = atoi(p);
           break;
       }
+      pthread_mutex_unlock(&cli_data->zone_lock);
     }
   }
 
@@ -354,6 +372,7 @@ int main() {
     jm::free_wave(it->second);
 
   delete cli_data->sampler;
+  pthread_mutex_destroy(&cli_data->zone_lock);
   delete cli_data;
 
   return 0;
