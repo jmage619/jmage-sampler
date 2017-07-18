@@ -282,6 +282,60 @@ int main() {
         case jm::ZONE_AMP:
           cli_data->zones[index].amp = atof(p);
           break;
+        case jm::ZONE_ORIGIN:
+          cli_data->zones[index].origin = atoi(p);
+          break;
+        case jm::ZONE_LOW_KEY:
+          cli_data->zones[index].low_key = atoi(p);
+          break;
+        case jm::ZONE_HIGH_KEY:
+          cli_data->zones[index].high_key = atoi(p);
+          break;
+        case jm::ZONE_LOW_VEL:
+          cli_data->zones[index].low_vel = atoi(p);
+          break;
+        case jm::ZONE_HIGH_VEL:
+          cli_data->zones[index].high_vel = atoi(p);
+          break;
+        case jm::ZONE_PITCH:
+          cli_data->zones[index].pitch_corr = atof(p);
+          break;
+        case jm::ZONE_START:
+          cli_data->zones[index].start = atoi(p);
+          break;
+        case jm::ZONE_LEFT:
+          cli_data->zones[index].left = atoi(p);
+          break;
+        case jm::ZONE_RIGHT:
+          cli_data->zones[index].right = atoi(p);
+          break;
+        case jm::ZONE_LOOP_MODE:
+          cli_data->zones[index].loop_mode = (jm::loop_mode) atoi(p);
+          break;
+        case jm::ZONE_CROSSFADE:
+          cli_data->zones[index].crossfade = atoi(p);
+          break;
+        case jm::ZONE_GROUP:
+          cli_data->zones[index].group = atoi(p);
+          break;
+        case jm::ZONE_OFF_GROUP:
+          cli_data->zones[index].off_group = atoi(p);
+          break;
+        case jm::ZONE_ATTACK:
+          cli_data->zones[index].attack = atoi(p);
+          break;
+        case jm::ZONE_HOLD:
+          cli_data->zones[index].hold = atoi(p);
+          break;
+        case jm::ZONE_DECAY:
+          cli_data->zones[index].decay = atoi(p);
+          break;
+        case jm::ZONE_SUSTAIN:
+          cli_data->zones[index].sustain = atof(p);
+          break;
+        case jm::ZONE_RELEASE:
+          cli_data->zones[index].release = atoi(p);
+          break;
       }
     }
   }
