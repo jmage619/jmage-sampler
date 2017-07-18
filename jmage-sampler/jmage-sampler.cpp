@@ -236,6 +236,9 @@ int main() {
 
   char buf[256];
 
+  fprintf(fout, "set_sample_rate:%i\n", sample_rate);
+  fflush(fout);
+
   fprintf(fout, "update_vol:16\n");
   fflush(fout);
 
