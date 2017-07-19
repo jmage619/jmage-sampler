@@ -286,6 +286,15 @@ int main() {
       fprintf(fout, outstr);
       fflush(fout);
     }
+    else if (!strncmp(buf, "remove_zone:", 12)) {
+      int index = atoi(buf + 12);
+      pthread_mutex_lock(&cli_data->zone_lock);
+      cli_data->zones.erase(cli_data->zones.begin() + index);
+      pthread_mutex_unlock(&cli_data->zone_lock);
+
+      fprintf(fout, "remove_zone:%i\n", index);
+      fflush(fout);
+    }
     else if (!strncmp(buf, "update_zone:", 12)) {
       char* p = strtok(buf + 12, ",");
       int index = atoi(p);
