@@ -54,6 +54,7 @@ template<class T> class JMQueue {
     T remove();
     T* get_head_ptr();
     T* inc_ptr(T const * p);
+    bool empty();
     ~JMQueue();
 };
 
@@ -91,6 +92,10 @@ template<class T> T* JMQueue<T>::inc_ptr(T const * p) {
   if (new_off == tail)
     return NULL;
   return arr + new_off;
+}
+
+template<class T> bool JMQueue<T>::empty() {
+  return head == tail;
 }
 
 #endif

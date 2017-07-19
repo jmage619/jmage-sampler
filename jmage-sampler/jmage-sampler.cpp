@@ -5,6 +5,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
+#include <cmath>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/wait.h>
@@ -18,20 +19,42 @@
 #include <lib/jmsampler.h>
 #include <lib/wave.h>
 #include <lib/zone.h>
+#include <lib/collections.h>
+
+#define MSG_Q_SIZE 32
+#define VOL_STEPS 17
 
 typedef jack_default_audio_sample_t sample_t;
+
+enum msg_type {
+MT_VOLUME,
+MT_CHANNEL
+};
+
+struct jm_msg {
+  msg_type type;
+  union {
+    int i;
+  } data;
+};
 
 struct client_data {
   std::map<std::string, jm::wave> waves;
   std::vector<jm::zone> zones;
   pthread_mutex_t zone_lock;
+  JMQueue<jm_msg>* msg_q;
   jack_port_t* input_port;
   jack_port_t* output_port1;
   jack_port_t* output_port2;
   JMSampler* sampler;
   int zone_number;
+  int volume;
   int channel;
 };
+
+float get_amp(int index) {
+  return index == 0 ? 0.f: 1 / 100.f * pow(10.f, 2 * index / (VOL_STEPS - 1.0f));
+}
 
 void build_zone_str(char* outstr, const std::vector<jm::zone>& zones, int i) {
   char* p = outstr;
@@ -115,6 +138,20 @@ int process_callback(jack_nframes_t nframes, void* arg) {
   memset(buffer1, 0, sizeof(sample_t) * nframes);
   memset(buffer2, 0, sizeof(sample_t) * nframes);
 
+  // handle any UI messages
+  while (!cli_data->msg_q->empty()) {
+    jm_msg msg = cli_data->msg_q->remove();
+    switch (msg.type) {
+      case MT_VOLUME:
+        cli_data->volume = msg.data.i;
+        break;
+      case MT_CHANNEL:
+        cli_data->channel = msg.data.i;
+        break;
+      default:
+        break;
+    }
+  }
   cli_data->sampler->pre_process(nframes);
 
   // capture midi event
@@ -162,7 +199,7 @@ int process_callback(jack_nframes_t nframes, void* arg) {
         jack_midi_event_get(&event, midi_buf, cur_event);
       }
     }
-    cli_data->sampler->process_frame(n, 1.0, buffer1, buffer2);
+    cli_data->sampler->process_frame(n, get_amp(cli_data->volume), buffer1, buffer2);
   }
 
   return 0;
@@ -189,12 +226,15 @@ int main() {
 
   pthread_mutex_init(&cli_data->zone_lock, NULL);
 
+  cli_data->msg_q = new JMQueue<jm_msg>(MSG_Q_SIZE);
+
   jack_nframes_t sample_rate = jack_get_sample_rate(client);
   // supposed to also implement jack_set_buffer_size_callback; for now assume rarely changes
   jack_nframes_t jack_buf_size = jack_get_buffer_size(client);
   cli_data->sampler = new JMSampler(cli_data->zones, sample_rate, jack_buf_size, jack_buf_size);
 
   cli_data->zone_number = 1;
+  cli_data->volume = 16;
   cli_data->channel = 0;
 
   if (jack_activate(client)) {
@@ -203,6 +243,7 @@ int main() {
     jack_port_unregister(client, cli_data->output_port2);
     jack_client_close(client);
     delete cli_data->sampler;
+    delete cli_data->msg_q;
     pthread_mutex_destroy(&cli_data->zone_lock);
     delete cli_data;
     std::cerr <<"cannot activate jack client" << std::endl;
@@ -239,14 +280,31 @@ int main() {
   fprintf(fout, "set_sample_rate:%i\n", sample_rate);
   fflush(fout);
 
-  fprintf(fout, "update_vol:16\n");
+  fprintf(fout, "update_vol:%i\n", cli_data->volume);
+  fflush(fout);
+
+  fprintf(fout, "update_chan:%i\n", cli_data->channel);
   fflush(fout);
 
   while (fgets(buf, 256, fin) != NULL) {
     // kill newline char
     buf[strlen(buf) - 1] = '\0';
     std::cout << "UI: " << buf << std::endl;
-    if (!strncmp(buf, "add_zone:", 9)) {
+    if (!strncmp(buf, "update_vol:", 11)) {
+      jm_msg msg;
+      msg.type = MT_VOLUME;
+      msg.data.i = atoi(buf + 11);
+
+      cli_data->msg_q->add(msg);
+    }
+    else if (!strncmp(buf, "update_chan:", 12)) {
+      jm_msg msg;
+      msg.type = MT_CHANNEL;
+      msg.data.i = atoi(buf + 12);
+
+      cli_data->msg_q->add(msg);
+    }
+    else if (!strncmp(buf, "add_zone:", 9)) {
       char* p = strtok(buf + 9, ",");
       int index = atoi(p);
       p = strtok(NULL, ",");
@@ -384,6 +442,7 @@ int main() {
     jm::free_wave(it->second);
 
   delete cli_data->sampler;
+  delete cli_data->msg_q;
   pthread_mutex_destroy(&cli_data->zone_lock);
   delete cli_data;
 
