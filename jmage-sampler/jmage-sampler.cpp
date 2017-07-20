@@ -20,142 +20,44 @@
 #include <lib/wave.h>
 #include <lib/zone.h>
 #include <lib/collections.h>
+#include <lib/sfzparser.h>
+
+#include "jacksampler.h"
 
 #define MSG_Q_SIZE 32
 #define VOL_STEPS 17
 
 typedef jack_default_audio_sample_t sample_t;
 
-enum msg_type {
-MT_VOLUME,
-MT_CHANNEL
-};
-
-struct jm_msg {
-  msg_type type;
-  union {
-    int i;
-  } data;
-};
-
-struct client_data {
-  std::map<std::string, jm::wave> waves;
-  std::vector<jm::zone> zones;
-  pthread_mutex_t zone_lock;
-  JMQueue<jm_msg>* msg_q;
-  jack_port_t* input_port;
-  jack_port_t* output_port1;
-  jack_port_t* output_port2;
-  JMSampler* sampler;
-  int zone_number;
-  int volume;
-  int channel;
-};
-
 float get_amp(int index) {
   return index == 0 ? 0.f: 1 / 100.f * pow(10.f, 2 * index / (VOL_STEPS - 1.0f));
 }
 
-void build_zone_str(char* outstr, const std::vector<jm::zone>& zones, int i) {
-  char* p = outstr;
-  sprintf(p, "add_zone:");
-  // index
-  p += strlen(p);
-  sprintf(p, "%i,", i);
-  // wave length
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].wave_length);
-  // name
-  p += strlen(p);
-  sprintf(p, "%s,", zones[i].name);
-  std::cerr << "UI: adding ui zone!! " << zones[i].name << std::endl;
-  // amp
-  p += strlen(p);
-  sprintf(p, "%f,", zones[i].amp);
-  // origin
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].origin);
-  // low key
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].low_key);
-  // high key
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].high_key);
-  // low vel
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].low_vel);
-  // high vel
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].high_vel);
-  // pitch
-  p += strlen(p);
-  sprintf(p, "%f,", zones[i].pitch_corr);
-  // start
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].start);
-  // left
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].left);
-  // right
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].right);
-  // loop mode
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].loop_mode);
-  // crossfade
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].crossfade);
-  // group
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].group);
-  // off group
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].off_group);
-  // attack
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].attack);
-  // hold
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].hold);
-  // decay
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].decay);
-  // sustain
-  p += strlen(p);
-  sprintf(p, "%f,", zones[i].sustain);
-  // release
-  p += strlen(p);
-  sprintf(p, "%i,", zones[i].release);
-  // path
-  p += strlen(p);
-  sprintf(p, "%s\n", zones[i].path);
-}
-
 int process_callback(jack_nframes_t nframes, void* arg) {
-  client_data* cli_data = static_cast<client_data*>(arg);
-  sample_t* buffer1 = (sample_t*) jack_port_get_buffer(cli_data->output_port1, nframes);
-  sample_t* buffer2 = (sample_t*) jack_port_get_buffer(cli_data->output_port2, nframes);
+  jack_sampler* jsampler = static_cast<jack_sampler*>(arg);
+  sample_t* buffer1 = (sample_t*) jack_port_get_buffer(jsampler->output_port1, nframes);
+  sample_t* buffer2 = (sample_t*) jack_port_get_buffer(jsampler->output_port2, nframes);
   memset(buffer1, 0, sizeof(sample_t) * nframes);
   memset(buffer2, 0, sizeof(sample_t) * nframes);
 
   // handle any UI messages
-  while (!cli_data->msg_q->empty()) {
-    jm_msg msg = cli_data->msg_q->remove();
+  while (!jsampler->msg_q->empty()) {
+    jm_msg msg = jsampler->msg_q->remove();
     switch (msg.type) {
       case MT_VOLUME:
-        cli_data->volume = msg.data.i;
+        jsampler->volume = msg.data.i;
         break;
       case MT_CHANNEL:
-        cli_data->channel = msg.data.i;
+        jsampler->channel = msg.data.i;
         break;
       default:
         break;
     }
   }
-  cli_data->sampler->pre_process(nframes);
+  jsampler->sampler->pre_process(nframes);
 
   // capture midi event
-  void* midi_buf = jack_port_get_buffer(cli_data->input_port, nframes);
+  void* midi_buf = jack_port_get_buffer(jsampler->input_port, nframes);
 
   uint32_t event_count = jack_midi_get_event_count(midi_buf);
   uint32_t cur_event = 0;
@@ -169,24 +71,24 @@ int process_callback(jack_nframes_t nframes, void* arg) {
       // procces next midi event if it applies to current time (frame)
       while (n == event.time) {
         // only consider events from current channel
-        if ((event.buffer[0] & 0x0f) == cli_data->channel) {
+        if ((event.buffer[0] & 0x0f) == jsampler->channel) {
           // process note on
           if ((event.buffer[0] & 0xf0) == 0x90) {
             // yes, using mutex here violates the laws of real time ..BUT..
             // we don't expect a musician to tweak zones during an actual take!
             // this allows for demoing zone changes in thread safe way in *almost* real time
             // we can safely assume this mutex will be unlocked in a real take
-            pthread_mutex_lock(&cli_data->zone_lock);
-            cli_data->sampler->handle_note_on(event.buffer, nframes, n);
-            pthread_mutex_unlock(&cli_data->zone_lock);
+            pthread_mutex_lock(&jsampler->zone_lock);
+            jsampler->sampler->handle_note_on(event.buffer, nframes, n);
+            pthread_mutex_unlock(&jsampler->zone_lock);
           }
           // process note off
           else if ((event.buffer[0] & 0xf0) == 0x80) {
-            cli_data->sampler->handle_note_off(event.buffer);
+            jsampler->sampler->handle_note_off(event.buffer);
           }
           // process sustain pedal
           else if ((event.buffer[0] & 0xf0) == 0xb0 && event.buffer[1] == 0x40) {
-            cli_data->sampler->handle_sustain(event.buffer);
+            jsampler->sampler->handle_sustain(event.buffer);
           }
           // just print messages we don't currently handle
           else if (event.buffer[0] != 0xfe)
@@ -199,7 +101,7 @@ int process_callback(jack_nframes_t nframes, void* arg) {
         jack_midi_event_get(&event, midi_buf, cur_event);
       }
     }
-    cli_data->sampler->process_frame(n, get_amp(cli_data->volume), buffer1, buffer2);
+    jsampler->sampler->process_frame(n, get_amp(jsampler->volume), buffer1, buffer2);
   }
 
   return 0;
@@ -215,37 +117,37 @@ int main() {
     return 1;
   }
 
-  client_data* cli_data = new client_data;
+  jack_sampler* jsampler = new jack_sampler;
 
-  jack_set_process_callback(client, process_callback, cli_data);
-  cli_data->input_port = jack_port_register(client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
-  cli_data->output_port1 = jack_port_register(client, "out1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
-  cli_data->output_port2 = jack_port_register(client, "out2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
+  jack_set_process_callback(client, process_callback, jsampler);
+  jsampler->input_port = jack_port_register(client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
+  jsampler->output_port1 = jack_port_register(client, "out1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
+  jsampler->output_port2 = jack_port_register(client, "out2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 
-  cli_data->zones.reserve(100);
+  jsampler->zones.reserve(100);
 
-  pthread_mutex_init(&cli_data->zone_lock, NULL);
+  pthread_mutex_init(&jsampler->zone_lock, NULL);
 
-  cli_data->msg_q = new JMQueue<jm_msg>(MSG_Q_SIZE);
+  jsampler->msg_q = new JMQueue<jm_msg>(MSG_Q_SIZE);
 
-  jack_nframes_t sample_rate = jack_get_sample_rate(client);
+  jsampler->sample_rate = jack_get_sample_rate(client);
   // supposed to also implement jack_set_buffer_size_callback; for now assume rarely changes
   jack_nframes_t jack_buf_size = jack_get_buffer_size(client);
-  cli_data->sampler = new JMSampler(cli_data->zones, sample_rate, jack_buf_size, jack_buf_size);
+  jsampler->sampler = new JMSampler(jsampler->zones, jsampler->sample_rate, jack_buf_size, jack_buf_size);
 
-  cli_data->zone_number = 1;
-  cli_data->volume = 16;
-  cli_data->channel = 0;
+  jsampler->zone_number = 1;
+  jsampler->volume = 16;
+  jsampler->channel = 0;
 
   if (jack_activate(client)) {
-    jack_port_unregister(client, cli_data->input_port);
-    jack_port_unregister(client, cli_data->output_port1);
-    jack_port_unregister(client, cli_data->output_port2);
+    jack_port_unregister(client, jsampler->input_port);
+    jack_port_unregister(client, jsampler->output_port1);
+    jack_port_unregister(client, jsampler->output_port2);
     jack_client_close(client);
-    delete cli_data->sampler;
-    delete cli_data->msg_q;
-    pthread_mutex_destroy(&cli_data->zone_lock);
-    delete cli_data;
+    delete jsampler->sampler;
+    delete jsampler->msg_q;
+    pthread_mutex_destroy(&jsampler->zone_lock);
+    delete jsampler;
     std::cerr <<"cannot activate jack client" << std::endl;
     return 1;
   }
@@ -277,13 +179,13 @@ int main() {
 
   char buf[256];
 
-  fprintf(fout, "set_sample_rate:%i\n", sample_rate);
+  fprintf(fout, "set_sample_rate:%i\n", jsampler->sample_rate);
   fflush(fout);
 
-  fprintf(fout, "update_vol:%i\n", cli_data->volume);
+  fprintf(fout, "update_vol:%i\n", jsampler->volume);
   fflush(fout);
 
-  fprintf(fout, "update_chan:%i\n", cli_data->channel);
+  fprintf(fout, "update_chan:%i\n", jsampler->channel);
   fflush(fout);
 
   while (fgets(buf, 256, fin) != NULL) {
@@ -295,25 +197,25 @@ int main() {
       msg.type = MT_VOLUME;
       msg.data.i = atoi(buf + 11);
 
-      cli_data->msg_q->add(msg);
+      jsampler->msg_q->add(msg);
     }
     else if (!strncmp(buf, "update_chan:", 12)) {
       jm_msg msg;
       msg.type = MT_CHANNEL;
       msg.data.i = atoi(buf + 12);
 
-      cli_data->msg_q->add(msg);
+      jsampler->msg_q->add(msg);
     }
     else if (!strncmp(buf, "add_zone:", 9)) {
       char* p = strtok(buf + 9, ",");
       int index = atoi(p);
       p = strtok(NULL, ",");
 
-      if (cli_data->waves.find(p) == cli_data->waves.end()) {
-        cli_data->waves[p] = jm::parse_wave(p);
+      if (jsampler->waves.find(p) == jsampler->waves.end()) {
+        jsampler->waves[p] = jm::parse_wave(p);
       }
 
-      jm::wave& wav = cli_data->waves[p];
+      jm::wave& wav = jsampler->waves[p];
       jm::zone zone;
       jm::init_zone(&zone);
       zone.wave = wav.wave;
@@ -324,21 +226,21 @@ int main() {
       zone.right = wav.length;
       if (wav.has_loop)
         zone.loop_mode = jm::LOOP_CONTINUOUS;
-      sprintf(zone.name, "Zone %i", cli_data->zone_number++);
+      sprintf(zone.name, "Zone %i", jsampler->zone_number++);
       strcpy(zone.path, p);
 
       char outstr[256];
       if (index < 0) {
-        pthread_mutex_lock(&cli_data->zone_lock);
-        cli_data->zones.push_back(zone);
-        pthread_mutex_unlock(&cli_data->zone_lock);
-        build_zone_str(outstr, cli_data->zones, cli_data->zones.size() - 1);
+        pthread_mutex_lock(&jsampler->zone_lock);
+        jsampler->zones.push_back(zone);
+        pthread_mutex_unlock(&jsampler->zone_lock);
+        build_zone_str(outstr, jsampler->zones, jsampler->zones.size() - 1);
       }
       else {
-        pthread_mutex_lock(&cli_data->zone_lock);
-        cli_data->zones.insert(cli_data->zones.begin() + index, zone);
-        pthread_mutex_unlock(&cli_data->zone_lock);
-        build_zone_str(outstr, cli_data->zones, index);
+        pthread_mutex_lock(&jsampler->zone_lock);
+        jsampler->zones.insert(jsampler->zones.begin() + index, zone);
+        pthread_mutex_unlock(&jsampler->zone_lock);
+        build_zone_str(outstr, jsampler->zones, index);
       }
 
       fprintf(fout, outstr);
@@ -346,9 +248,9 @@ int main() {
     }
     else if (!strncmp(buf, "remove_zone:", 12)) {
       int index = atoi(buf + 12);
-      pthread_mutex_lock(&cli_data->zone_lock);
-      cli_data->zones.erase(cli_data->zones.begin() + index);
-      pthread_mutex_unlock(&cli_data->zone_lock);
+      pthread_mutex_lock(&jsampler->zone_lock);
+      jsampler->zones.erase(jsampler->zones.begin() + index);
+      pthread_mutex_unlock(&jsampler->zone_lock);
 
       fprintf(fout, "remove_zone:%i\n", index);
       fflush(fout);
@@ -361,70 +263,139 @@ int main() {
 
       p = strtok(NULL, ",");
 
-      pthread_mutex_lock(&cli_data->zone_lock);
+      pthread_mutex_lock(&jsampler->zone_lock);
       switch (key) {
         case jm::ZONE_NAME:
-          strcpy(cli_data->zones[index].name, p);
+          strcpy(jsampler->zones[index].name, p);
           break;
         case jm::ZONE_AMP:
-          cli_data->zones[index].amp = atof(p);
+          jsampler->zones[index].amp = atof(p);
           break;
         case jm::ZONE_ORIGIN:
-          cli_data->zones[index].origin = atoi(p);
+          jsampler->zones[index].origin = atoi(p);
           break;
         case jm::ZONE_LOW_KEY:
-          cli_data->zones[index].low_key = atoi(p);
+          jsampler->zones[index].low_key = atoi(p);
           break;
         case jm::ZONE_HIGH_KEY:
-          cli_data->zones[index].high_key = atoi(p);
+          jsampler->zones[index].high_key = atoi(p);
           break;
         case jm::ZONE_LOW_VEL:
-          cli_data->zones[index].low_vel = atoi(p);
+          jsampler->zones[index].low_vel = atoi(p);
           break;
         case jm::ZONE_HIGH_VEL:
-          cli_data->zones[index].high_vel = atoi(p);
+          jsampler->zones[index].high_vel = atoi(p);
           break;
         case jm::ZONE_PITCH:
-          cli_data->zones[index].pitch_corr = atof(p);
+          jsampler->zones[index].pitch_corr = atof(p);
           break;
         case jm::ZONE_START:
-          cli_data->zones[index].start = atoi(p);
+          jsampler->zones[index].start = atoi(p);
           break;
         case jm::ZONE_LEFT:
-          cli_data->zones[index].left = atoi(p);
+          jsampler->zones[index].left = atoi(p);
           break;
         case jm::ZONE_RIGHT:
-          cli_data->zones[index].right = atoi(p);
+          jsampler->zones[index].right = atoi(p);
           break;
         case jm::ZONE_LOOP_MODE:
-          cli_data->zones[index].loop_mode = (jm::loop_mode) atoi(p);
+          jsampler->zones[index].loop_mode = (jm::loop_mode) atoi(p);
           break;
         case jm::ZONE_CROSSFADE:
-          cli_data->zones[index].crossfade = atoi(p);
+          jsampler->zones[index].crossfade = atoi(p);
           break;
         case jm::ZONE_GROUP:
-          cli_data->zones[index].group = atoi(p);
+          jsampler->zones[index].group = atoi(p);
           break;
         case jm::ZONE_OFF_GROUP:
-          cli_data->zones[index].off_group = atoi(p);
+          jsampler->zones[index].off_group = atoi(p);
           break;
         case jm::ZONE_ATTACK:
-          cli_data->zones[index].attack = atoi(p);
+          jsampler->zones[index].attack = atoi(p);
           break;
         case jm::ZONE_HOLD:
-          cli_data->zones[index].hold = atoi(p);
+          jsampler->zones[index].hold = atoi(p);
           break;
         case jm::ZONE_DECAY:
-          cli_data->zones[index].decay = atoi(p);
+          jsampler->zones[index].decay = atoi(p);
           break;
         case jm::ZONE_SUSTAIN:
-          cli_data->zones[index].sustain = atof(p);
+          jsampler->zones[index].sustain = atof(p);
           break;
         case jm::ZONE_RELEASE:
-          cli_data->zones[index].release = atoi(p);
+          jsampler->zones[index].release = atoi(p);
           break;
       }
-      pthread_mutex_unlock(&cli_data->zone_lock);
+      pthread_mutex_unlock(&jsampler->zone_lock);
+    }
+    else if (!strncmp(buf, "load_patch:", 11)) {
+      char* path = buf + 11;
+      SFZParser* parser;
+      int len = strlen(path);
+      if (!strcmp(path + len - 4, ".jmz"))
+        parser = new JMZParser(path);
+      // assumed it could ony eitehr be jmz or sfz
+      else
+        parser = new SFZParser(path);
+
+      sfz::sfz* patch;
+
+      try {
+        patch = parser->parse();
+      }
+      catch (std::runtime_error& e) {
+        std::cerr << "failed parsing patch:" << e.what() << std::endl;
+        delete parser;
+        continue;
+      }
+
+      int num_zones = jsampler->zones.size();
+      for (int i = 0; i < num_zones; ++i) {
+        fprintf(fout, "remove_zone:%i\n", i);
+        fflush(fout);
+      }
+
+      jsampler->zone_number = 1;
+
+      std::map<std::string, SFZValue>::iterator c_it = patch->control.find("jm_vol");
+      if (c_it != patch->control.end()) {
+        jsampler->volume = c_it->second.get_int();
+        jsampler-> channel =  patch->control["jm_chan"].get_int() - 1;
+      }
+      else {
+        jsampler->volume = 16;
+        jsampler->channel = 0;
+      }
+
+      fprintf(fout, "update_vol:%i\n", jsampler->volume);
+      fflush(fout);
+
+      fprintf(fout, "update_chan:%i\n", jsampler->channel);
+      fflush(fout);
+
+      
+      pthread_mutex_lock(&jsampler->zone_lock);
+      jsampler->zones.erase(jsampler->zones.begin(), jsampler->zones.end());
+      pthread_mutex_unlock(&jsampler->zone_lock);
+
+      std::vector<std::map<std::string, SFZValue>>::iterator it;
+      char outstr[256];
+      for (it = patch->regions.begin(); it != patch->regions.end(); ++it) {
+        std::string wave_path = (*it)["sample"].get_str();
+        if (jsampler->waves.find(wave_path) == jsampler->waves.end())
+          jsampler->waves[wave_path] = jm::parse_wave(wave_path.c_str());
+
+        pthread_mutex_lock(&jsampler->zone_lock);
+        add_zone_from_region(jsampler, *it);      
+        pthread_mutex_unlock(&jsampler->zone_lock);
+
+        build_zone_str(outstr, jsampler->zones, jsampler->zones.size() - 1);
+        fprintf(fout, outstr);
+        fflush(fout);
+      }
+
+      delete patch;
+      delete parser;
     }
   }
 
@@ -432,19 +403,19 @@ int main() {
   waitpid(pid, NULL, 0);
 
   jack_deactivate(client);
-  jack_port_unregister(client, cli_data->input_port);
-  jack_port_unregister(client, cli_data->output_port1);
-  jack_port_unregister(client, cli_data->output_port2);
+  jack_port_unregister(client, jsampler->input_port);
+  jack_port_unregister(client, jsampler->output_port1);
+  jack_port_unregister(client, jsampler->output_port2);
   jack_client_close(client);
 
   std::map<std::string, jm::wave>::iterator it;
-  for (it = cli_data->waves.begin(); it != cli_data->waves.end(); ++it)
+  for (it = jsampler->waves.begin(); it != jsampler->waves.end(); ++it)
     jm::free_wave(it->second);
 
-  delete cli_data->sampler;
-  delete cli_data->msg_q;
-  pthread_mutex_destroy(&cli_data->zone_lock);
-  delete cli_data;
+  delete jsampler->sampler;
+  delete jsampler->msg_q;
+  pthread_mutex_destroy(&jsampler->zone_lock);
+  delete jsampler;
 
   return 0;
 }
