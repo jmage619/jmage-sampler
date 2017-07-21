@@ -239,6 +239,4 @@ void jm::add_zone_from_region(sampler_plugin* plugin, const std::map<std::string
   zone.sustain = region.find("ampeg_sustain")->second.get_double() / 100.;
   zone.release = plugin->sample_rate * region.find("ampeg_release")->second.get_double();
   plugin->zones.push_back(zone);
-
-  send_add_zone(plugin, plugin->zones.size() - 1);
 }

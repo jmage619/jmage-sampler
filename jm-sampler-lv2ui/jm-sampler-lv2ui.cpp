@@ -335,7 +335,8 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       fprintf(ui->fout, "remove_zone:%i\n", index);
       fflush(ui->fout);
     }
-    else if (obj->body.otype == ui->uris.jm_removeZone) {
+    else if (obj->body.otype == ui->uris.jm_clearZones) {
+      std::cerr << "UI: received clear zones!!" << std::endl;
       fprintf(ui->fout, "clear_zones\n");
       fflush(ui->fout);
     }
