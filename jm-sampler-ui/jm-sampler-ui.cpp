@@ -82,6 +82,8 @@ void InputThread::run() {
     }
     else if (!input.compare(0, 12, "remove_zone:"))
       emit receivedRemoveZone(atoi(input.substr(12).c_str()));
+    else if (!input.compare(0, 11, "clear_zones"))
+      emit receivedClearZones();
     else if (!input.compare(0, 11, "update_vol:"))
       emit receivedUpdateVol(atof(input.substr(11).c_str()));
     else if (!input.compare(0, 12, "update_chan:"))
@@ -141,6 +143,7 @@ SamplerUI::SamplerUI() {
   connect(in_thread, &InputThread::receivedSampleRate, this, &SamplerUI::setSampleRate);
   connect(in_thread, &InputThread::receivedAddZone, this, &SamplerUI::addNewZone);
   connect(in_thread, &InputThread::receivedRemoveZone, this, &SamplerUI::removeZone);
+  connect(in_thread, &InputThread::receivedClearZones, this, &SamplerUI::clearZones);
   connect(in_thread, &InputThread::receivedUpdateVol, this, &SamplerUI::checkAndUpdateVol);
   connect(in_thread, &InputThread::receivedUpdateChan, this, &SamplerUI::checkAndUpdateChan);
   connect(in_thread, &QThread::finished, in_thread, &QObject::deleteLater);
@@ -160,6 +163,10 @@ void SamplerUI::addNewZone(int i, const jm::zone& z) {
 
 void SamplerUI::removeZone(int i) {
   zone_model.removeRows(i, 1);
+}
+
+void SamplerUI::clearZones() {
+  zone_model.removeRows(0, zone_model.rowCount());
 }
 
 void SamplerUI::checkAndUpdateVol(double val) {

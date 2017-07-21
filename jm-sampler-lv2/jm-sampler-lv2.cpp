@@ -288,10 +288,7 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
   else if (msg->type == WORKER_LOAD_PATCH) {
     fprintf(stderr, "SAMPLER load patch response!! num regions: %i\n", (int) plugin->patch->regions.size());
 
-    int num_zones = (int) plugin->zones.size();
-
-    for (int i = 0; i < num_zones; ++i)
-      jm::send_remove_zone(plugin, 0);
+    jm::send_clear_zones(plugin);
 
     plugin->zone_number = 1;
 

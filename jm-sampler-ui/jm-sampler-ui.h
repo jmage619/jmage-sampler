@@ -23,6 +23,7 @@ class InputThread: public QThread {
     void receivedSampleRate(int sample_rate);
     void receivedAddZone(int i, const jm::zone& z);
     void receivedRemoveZone(int i);
+    void receivedClearZones();
     void receivedUpdateVol(double val);
     void receivedUpdateChan(int index);
 };
@@ -42,6 +43,7 @@ class SamplerUI: public QWidget {
     void setSampleRate(int sample_rate);
     void addNewZone(int i, const jm::zone& z);
     void removeZone(int i);
+    void clearZones();
     void checkAndUpdateVol(double val);
     void checkAndUpdateChan(int index);
     void sendAddZone();

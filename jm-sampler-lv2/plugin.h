@@ -41,6 +41,7 @@ namespace jm {
   void send_zone_vect(sampler_plugin* plugin);
   void send_add_zone(sampler_plugin* plugin, int index);
   void send_remove_zone(sampler_plugin* plugin, int index);
+  void send_clear_zones(sampler_plugin* plugin);
   void send_update_vol(sampler_plugin* plugin, float vol);
   void send_update_chan(sampler_plugin* plugin, float chan);
   void update_zone(sampler_plugin* plugin, const LV2_Atom_Object* obj);

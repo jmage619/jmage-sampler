@@ -58,6 +58,15 @@ void jm::send_remove_zone(sampler_plugin* plugin, int index) {
   fprintf(stderr, "SAMPLER: remove zone sent!! %i\n", index);
 }
 
+void jm::send_clear_zones(sampler_plugin* plugin) {
+  lv2_atom_forge_frame_time(&plugin->forge, 0);
+  LV2_Atom_Forge_Frame obj_frame;
+  lv2_atom_forge_object(&plugin->forge, &obj_frame, 0, plugin->uris.jm_clearZones);
+  lv2_atom_forge_pop(&plugin->forge, &obj_frame);
+
+  fprintf(stderr, "SAMPLER: clear zones sent!!\n");
+}
+
 void jm::send_update_vol(sampler_plugin* plugin, float vol) {
   lv2_atom_forge_frame_time(&plugin->forge, 0);
   LV2_Atom_Forge_Frame obj_frame;

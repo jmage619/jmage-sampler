@@ -15,6 +15,7 @@
 #define JM_SAMPLER__getSampleRate JM_SAMPLER_URI "#setSampleRate"
 #define JM_SAMPLER__addZone JM_SAMPLER_URI "#addZone"
 #define JM_SAMPLER__removeZone JM_SAMPLER_URI "#removeZone"
+#define JM_SAMPLER__clearZones JM_SAMPLER_URI "#clearZones"
 #define JM_SAMPLER__params JM_SAMPLER_URI "#params"
 #define JM_SAMPLER__getZones JM_SAMPLER_URI "#getZones"
 #define JM_SAMPLER__updateZone JM_SAMPLER_URI "#updateZone"
@@ -36,6 +37,7 @@ namespace jm {
     LV2_URID jm_getSampleRate;
     LV2_URID jm_addZone;
     LV2_URID jm_removeZone;
+    LV2_URID jm_clearZones;
     LV2_URID jm_params;
     LV2_URID jm_updateZone;
     LV2_URID jm_loadPatch;
@@ -56,6 +58,7 @@ namespace jm {
     uris->jm_getSampleRate = map->map(map->handle, JM_SAMPLER__getSampleRate);
     uris->jm_addZone = map->map(map->handle, JM_SAMPLER__addZone);
     uris->jm_removeZone = map->map(map->handle, JM_SAMPLER__removeZone);
+    uris->jm_clearZones = map->map(map->handle, JM_SAMPLER__clearZones);
     uris->jm_params = map->map(map->handle, JM_SAMPLER__params);
     uris->jm_updateZone = map->map(map->handle, JM_SAMPLER__updateZone);
     uris->jm_loadPatch = map->map(map->handle, JM_SAMPLER__loadPatch);

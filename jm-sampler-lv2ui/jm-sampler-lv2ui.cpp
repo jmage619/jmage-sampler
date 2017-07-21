@@ -321,6 +321,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
 
       // index
       int i = ((LV2_Atom_Int*) params)->body;
+      fprintf(stderr, "UI addZone received!! %i\n", i);
 
       add_ui_zone(ui, i);
     }
@@ -332,6 +333,10 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       int index = ((LV2_Atom_Int*) params)->body;
       std::cerr << "UI: received remove zone!! " << index << std::endl;
       fprintf(ui->fout, "remove_zone:%i\n", index);
+      fflush(ui->fout);
+    }
+    else if (obj->body.otype == ui->uris.jm_removeZone) {
+      fprintf(ui->fout, "clear_zones\n");
       fflush(ui->fout);
     }
     else if (obj->body.otype == ui->uris.jm_updateVol) {

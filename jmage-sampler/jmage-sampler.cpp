@@ -349,11 +349,8 @@ int main() {
         continue;
       }
 
-      int num_zones = jsampler->zones.size();
-      for (int i = 0; i < num_zones; ++i) {
-        fprintf(fout, "remove_zone:%i\n", i);
-        fflush(fout);
-      }
+      fprintf(fout, "clear_zones\n");
+      fflush(fout);
 
       jsampler->zone_number = 1;
 
