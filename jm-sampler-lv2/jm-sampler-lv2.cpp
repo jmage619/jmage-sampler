@@ -309,14 +309,11 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
     plugin->zones.erase(plugin->zones.begin(), plugin->zones.end());
     std::vector<std::map<std::string, SFZValue>>::iterator it;
     for (it = plugin->patch->regions.begin(); it != plugin->patch->regions.end(); ++it) {
-      if (plugin->waves.find((*it)["sample"].get_str()) == plugin->waves.end()) {
-        worker_msg reg_msg;
-        reg_msg.type = WORKER_LOAD_REGION_WAV;
-        reg_msg.i = it - plugin->patch->regions.begin();
-        plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &reg_msg);
+      std::string wav_path = (*it)["sample"].get_str();
+      if (plugin->waves.find(wav_path) == plugin->waves.end()) {
+        plugin->waves[wav_path] = jm::parse_wave(wav_path.c_str());
       }
-      else
-        jm::add_zone_from_region(plugin, *it);
+      jm::add_zone_from_region(plugin, *it);
     }
   }
 
