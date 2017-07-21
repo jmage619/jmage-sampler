@@ -42,5 +42,6 @@ struct jack_sampler {
 
 void build_zone_str(char* outstr, const std::vector<jm::zone>& zones, int i);
 void add_zone_from_region(jack_sampler* sampler, const std::map<std::string, SFZValue>& region);
+void save_patch(jack_sampler* sampler, const char* path);
 
 #endif

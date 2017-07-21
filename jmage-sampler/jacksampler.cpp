@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <map>
 #include <cstdio>
@@ -134,4 +135,52 @@ void add_zone_from_region(jack_sampler* sampler, const std::map<std::string, SFZ
   zone.sustain = region.find("ampeg_sustain")->second.get_double() / 100.;
   zone.release = sampler->sample_rate * region.find("ampeg_release")->second.get_double();
   sampler->zones.push_back(zone);
+}
+
+void save_patch(jack_sampler* sampler, const char* path) {
+  int len = strlen(path);
+
+  sfz::sfz patch;
+
+  bool is_jmz = !strcmp(path + len - 4, ".jmz");
+  if (is_jmz) {
+    patch.control["jm_vol"] = sampler->volume;
+    patch.control["jm_chan"] = sampler->channel + 1;
+  }
+
+  std::vector<jm::zone>::iterator it;
+  for (it = sampler->zones.begin(); it != sampler->zones.end(); ++it) {
+    std::map<std::string, SFZValue> region;
+
+    if (is_jmz)
+      region["jm_name"] = it->name;
+
+    region["sample"] = it->path;
+    region["volume"] = 20. * log10(it->amp);
+    region["lokey"] = it->low_key;
+    region["hikey"] = it->high_key;
+    region["pitch_keycenter"] = it->origin;
+    region["lovel"] = it->low_vel;
+    region["hivel"] = it->high_vel;
+    region["tune"] = (int) (100. * it->pitch_corr);
+    region["offset"] = it->start;
+    region["loop_mode"] = it->loop_mode;
+    region["loop_start"] = it->left;
+    region["loop_end"] = it->right;
+    region["loop_crossfade"] = (double) it->crossfade / sampler->sample_rate;
+    region["group"] = it->group;
+    region["off_group"] = it->off_group;
+    region["ampeg_attack"] = (double) it->attack / sampler->sample_rate;
+    region["ampeg_hold"] = (double) it->hold / sampler->sample_rate;
+    region["ampeg_decay"] = (double) it->decay / sampler->sample_rate;
+    region["ampeg_sustain"] = 100. * it->sustain;
+    region["ampeg_release"] = (double) it->release / sampler->sample_rate;
+
+    patch.regions.push_back(region);
+  }
+
+  std::ofstream fout(path);
+
+  sfz::write(&patch, fout);
+  fout.close();
 }

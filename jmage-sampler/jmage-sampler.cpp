@@ -397,6 +397,10 @@ int main() {
       delete patch;
       delete parser;
     }
+    else if (!strncmp(buf, "save_patch:", 11)) {
+      char* path = buf + 11;
+      save_patch(jsampler, path);
+    }
   }
 
   fclose(fout);
