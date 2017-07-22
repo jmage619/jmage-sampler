@@ -47,6 +47,7 @@ namespace jm {
   void update_zone(sampler_plugin* plugin, const LV2_Atom_Object* obj);
   void add_zone_from_wave(sampler_plugin* plugin, int index, const char* path);
   void add_zone_from_region(sampler_plugin* plugin, const std::map<std::string, SFZValue>& region);
+  void parse_patch(sampler_plugin* plugin);
 };
 
 #endif

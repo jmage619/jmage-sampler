@@ -240,3 +240,35 @@ void jm::add_zone_from_region(sampler_plugin* plugin, const std::map<std::string
   zone.release = plugin->sample_rate * region.find("ampeg_release")->second.get_double();
   plugin->zones.push_back(zone);
 }
+
+void jm::parse_patch(sampler_plugin* plugin) {
+  SFZParser* parser;
+
+  int len = strlen(plugin->patch_path);
+  if (!strcmp(plugin->patch_path + len - 4, ".jmz"))
+    parser = new JMZParser(plugin->patch_path);
+  // assumed it could ony eitehr be jmz or sfz
+  else
+    parser = new SFZParser(plugin->patch_path);
+
+  if (plugin->patch != NULL)
+    delete plugin->patch;
+
+  // consider error handling here
+  plugin->patch = parser->parse();
+
+  delete parser;
+
+  plugin->zone_number = 1;
+
+  plugin->zones.erase(plugin->zones.begin(), plugin->zones.end());
+
+  std::vector<std::map<std::string, SFZValue>>::iterator it;
+  for (it = plugin->patch->regions.begin(); it != plugin->patch->regions.end(); ++it) {
+    std::string wav_path = (*it)["sample"].get_str();
+    if (plugin->waves.find(wav_path) == plugin->waves.end()) {
+      plugin->waves[wav_path] = jm::parse_wave(wav_path.c_str());
+    }
+    jm::add_zone_from_region(plugin, *it);
+  }
+}

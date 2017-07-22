@@ -189,33 +189,8 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
     //fprintf(stderr, "SAMPLER: work completed; parsed: %s\n", path);
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
-    SFZParser* parser;
-    int len = strlen(plugin->patch_path);
-    if (!strcmp(plugin->patch_path + len - 4, ".jmz"))
-      parser = new JMZParser(plugin->patch_path);
-    // assumed it could ony eitehr be jmz or sfz
-    else
-      parser = new SFZParser(plugin->patch_path);
-
     fprintf(stderr, "SAMPLER: work loading patch: %s\n", plugin->patch_path);
-    if (plugin->patch != NULL)
-      delete plugin->patch;
-
-    plugin->patch = parser->parse();
-    delete parser;
-
-    plugin->zone_number = 1;
-
-    plugin->zones.erase(plugin->zones.begin(), plugin->zones.end());
-
-    std::vector<std::map<std::string, SFZValue>>::iterator it;
-    for (it = plugin->patch->regions.begin(); it != plugin->patch->regions.end(); ++it) {
-      std::string wav_path = (*it)["sample"].get_str();
-      if (plugin->waves.find(wav_path) == plugin->waves.end()) {
-        plugin->waves[wav_path] = jm::parse_wave(wav_path.c_str());
-      }
-      jm::add_zone_from_region(plugin, *it);
-    }
+    jm::parse_patch(plugin);
 
     respond(handle, sizeof(worker_msg), msg); 
   }
@@ -489,55 +464,15 @@ static LV2_State_Status restore(LV2_Handle instance, LV2_State_Retrieve_Function
   const char* apath = static_cast<const char*>(value);
   char* path = map_path->absolute_path(map_path->handle, apath);
 
-  // copied and pasted a lot from elsewhere.. consider wrapping in funs
-  SFZParser* parser;
-  int len = strlen(path);
-  if (!strcmp(path + len - 4, ".jmz"))
-    parser = new JMZParser(path);
-  // assumed it could ony eitehr be jmz or sfz
-  else
-    parser = new SFZParser(path);
-
-  fprintf(stderr, "SAMPLER: restore loading patch: %s\n", path);
-  if (plugin->patch != NULL)
-    delete plugin->patch;
-
-  try {
-    plugin->patch = parser->parse();
-  }
-  catch (std::runtime_error& e) {
-    fprintf(stderr, "restore failed parsing patch: %s\n", e.what());
-    delete parser;
-    delete path;
-    return LV2_STATE_ERR_UNKNOWN;
-  }
-
-  delete parser;
-
   strcpy(plugin->patch_path, path);
   delete path;
 
-  // skipping vol and chan updates; should get those automatically from save state
-  /*std::map<std::string, sfz::Value>::iterator c_it = plugin->patch->control.find("jm_vol");
-  if (c_it != plugin->patch->control.end()) {
-    send_update_vol(plugin, c_it->second.get_int());
-    send_update_chan(plugin, plugin->patch->control["jm_chan"].get_int() - 1);
-  }
-  // reset to reasonable defaults if not defined
-  else {
-    send_update_vol(plugin, 16);
-    send_update_chan(plugin, 0);
-  }
-  */
+  jm::parse_patch(plugin);
 
-  std::vector<std::map<std::string, SFZValue>>::iterator it;
-  for (it = plugin->patch->regions.begin(); it != plugin->patch->regions.end(); ++it) {
-    if (plugin->waves.find((*it)["sample"].get_str()) == plugin->waves.end()) {
-      std::string wav_path = (*it)["sample"].get_str();
-      plugin->waves[wav_path] = jm::parse_wave(wav_path.c_str());
-    }
-    jm::add_zone_from_region(plugin, *it);
-  }
+  int num_zones = plugin->zones.size();
+
+  for (int i = 0; i < num_zones; ++i)
+    send_add_zone(plugin, i);
 
   return LV2_STATE_SUCCESS;
 }
