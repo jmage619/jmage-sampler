@@ -39,7 +39,6 @@ enum {
 
 enum worker_msg_type {
   WORKER_LOAD_PATH_WAV,
-  WORKER_LOAD_REGION_WAV,
   WORKER_LOAD_PATCH,
   WORKER_SAVE_PATCH
 };
@@ -189,15 +188,6 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
     respond(handle, sizeof(worker_msg), msg); 
     //fprintf(stderr, "SAMPLER: work completed; parsed: %s\n", path);
   }
-  else if (msg->type == WORKER_LOAD_REGION_WAV) {
-    std::map<std::string, SFZValue>& reg = plugin->patch->regions.at(msg->i);
-
-    std::string wav_path = reg["sample"].get_str();
-    
-    plugin->waves[wav_path] = jm::parse_wave(wav_path.c_str());
-
-    respond(handle, sizeof(worker_msg), msg); 
-  }
   else if (msg->type == WORKER_LOAD_PATCH) {
     SFZParser* parser;
     int len = strlen(plugin->patch_path);
@@ -292,11 +282,6 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
     jm::add_zone_from_wave(plugin, msg->i, plugin->wav_path);
     //lv2_atom_forge_pop(&plugin->forge, &seq_frame);
     //fprintf(stderr, "SAMPLER: response completed; added: %s\n", path);
-  }
-  else if (msg->type == WORKER_LOAD_REGION_WAV) {
-    fprintf(stderr, "SAMPLER load region wav response!!\n");
-    std::map<std::string, SFZValue>& reg = plugin->patch->regions.at(msg->i);
-    jm::add_zone_from_region(plugin, reg);
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
     fprintf(stderr, "SAMPLER load patch response!! num regions: %i\n", (int) plugin->patch->regions.size());
