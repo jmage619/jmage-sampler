@@ -27,7 +27,7 @@ namespace jm {
     LV2_Atom_Forge forge;
     LV2_Atom_Forge_Frame seq_frame;
     int zone_number; // only for naming
-    sfz::sfz* patch;
+    sfz::sfz patch;
     std::vector<jm::zone> zones;
     std::map<std::string, jm::wave> waves;
     char patch_path[256];

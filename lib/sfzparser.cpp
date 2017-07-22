@@ -186,14 +186,14 @@ void SFZParser::update_region(std::map<std::string, SFZValue>& region, const std
   }
 }
 
-sfz::sfz* SFZParser::parse() {
+sfz::sfz SFZParser::parse() {
   char tmp_str[256];
   strcpy(tmp_str, path.c_str());
   dir_path += dirname(tmp_str);
   dir_path += "/";
 
   std::ifstream fin(path);
-  sfz::sfz* s = new sfz::sfz;
+  sfz::sfz s;
   std::map<std::string, SFZValue> cur_control;
   set_control_defaults(cur_control);
   std::map<std::string, SFZValue> cur_group;
@@ -219,9 +219,9 @@ sfz::sfz* SFZParser::parse() {
         if (data.length() > 0) {
           save_prev();
           if (state == REGION)
-            s->regions.push_back(cur_region);
+            s.regions.push_back(cur_region);
           else if (state == CONTROL)
-            s->control = cur_control;
+            s.control = cur_control;
         }
         if (field == "<control>") {
           // reset cur_control
@@ -260,9 +260,9 @@ sfz::sfz* SFZParser::parse() {
   if (data.length() > 0) {
     save_prev();
     if (state == REGION)
-      s->regions.push_back(cur_region);
+      s.regions.push_back(cur_region);
     else if (state == CONTROL)
-      s->control = cur_control;
+      s.control = cur_control;
   }
 
   fin.close();

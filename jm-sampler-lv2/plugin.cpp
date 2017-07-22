@@ -251,9 +251,6 @@ void jm::parse_patch(sampler_plugin* plugin) {
   else
     parser = new SFZParser(plugin->patch_path);
 
-  if (plugin->patch != NULL)
-    delete plugin->patch;
-
   // consider error handling here
   plugin->patch = parser->parse();
 
@@ -264,7 +261,7 @@ void jm::parse_patch(sampler_plugin* plugin) {
   plugin->zones.erase(plugin->zones.begin(), plugin->zones.end());
 
   std::vector<std::map<std::string, SFZValue>>::iterator it;
-  for (it = plugin->patch->regions.begin(); it != plugin->patch->regions.end(); ++it) {
+  for (it = plugin->patch.regions.begin(); it != plugin->patch.regions.end(); ++it) {
     std::string wav_path = (*it)["sample"].get_str();
     if (plugin->waves.find(wav_path) == plugin->waves.end()) {
       plugin->waves[wav_path] = jm::parse_wave(wav_path.c_str());

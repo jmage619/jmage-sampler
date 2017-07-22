@@ -67,7 +67,7 @@ class SFZParser {
   public:
     SFZParser(const std::string& path);
     virtual ~SFZParser(){}
-    sfz::sfz* parse();
+    sfz::sfz parse();
 };
 
 class JMZParser: public SFZParser {

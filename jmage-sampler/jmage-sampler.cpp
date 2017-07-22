@@ -338,7 +338,7 @@ int main() {
       else
         parser = new SFZParser(path);
 
-      sfz::sfz* patch;
+      sfz::sfz patch;
 
       try {
         patch = parser->parse();
@@ -354,10 +354,10 @@ int main() {
 
       jsampler->zone_number = 1;
 
-      std::map<std::string, SFZValue>::iterator c_it = patch->control.find("jm_vol");
-      if (c_it != patch->control.end()) {
+      std::map<std::string, SFZValue>::iterator c_it = patch.control.find("jm_vol");
+      if (c_it != patch.control.end()) {
         jsampler->volume = c_it->second.get_int();
-        jsampler-> channel =  patch->control["jm_chan"].get_int() - 1;
+        jsampler-> channel =  patch.control["jm_chan"].get_int() - 1;
       }
       else {
         jsampler->volume = 16;
@@ -377,7 +377,7 @@ int main() {
 
       std::vector<std::map<std::string, SFZValue>>::iterator it;
       char outstr[256];
-      for (it = patch->regions.begin(); it != patch->regions.end(); ++it) {
+      for (it = patch.regions.begin(); it != patch.regions.end(); ++it) {
         std::string wave_path = (*it)["sample"].get_str();
         if (jsampler->waves.find(wave_path) == jsampler->waves.end())
           jsampler->waves[wave_path] = jm::parse_wave(wave_path.c_str());
@@ -391,7 +391,6 @@ int main() {
         fflush(fout);
       }
 
-      delete patch;
       delete parser;
     }
     else if (!strncmp(buf, "save_patch:", 11)) {

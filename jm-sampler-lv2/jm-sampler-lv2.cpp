@@ -122,7 +122,6 @@ static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const c
     nominal_block_len = max_block_len;
 
   plugin->zone_number = 1;
-  plugin->patch = NULL;
   plugin->patch_path[0] = '\0';
 
   // pre-allocate vector to prevent allocations later in RT thread
@@ -140,9 +139,6 @@ static void cleanup(LV2_Handle instance) {
   jm::sampler_plugin* plugin = static_cast<jm::sampler_plugin*>(instance);
 
   delete plugin->sampler;
-
-  if (plugin->patch != NULL)
-    delete plugin->patch;
 
   std::map<std::string, jm::wave>::iterator it;
   for (it = plugin->waves.begin(); it != plugin->waves.end(); ++it)
@@ -259,14 +255,14 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
     //fprintf(stderr, "SAMPLER: response completed; added: %s\n", path);
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
-    fprintf(stderr, "SAMPLER load patch response!! num regions: %i\n", (int) plugin->patch->regions.size());
+    fprintf(stderr, "SAMPLER load patch response!! num regions: %i\n", (int) plugin->patch.regions.size());
 
     jm::send_clear_zones(plugin);
 
-    std::map<std::string, SFZValue>::iterator c_it = plugin->patch->control.find("jm_vol");
-    if (c_it != plugin->patch->control.end()) {
+    std::map<std::string, SFZValue>::iterator c_it = plugin->patch.control.find("jm_vol");
+    if (c_it != plugin->patch.control.end()) {
       jm::send_update_vol(plugin, c_it->second.get_int());
-      jm::send_update_chan(plugin, plugin->patch->control["jm_chan"].get_int() - 1);
+      jm::send_update_chan(plugin, plugin->patch.control["jm_chan"].get_int() - 1);
     }
     // reset to reasonable defaults if not defined
     else {
