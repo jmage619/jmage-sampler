@@ -2,6 +2,7 @@
 #include <cmath>
 #include <map>
 #include <vector>
+#include <pthread.h>
 
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
 #include <lv2/lv2plug.in/ns/ext/atom/forge.h>
@@ -266,6 +267,8 @@ void jm::parse_patch(sampler_plugin* plugin) {
     if (plugin->waves.find(wav_path) == plugin->waves.end()) {
       plugin->waves[wav_path] = jm::parse_wave(wav_path.c_str());
     }
+    pthread_mutex_lock(&plugin->zone_lock);
     jm::add_zone_from_region(plugin, *it);
+    pthread_mutex_unlock(&plugin->zone_lock);
   }
 }

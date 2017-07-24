@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstring>
 #include <stdexcept>
+#include <pthread.h>
 
 #include <lv2/lv2plug.in/ns/lv2core/lv2.h>
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
@@ -127,6 +128,8 @@ static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const c
   // pre-allocate vector to prevent allocations later in RT thread
   plugin->zones.reserve(100);
 
+  pthread_mutex_init(&plugin->zone_lock, NULL);
+
   // src output buf just needs to hold up to nframes so max is sufficient
   // but set src input buf to nominal for efficiency
   plugin->sampler = new JMSampler(plugin->zones, sample_rate, nominal_block_len, max_block_len);
@@ -143,6 +146,8 @@ static void cleanup(LV2_Handle instance) {
   std::map<std::string, jm::wave>::iterator it;
   for (it = plugin->waves.begin(); it != plugin->waves.end(); ++it)
     jm::free_wave(it->second);
+
+  pthread_mutex_destroy(&plugin->zone_lock);
 
   delete plugin;
 }
@@ -381,8 +386,15 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
           // only consider events from current channel
           if ((msg[0] & 0x0f) == (int) *plugin->channel) {
             // process note on
-            if (lv2_midi_message_type(msg) == LV2_MIDI_MSG_NOTE_ON)
+            if (lv2_midi_message_type(msg) == LV2_MIDI_MSG_NOTE_ON) {
+              // yes, using mutex here violates the laws of real time ..BUT..
+              // we don't expect a musician to tweak zones during an actual take!
+              // this allows for demoing zone changes in thread safe way in *almost* real time
+              // we can safely assume this mutex will be unlocked in a real take
+              pthread_mutex_lock(&plugin->zone_lock);
               plugin->sampler->handle_note_on(msg, n_samples, n);
+              pthread_mutex_unlock(&plugin->zone_lock);
+            }
             // process note off
             else if (lv2_midi_message_type(msg) == LV2_MIDI_MSG_NOTE_OFF)
               plugin->sampler->handle_note_off(msg);

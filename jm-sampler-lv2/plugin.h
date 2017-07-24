@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <pthread.h>
 
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
@@ -28,6 +29,7 @@ namespace jm {
     LV2_Atom_Forge_Frame seq_frame;
     int zone_number; // only for naming
     sfz::sfz patch;
+    pthread_mutex_t zone_lock;
     std::vector<jm::zone> zones;
     std::map<std::string, jm::wave> waves;
     char patch_path[256];
