@@ -477,11 +477,6 @@ static LV2_State_Status restore(LV2_Handle instance, LV2_State_Retrieve_Function
 
   jm::parse_patch(plugin);
 
-  int num_zones = plugin->zones.size();
-
-  for (int i = 0; i < num_zones; ++i)
-    send_add_zone(plugin, i);
-
   return LV2_STATE_SUCCESS;
 }
 
