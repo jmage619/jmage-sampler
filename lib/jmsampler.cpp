@@ -3,6 +3,7 @@
 #include <stdexcept> 
 
 #include <vector>
+#include <pthread.h>
 
 #include "zone.h"
 #include "collections.h"
@@ -16,7 +17,9 @@ JMSampler::JMSampler(const std::vector<jm::zone>& zones, int sample_rate, size_t
     playhead_pool(POLYPHONY),
     amp_gen_pool(POLYPHONY) {
   // pre-allocate vector to prevent allocations later in RT thread
-  //zones.reserve(100);
+  this->zones.reserve(100);
+  pthread_mutex_init(&zone_lock, NULL);
+  zone_number = 1;
 
   for (size_t i = 0; i < POLYPHONY; ++i) {
     amp_gen_pool.push(new AmpEnvGenerator(amp_gen_pool));
@@ -37,6 +40,8 @@ JMSampler::~JMSampler() {
 
   while (amp_gen_pool.size() > 0)
     delete amp_gen_pool.pop();
+
+  pthread_mutex_destroy(&zone_lock);
 }
 
 void JMSampler::pre_process(size_t nframes) {

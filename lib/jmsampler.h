@@ -1,6 +1,8 @@
 #ifndef JMSAMPLER_H
 #define JMSAMPLER_H
 
+#include <pthread.h>
+
 #include "zone.h"
 #include "collections.h"
 #include "components.h"
@@ -9,7 +11,7 @@
 
 class JMSampler {
   private:
-    const std::vector<jm::zone>& zones;
+    int zone_number;
     // state
     bool sustain_on;
     SoundGenList sound_gens;
@@ -18,6 +20,10 @@ class JMSampler {
     JMStack<AmpEnvGenerator*> amp_gen_pool;
 
   public:
+    float* volume;
+    float* channel;
+    std::vector<jm::zone> zones;
+    pthread_mutex_t zone_lock;
     JMSampler(const std::vector<jm::zone>& zones, int sample_rate, size_t in_nframes, size_t out_nframes);
     ~JMSampler();
     void pre_process(size_t nframes);
