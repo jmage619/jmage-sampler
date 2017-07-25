@@ -1,6 +1,9 @@
 #ifndef ZONE_H
 #define ZONE_H
 
+#include <vector>
+#include <cstring>
+
 #define MAX_NAME 32
 #define MAX_PATH 256
 #define NOTE_MIN 0
@@ -97,6 +100,80 @@ namespace jm {
   inline int zone_contains(const jm::zone* zone, int pitch, int velocity) {
     return pitch >= zone->low_key && pitch <= zone->high_key &&
       velocity >= zone->low_vel && velocity <= zone->high_vel;
+  }
+
+  inline void build_zone_str(char* outstr, const std::vector<jm::zone>& zones, int i) {
+    char* p = outstr;
+    sprintf(p, "add_zone:");
+    // index
+    p += strlen(p);
+    sprintf(p, "%i,", i);
+    // wave length
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].wave_length);
+    // name
+    p += strlen(p);
+    sprintf(p, "%s,", zones[i].name);
+    // amp
+    p += strlen(p);
+    sprintf(p, "%f,", zones[i].amp);
+    // origin
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].origin);
+    // low key
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].low_key);
+    // high key
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].high_key);
+    // low vel
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].low_vel);
+    // high vel
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].high_vel);
+    // pitch
+    p += strlen(p);
+    sprintf(p, "%f,", zones[i].pitch_corr);
+    // start
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].start);
+    // left
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].left);
+    // right
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].right);
+    // loop mode
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].loop_mode);
+    // crossfade
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].crossfade);
+    // group
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].group);
+    // off group
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].off_group);
+    // attack
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].attack);
+    // hold
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].hold);
+    // decay
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].decay);
+    // sustain
+    p += strlen(p);
+    sprintf(p, "%f,", zones[i].sustain);
+    // release
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].release);
+    // path
+    p += strlen(p);
+    sprintf(p, "%s\n", zones[i].path);
   }
 };
 

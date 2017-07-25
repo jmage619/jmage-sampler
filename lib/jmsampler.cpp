@@ -1,25 +1,29 @@
+#include <vector>
+#include <fstream>
+
 #include <cmath>
 #include <cstdio>
 #include <stdexcept> 
 
-#include <vector>
 #include <pthread.h>
 
 #include "zone.h"
+#include "wave.h"
+#include "sfzparser.h"
 #include "collections.h"
 #include "components.h"
 #include "jmsampler.h"
 
-JMSampler::JMSampler(const std::vector<jm::zone>& zones, int sample_rate, size_t in_nframes, size_t out_nframes):
-    zones(zones),
+JMSampler::JMSampler(int sample_rate, size_t in_nframes, size_t out_nframes):
+    zone_number(1),
     sustain_on(false),
     sound_gens(POLYPHONY),
     playhead_pool(POLYPHONY),
-    amp_gen_pool(POLYPHONY) {
+    amp_gen_pool(POLYPHONY),
+    sample_rate(sample_rate) {
   // pre-allocate vector to prevent allocations later in RT thread
-  this->zones.reserve(100);
+  zones.reserve(100);
   pthread_mutex_init(&zone_lock, NULL);
-  zone_number = 1;
 
   for (size_t i = 0; i < POLYPHONY; ++i) {
     amp_gen_pool.push(new AmpEnvGenerator(amp_gen_pool));
@@ -42,6 +46,234 @@ JMSampler::~JMSampler() {
     delete amp_gen_pool.pop();
 
   pthread_mutex_destroy(&zone_lock);
+}
+
+void JMSampler::add_zone_from_wave(int index, const char* path) {
+  jm::wave& wav = waves[path];
+  jm::zone zone;
+  jm::init_zone(&zone);
+  zone.wave = wav.wave;
+  zone.num_channels = wav.num_channels;
+  zone.sample_rate = wav.sample_rate;
+  zone.wave_length = wav.length;
+  zone.left = wav.left;
+  zone.right = wav.length;
+  if (wav.has_loop)
+    zone.loop_mode = jm::LOOP_CONTINUOUS;
+  sprintf(zone.name, "Zone %i", zone_number++);
+  strcpy(zone.path, path);
+  if (index >= 0) {
+    pthread_mutex_lock(&zone_lock);
+    zones.insert(zones.begin() + index, zone);
+    pthread_mutex_unlock(&zone_lock);
+    send_add_zone(index);
+  }
+  else {
+    pthread_mutex_lock(&zone_lock);
+    zones.push_back(zone);
+    pthread_mutex_unlock(&zone_lock);
+    send_add_zone(zones.size() - 1);
+  }
+}
+
+void JMSampler::add_zone_from_region(const std::map<std::string, SFZValue>& region) {
+  jm::wave& wav = waves[region.find("sample")->second.get_str()];
+  jm::zone zone;
+  jm::init_zone(&zone);
+  zone.wave = wav.wave;
+  zone.num_channels = wav.num_channels;
+  zone.sample_rate = wav.sample_rate;
+  zone.wave_length = wav.length;
+  zone.left = wav.left;
+  zone.right = wav.length;
+  if (wav.has_loop)
+    zone.loop_mode = jm::LOOP_CONTINUOUS;
+
+  std::map<std::string, SFZValue>::const_iterator it = region.find("jm_name");
+  if (it != region.end())
+    strcpy(zone.name, it->second.get_str().c_str());
+  else
+    sprintf(zone.name, "Zone %i", zone_number++);
+
+  strcpy(zone.path, region.find("sample")->second.get_str().c_str());
+  zone.amp = pow(10., region.find("volume")->second.get_double() / 20.);
+  zone.low_key = region.find("lokey")->second.get_int();
+  zone.high_key = region.find("hikey")->second.get_int();
+  zone.origin = region.find("pitch_keycenter")->second.get_int();
+  zone.low_vel = region.find("lovel")->second.get_int();
+  zone.high_vel = region.find("hivel")->second.get_int();
+  zone.pitch_corr = region.find("tune")->second.get_int() / 100.;
+  zone.start = region.find("offset")->second.get_int();
+
+  jm::loop_mode mode = (jm::loop_mode) region.find("loop_mode")->second.get_int();
+  if (mode != jm::LOOP_UNSET)
+    zone.loop_mode = mode;
+
+  int loop_start = region.find("loop_start")->second.get_int();
+  if (loop_start >= 0)
+    zone.left = loop_start;
+
+  int loop_end = region.find("loop_end")->second.get_int();
+  if (loop_end >= 0)
+    zone.right = loop_end;
+
+  zone.crossfade = sample_rate * region.find("loop_crossfade")->second.get_double();
+  zone.group = region.find("group")->second.get_int();
+  zone.off_group = region.find("off_group")->second.get_int();
+  zone.attack = sample_rate * region.find("ampeg_attack")->second.get_double();
+  zone.hold = sample_rate * region.find("ampeg_hold")->second.get_double();
+  zone.decay = sample_rate * region.find("ampeg_decay")->second.get_double();
+  zone.sustain = region.find("ampeg_sustain")->second.get_double() / 100.;
+  zone.release = sample_rate * region.find("ampeg_release")->second.get_double();
+  pthread_mutex_lock(&zone_lock);
+  zones.push_back(zone);
+  pthread_mutex_unlock(&zone_lock);
+}
+
+void JMSampler::load_patch() {
+  SFZParser* parser;
+
+  int len = strlen(patch_path);
+  if (!strcmp(patch_path + len - 4, ".jmz"))
+    parser = new JMZParser(patch_path);
+  // assumed it could ony eitehr be jmz or sfz
+  else
+    parser = new SFZParser(patch_path);
+
+  // consider error handling here
+  patch = parser->parse();
+
+  delete parser;
+
+  zone_number = 1;
+
+  pthread_mutex_lock(&zone_lock);
+  zones.erase(zones.begin(), zones.end());
+  pthread_mutex_unlock(&zone_lock);
+
+  std::vector<std::map<std::string, SFZValue>>::iterator it;
+  for (it = patch.regions.begin(); it != patch.regions.end(); ++it) {
+    std::string wav_path = (*it)["sample"].get_str();
+    if (waves.find(wav_path) == waves.end()) {
+      waves[wav_path] = jm::parse_wave(wav_path.c_str());
+    }
+    add_zone_from_region(*it);
+  }
+}
+
+void JMSampler::save_patch() {
+  int len = strlen(patch_path);
+
+  sfz::sfz save_patch;
+
+  bool is_jmz = !strcmp(patch_path + len - 4, ".jmz");
+  if (is_jmz) {
+    save_patch.control["jm_vol"] = (int) *volume;
+    save_patch.control["jm_chan"] = (int) *channel + 1;
+  }
+
+  std::vector<jm::zone>::iterator it;
+  for (it = zones.begin(); it != zones.end(); ++it) {
+    std::map<std::string, SFZValue> region;
+
+    if (is_jmz)
+      region["jm_name"] = it->name;
+
+    region["sample"] = it->path;
+    region["volume"] = 20. * log10(it->amp);
+    region["lokey"] = it->low_key;
+    region["hikey"] = it->high_key;
+    region["pitch_keycenter"] = it->origin;
+    region["lovel"] = it->low_vel;
+    region["hivel"] = it->high_vel;
+    region["tune"] = (int) (100. * it->pitch_corr);
+    region["offset"] = it->start;
+    region["loop_mode"] = it->loop_mode;
+    region["loop_start"] = it->left;
+    region["loop_end"] = it->right;
+    region["loop_crossfade"] = (double) it->crossfade / sample_rate;
+    region["group"] = it->group;
+    region["off_group"] = it->off_group;
+    region["ampeg_attack"] = (double) it->attack / sample_rate;
+    region["ampeg_hold"] = (double) it->hold / sample_rate;
+    region["ampeg_decay"] = (double) it->decay / sample_rate;
+    region["ampeg_sustain"] = 100. * it->sustain;
+    region["ampeg_release"] = (double) it->release / sample_rate;
+
+    save_patch.regions.push_back(region);
+  }
+
+  std::ofstream fout(patch_path);
+
+  sfz::write(&save_patch, fout);
+  fout.close();
+}
+
+void JMSampler::update_zone(int index, int key, const char* val) {
+  pthread_mutex_lock(&zone_lock);
+  switch (key) {
+    case jm::ZONE_NAME:
+      strcpy(zones[index].name, val);
+      break;
+    case jm::ZONE_AMP:
+      zones[index].amp = atof(val);
+      break;
+    case jm::ZONE_ORIGIN:
+      zones[index].origin = atoi(val);
+      break;
+    case jm::ZONE_LOW_KEY:
+      zones[index].low_key = atoi(val);
+      break;
+    case jm::ZONE_HIGH_KEY:
+      zones[index].high_key = atoi(val);
+      break;
+    case jm::ZONE_LOW_VEL:
+      zones[index].low_vel = atoi(val);
+      break;
+    case jm::ZONE_HIGH_VEL:
+      zones[index].high_vel = atoi(val);
+      break;
+    case jm::ZONE_PITCH:
+      zones[index].pitch_corr = atof(val);
+      break;
+    case jm::ZONE_START:
+      zones[index].start = atoi(val);
+      break;
+    case jm::ZONE_LEFT:
+      zones[index].left = atoi(val);
+      break;
+    case jm::ZONE_RIGHT:
+      zones[index].right = atoi(val);
+      break;
+    case jm::ZONE_LOOP_MODE:
+      zones[index].loop_mode = (jm::loop_mode) atoi(val);
+      break;
+    case jm::ZONE_CROSSFADE:
+      zones[index].crossfade = atoi(val);
+      break;
+    case jm::ZONE_GROUP:
+      zones[index].group = atoi(val);
+      break;
+    case jm::ZONE_OFF_GROUP:
+      zones[index].off_group = atoi(val);
+      break;
+    case jm::ZONE_ATTACK:
+      zones[index].attack = atoi(val);
+      break;
+    case jm::ZONE_HOLD:
+      zones[index].hold = atoi(val);
+      break;
+    case jm::ZONE_DECAY:
+      zones[index].decay = atoi(val);
+      break;
+    case jm::ZONE_SUSTAIN:
+      zones[index].sustain = atof(val);
+      break;
+    case jm::ZONE_RELEASE:
+      zones[index].release = atoi(val);
+      break;
+  }
+  pthread_mutex_unlock(&zone_lock);
 }
 
 void JMSampler::pre_process(size_t nframes) {

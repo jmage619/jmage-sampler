@@ -239,7 +239,9 @@ void jm::add_zone_from_region(sampler_plugin* plugin, const std::map<std::string
   zone.decay = plugin->sample_rate * region.find("ampeg_decay")->second.get_double();
   zone.sustain = region.find("ampeg_sustain")->second.get_double() / 100.;
   zone.release = plugin->sample_rate * region.find("ampeg_release")->second.get_double();
+  pthread_mutex_lock(&zone_lock);
   plugin->zones.push_back(zone);
+  pthread_mutex_unlock(&zone_lock);
 }
 
 void jm::parse_patch(sampler_plugin* plugin) {

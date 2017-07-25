@@ -4,6 +4,8 @@
 #include <pthread.h>
 
 #include "zone.h"
+#include "wave.h"
+#include "sfzparser.h"
 #include "collections.h"
 #include "components.h"
 
@@ -20,12 +22,22 @@ class JMSampler {
     JMStack<AmpEnvGenerator*> amp_gen_pool;
 
   public:
+    int sample_rate;
     float* volume;
     float* channel;
+    char patch_path[256];
+    sfz::sfz patch;
+    std::map<std::string, jm::wave> waves;
     std::vector<jm::zone> zones;
     pthread_mutex_t zone_lock;
-    JMSampler(const std::vector<jm::zone>& zones, int sample_rate, size_t in_nframes, size_t out_nframes);
-    ~JMSampler();
+    JMSampler(int sample_rate, size_t in_nframes, size_t out_nframes);
+    virtual ~JMSampler();
+    virtual void send_add_zone(int index) = 0;
+    void add_zone_from_wave(int index, const char* path);
+    void add_zone_from_region(const std::map<std::string, SFZValue>& region);
+    void load_patch();
+    void save_patch();
+    void update_zone(int index, int key, const char* val);
     void pre_process(size_t nframes);
     void handle_note_on(const unsigned char* midi_msg, size_t nframes, size_t curframe);
     void handle_note_off(const unsigned char* midi_msg);
