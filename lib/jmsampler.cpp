@@ -304,6 +304,11 @@ void JMSampler::handle_note_on(const unsigned char* midi_msg, size_t nframes, si
     }
   }
   // pick out zones midi event matches against and add sound gens to queue
+  // yes, using mutex here violates the laws of real time ..BUT..
+  // we don't expect a musician to tweak zones during an actual take!
+  // this allows for demoing zone changes in thread safe way in *almost* real time
+  // we can safely assume this mutex will be unlocked in a real take
+  pthread_mutex_lock(&zone_lock);
   std::vector<jm::zone>::const_iterator it;
   for (it = zones.begin(); it != zones.end(); ++it) {
     if (jm::zone_contains(&*it, midi_msg[1], midi_msg[2])) {
@@ -337,6 +342,7 @@ void JMSampler::handle_note_on(const unsigned char* midi_msg, size_t nframes, si
       fprintf(stderr, "event: channel: %i; note on;  note: %i; vel: %i\n", midi_msg[0] & 0x0F, midi_msg[1], midi_msg[2]);
     }
   }
+  pthread_mutex_unlock(&zone_lock);
 }
 
 void JMSampler::handle_note_off(const unsigned char* midi_msg) {

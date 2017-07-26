@@ -330,13 +330,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
           if ((msg[0] & 0x0f) == (int) *sampler->channel) {
             // process note on
             if (lv2_midi_message_type(msg) == LV2_MIDI_MSG_NOTE_ON) {
-              // yes, using mutex here violates the laws of real time ..BUT..
-              // we don't expect a musician to tweak zones during an actual take!
-              // this allows for demoing zone changes in thread safe way in *almost* real time
-              // we can safely assume this mutex will be unlocked in a real take
-              pthread_mutex_lock(&sampler->zone_lock);
               sampler->handle_note_on(msg, n_samples, n);
-              pthread_mutex_unlock(&sampler->zone_lock);
             }
             // process note off
             else if (lv2_midi_message_type(msg) == LV2_MIDI_MSG_NOTE_OFF)

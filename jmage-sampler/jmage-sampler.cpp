@@ -74,13 +74,7 @@ int process_callback(jack_nframes_t nframes, void* arg) {
         if ((event.buffer[0] & 0x0f) == *sampler->channel) {
           // process note on
           if ((event.buffer[0] & 0xf0) == 0x90) {
-            // yes, using mutex here violates the laws of real time ..BUT..
-            // we don't expect a musician to tweak zones during an actual take!
-            // this allows for demoing zone changes in thread safe way in *almost* real time
-            // we can safely assume this mutex will be unlocked in a real take
-            pthread_mutex_lock(&sampler->zone_lock);
             sampler->handle_note_on(event.buffer, nframes, n);
-            pthread_mutex_unlock(&sampler->zone_lock);
           }
           // process note off
           else if ((event.buffer[0] & 0xf0) == 0x80) {
