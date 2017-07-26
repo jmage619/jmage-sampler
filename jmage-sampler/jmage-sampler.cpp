@@ -271,10 +271,6 @@ int main() {
   jack_port_unregister(client, jsampler->output_port2);
   jack_client_close(client);
 
-  std::map<std::string, jm::wave>::iterator it;
-  for (it = jsampler->waves.begin(); it != jsampler->waves.end(); ++it)
-    jm::free_wave(it->second);
-
   delete jsampler->msg_q;
   delete jsampler;
 

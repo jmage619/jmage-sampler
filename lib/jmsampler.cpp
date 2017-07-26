@@ -21,6 +21,7 @@ JMSampler::JMSampler(int sample_rate, size_t in_nframes, size_t out_nframes):
     playhead_pool(POLYPHONY),
     amp_gen_pool(POLYPHONY),
     sample_rate(sample_rate) {
+  patch_path[0] = '\0';
   // pre-allocate vector to prevent allocations later in RT thread
   zones.reserve(100);
   pthread_mutex_init(&zone_lock, NULL);
@@ -44,6 +45,10 @@ JMSampler::~JMSampler() {
 
   while (amp_gen_pool.size() > 0)
     delete amp_gen_pool.pop();
+
+  std::map<std::string, jm::wave>::iterator it;
+  for (it = waves.begin(); it != waves.end(); ++it)
+    jm::free_wave(it->second);
 
   pthread_mutex_destroy(&zone_lock);
 }

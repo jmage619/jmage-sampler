@@ -79,38 +79,7 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
   int type = atoi(p);
   lv2_atom_forge_int(&ui->forge, type);
   p = strtok(NULL, ",");
-
-  switch (type) {
-    case jm::ZONE_NAME:
-    case jm::ZONE_PATH:
-      lv2_atom_forge_string(&ui->forge, p, strlen(p));
-      break;
-    case jm::ZONE_AMP:
-    case jm::ZONE_SUSTAIN:
-      lv2_atom_forge_float(&ui->forge, atof(p));
-      break;
-    case jm::ZONE_ORIGIN:
-    case jm::ZONE_LOW_KEY:
-    case jm::ZONE_HIGH_KEY:
-    case jm::ZONE_LOW_VEL:
-    case jm::ZONE_HIGH_VEL:
-    case jm::ZONE_LOOP_MODE:
-    case jm::ZONE_GROUP:
-    case jm::ZONE_OFF_GROUP:
-    case jm::ZONE_START:
-    case jm::ZONE_LEFT:
-    case jm::ZONE_RIGHT:
-    case jm::ZONE_CROSSFADE:
-    case jm::ZONE_ATTACK:
-    case jm::ZONE_HOLD:
-    case jm::ZONE_DECAY:
-    case jm::ZONE_RELEASE:
-      lv2_atom_forge_int(&ui->forge, atoi(p));
-      break;
-    case jm::ZONE_PITCH:
-      lv2_atom_forge_double(&ui->forge, atof(p));
-      break;
-  }
+  lv2_atom_forge_string(&ui->forge, p, strlen(p));
   lv2_atom_forge_pop(&ui->forge, &tuple_frame);
   lv2_atom_forge_pop(&ui->forge, &obj_frame);
 
@@ -300,7 +269,8 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
 
       ui->zones = reinterpret_cast<const std::vector<jm::zone>*>(((LV2_Atom_Long*) params)->body);
       std::cerr << "UI: received zone pointer!! " << ui->zones << std::endl;
-      for (int i = 0; i < ui->zones->size(); ++i) {
+      int num_zones = ui->zones->size();
+      for (int i = 0; i < num_zones; ++i) {
         add_ui_zone(ui, i);
       }
     }

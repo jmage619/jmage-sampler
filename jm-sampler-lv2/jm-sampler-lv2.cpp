@@ -25,7 +25,7 @@
 #include <lib/sfzparser.h>
 #include <lib/jmsampler.h>
 
-#include "plugin.h"
+#include "lv2sampler.h"
 
 #define VOL_STEPS 17
 
@@ -55,8 +55,6 @@ static inline float get_amp(int index) {
 
 static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const char*,
     const LV2_Feature* const* features) {
-  jm::sampler_plugin* plugin = new jm::sampler_plugin;
-  plugin->sample_rate = sample_rate;
 
   // Scan host features for URID map
   LV2_URID_Map* map = NULL;
@@ -73,40 +71,34 @@ static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const c
   }
   if (!map) {
     fprintf(stderr, "Host does not support urid:map.\n");
-    delete plugin;
     return NULL;
   }
   if (!schedule) {
     fprintf(stderr, "Host does not support work:schedule.\n");
-    delete plugin;
     return NULL;
   }
   if (!opt) {
     fprintf(stderr, "Host does not support opt:options.\n");
-    delete plugin;
     return NULL;
   }
 
-  plugin->schedule = schedule;
-
-  // Map URIS
-  plugin->map = map;
-  jm::map_uris(plugin->map, &plugin->uris);
-  lv2_atom_forge_init(&plugin->forge, plugin->map);
-
   int max_block_len = -1;
   int nominal_block_len = -1;
+
+  // Map URIS
+  jm::uris uris;
+  jm::map_uris(map, &uris);
 
   int index = 0;
   while (1) {
     if (opt[index].key == 0)
       break;
 
-    if (opt[index].key == plugin->uris.bufsize_maxBlockLength) {
+    if (opt[index].key == uris.bufsize_maxBlockLength) {
       max_block_len = *((int*) opt[index].value);
       fprintf(stderr, "SAMPLER max block len: %i\n", max_block_len);
     }
-    else if (opt[index].key == plugin->uris.bufsize_nominalBlockLength) {
+    else if (opt[index].key == uris.bufsize_nominalBlockLength) {
       nominal_block_len = *((int*) opt[index].value);
       fprintf(stderr, "SAMPLER nominal block len: %i\n", nominal_block_len);
     }
@@ -115,63 +107,51 @@ static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const c
 
   if (max_block_len < 0) {
     fprintf(stderr, "Host did not set bufsz:maxBlockLength.\n");
-    delete plugin;
     return NULL;
   }
 
   if (nominal_block_len < 0)
     nominal_block_len = max_block_len;
 
-  plugin->zone_number = 1;
-  plugin->patch_path[0] = '\0';
-
-  // pre-allocate vector to prevent allocations later in RT thread
-  plugin->zones.reserve(100);
-
-  pthread_mutex_init(&plugin->zone_lock, NULL);
-
   // src output buf just needs to hold up to nframes so max is sufficient
   // but set src input buf to nominal for efficiency
-  plugin->sampler = new JMSampler(plugin->zones, sample_rate, nominal_block_len, max_block_len);
+  LV2Sampler* sampler = new LV2Sampler(sample_rate, nominal_block_len, max_block_len);
+  sampler->schedule = schedule;
+
+  sampler->uris = uris;
+  sampler->map = map;
+  lv2_atom_forge_init(&sampler->forge, sampler->map);
 
   fprintf(stderr, "sampler instantiated.\n");
-  return plugin;
+  return sampler;
 }
 
 static void cleanup(LV2_Handle instance) {
-  jm::sampler_plugin* plugin = static_cast<jm::sampler_plugin*>(instance);
+  LV2Sampler* sampler = static_cast<LV2Sampler*>(instance);
 
-  delete plugin->sampler;
-
-  std::map<std::string, jm::wave>::iterator it;
-  for (it = plugin->waves.begin(); it != plugin->waves.end(); ++it)
-    jm::free_wave(it->second);
-
-  pthread_mutex_destroy(&plugin->zone_lock);
-
-  delete plugin;
+  delete sampler;
 }
 
 static void connect_port(LV2_Handle instance, uint32_t port, void* data) {
-  jm::sampler_plugin* plugin = static_cast<jm::sampler_plugin*>(instance);
+  LV2Sampler* sampler = static_cast<LV2Sampler*>(instance);
   switch (port) {
     case SAMPLER_CONTROL:
-      plugin->control_port = static_cast<const LV2_Atom_Sequence*>(data);
+      sampler->control_port = static_cast<const LV2_Atom_Sequence*>(data);
       break;
     case SAMPLER_VOLUME:
-      plugin->volume = (float*) data;
+      sampler->volume = (float*) data;
       break;
     case SAMPLER_CHANNEL:
-      plugin->channel = (float*) data;
+      sampler->channel = (float*) data;
       break;
     case SAMPLER_NOTIFY:
-      plugin->notify_port = static_cast<LV2_Atom_Sequence*>(data);
+      sampler->notify_port = static_cast<LV2_Atom_Sequence*>(data);
       break;
     case SAMPLER_OUT_L:
-      plugin->out1 = (float*) data;
+      sampler->out1 = (float*) data;
       break;
     case SAMPLER_OUT_R:
-      plugin->out2 = (float*) data;
+      sampler->out2 = (float*) data;
       break;
     default:
       break;
@@ -180,68 +160,23 @@ static void connect_port(LV2_Handle instance, uint32_t port, void* data) {
 
 static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function respond,
     LV2_Worker_Respond_Handle handle, uint32_t, const void* data) {
-  jm::sampler_plugin* plugin = static_cast<jm::sampler_plugin*>(instance);
+  LV2Sampler* sampler = static_cast<LV2Sampler*>(instance);
 
   const worker_msg* msg = static_cast<const worker_msg*>(data);
   if (msg->type == WORKER_LOAD_PATH_WAV) {
-    plugin->waves[plugin->wav_path] = jm::parse_wave(plugin->wav_path);
+    sampler->waves[sampler->wav_path] = jm::parse_wave(sampler->wav_path);
 
     respond(handle, sizeof(worker_msg), msg); 
     //fprintf(stderr, "SAMPLER: work completed; parsed: %s\n", path);
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
-    fprintf(stderr, "SAMPLER: work loading patch: %s\n", plugin->patch_path);
-    jm::parse_patch(plugin);
+    fprintf(stderr, "SAMPLER: work loading patch: %s\n", sampler->patch_path);
+    sampler->load_patch();
 
     respond(handle, sizeof(worker_msg), msg); 
   }
   else if (msg->type == WORKER_SAVE_PATCH) {
-    int len = strlen(plugin->patch_path);
-
-    sfz::sfz save_patch;
-
-    bool is_jmz = !strcmp(plugin->patch_path + len - 4, ".jmz");
-    if (is_jmz) {
-      save_patch.control["jm_vol"] = (int) *plugin->volume;
-      save_patch.control["jm_chan"] = (int) *plugin->channel + 1;
-    }
-
-    std::vector<jm::zone>::iterator it;
-    for (it = plugin->zones.begin(); it != plugin->zones.end(); ++it) {
-      std::map<std::string, SFZValue> region;
-
-      if (is_jmz)
-        region["jm_name"] = it->name;
-
-      region["sample"] = it->path;
-      region["volume"] = 20. * log10(it->amp);
-      region["lokey"] = it->low_key;
-      region["hikey"] = it->high_key;
-      region["pitch_keycenter"] = it->origin;
-      region["lovel"] = it->low_vel;
-      region["hivel"] = it->high_vel;
-      region["tune"] = (int) (100. * it->pitch_corr);
-      region["offset"] = it->start;
-      region["loop_mode"] = it->loop_mode;
-      region["loop_start"] = it->left;
-      region["loop_end"] = it->right;
-      region["loop_crossfade"] = (double) it->crossfade / plugin->sample_rate;
-      region["group"] = it->group;
-      region["off_group"] = it->off_group;
-      region["ampeg_attack"] = (double) it->attack / plugin->sample_rate;
-      region["ampeg_hold"] = (double) it->hold / plugin->sample_rate;
-      region["ampeg_decay"] = (double) it->decay / plugin->sample_rate;
-      region["ampeg_sustain"] = 100. * it->sustain;
-      region["ampeg_release"] = (double) it->release / plugin->sample_rate;
-
-      save_patch.regions.push_back(region);
-    }
-
-    std::ofstream fout(plugin->patch_path);
-
-    sfz::write(&save_patch, fout);
-    fout.close();
-
+    sampler->save_patch();
     // probably should notify UI here that we finished!
   }
 
@@ -249,36 +184,36 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
 }
 
 static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void* data) {
-  jm::sampler_plugin* plugin = static_cast<jm::sampler_plugin*>(instance);
+  LV2Sampler* sampler = static_cast<LV2Sampler*>(instance);
   const worker_msg* msg = static_cast<const worker_msg*>(data);
 
   if (msg->type == WORKER_LOAD_PATH_WAV) {
     //LV2_Atom_Forge_Frame seq_frame;
     //lv2_atom_forge_sequence_head(&plugin->forge, &seq_frame, 0);
-    jm::add_zone_from_wave(plugin, msg->i, plugin->wav_path);
+    sampler->add_zone_from_wave(msg->i, sampler->wav_path);
     //lv2_atom_forge_pop(&plugin->forge, &seq_frame);
     //fprintf(stderr, "SAMPLER: response completed; added: %s\n", path);
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
-    fprintf(stderr, "SAMPLER load patch response!! num regions: %i\n", (int) plugin->patch.regions.size());
+    fprintf(stderr, "SAMPLER load patch response!! num regions: %i\n", (int) sampler->patch.regions.size());
 
-    jm::send_clear_zones(plugin);
+    sampler->send_clear_zones();
 
-    std::map<std::string, SFZValue>::iterator c_it = plugin->patch.control.find("jm_vol");
-    if (c_it != plugin->patch.control.end()) {
-      jm::send_update_vol(plugin, c_it->second.get_int());
-      jm::send_update_chan(plugin, plugin->patch.control["jm_chan"].get_int() - 1);
+    std::map<std::string, SFZValue>::iterator c_it = sampler->patch.control.find("jm_vol");
+    if (c_it != sampler->patch.control.end()) {
+      sampler->send_update_vol(c_it->second.get_int());
+      sampler->send_update_chan(sampler->patch.control["jm_chan"].get_int() - 1);
     }
     // reset to reasonable defaults if not defined
     else {
-      jm::send_update_vol(plugin, 16);
-      jm::send_update_chan(plugin, 0);
+      sampler->send_update_vol(16);
+      sampler->send_update_chan(0);
     }
 
-    int num_zones = plugin->zones.size();
+    int num_zones = sampler->zones.size();
 
     for (int i = 0; i < num_zones; ++i)
-      send_add_zone(plugin, i);
+      sampler->send_add_zone(i);
   }
 
   return LV2_WORKER_SUCCESS;
@@ -287,120 +222,128 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
 // later most of this opaque logic should be moved to member funs
 // consider everything in common w/ stand alone jack audio callback when we re-implement that version
 static void run(LV2_Handle instance, uint32_t n_samples) {
-  jm::sampler_plugin* plugin = static_cast<jm::sampler_plugin*>(instance);
+  LV2Sampler* sampler = static_cast<LV2Sampler*>(instance);
 
-  memset(plugin->out1, 0, sizeof(float) * n_samples);
-  memset(plugin->out2, 0, sizeof(float) * n_samples);
+  memset(sampler->out1, 0, sizeof(float) * n_samples);
+  memset(sampler->out2, 0, sizeof(float) * n_samples);
 
   // Set up forge to write directly to notify output port.
-  const uint32_t notify_capacity = plugin->notify_port->atom.size;
-  lv2_atom_forge_set_buffer(&plugin->forge, reinterpret_cast<uint8_t*>(plugin->notify_port),
+  const uint32_t notify_capacity = sampler->notify_port->atom.size;
+  lv2_atom_forge_set_buffer(&sampler->forge, reinterpret_cast<uint8_t*>(sampler->notify_port),
     notify_capacity);
 
   //LV2_Atom_Forge_Frame seq_frame;
-  //lv2_atom_forge_sequence_head(&plugin->forge, &seq_frame, 0);
-  lv2_atom_forge_sequence_head(&plugin->forge, &plugin->seq_frame, 0);
+  //lv2_atom_forge_sequence_head(&sampler->forge, &seq_frame, 0);
+  lv2_atom_forge_sequence_head(&sampler->forge, &sampler->seq_frame, 0);
 
   // we used to handle ui messages here
   // but now they will be in the same atom list as midi
 
   // must loop all atoms to find UI messages; not sure if qtractor bug
   // but they all occur at frame == n_samples (outside the range!)
-  LV2_ATOM_SEQUENCE_FOREACH(plugin->control_port, ev) {
-    if (lv2_atom_forge_is_object_type(&plugin->forge, ev->body.type)) {
+  LV2_ATOM_SEQUENCE_FOREACH(sampler->control_port, ev) {
+    if (lv2_atom_forge_is_object_type(&sampler->forge, ev->body.type)) {
       const LV2_Atom_Object* obj = (const LV2_Atom_Object*)&ev->body;
-      if (obj->body.otype == plugin->uris.jm_getSampleRate) {
-        jm::send_sample_rate(plugin);
+      if (obj->body.otype == sampler->uris.jm_getSampleRate) {
+        sampler->send_sample_rate();
       }
-      else if (obj->body.otype == plugin->uris.jm_getZoneVect) {
-        jm::send_zone_vect(plugin);
+      else if (obj->body.otype == sampler->uris.jm_getZoneVect) {
+        sampler->send_zone_vect();
       }
-      else if (obj->body.otype == plugin->uris.jm_updateZone) {
+      else if (obj->body.otype == sampler->uris.jm_updateZone) {
         //fprintf(stderr, "SAMPLER: update zone received!!\n");
-        jm::update_zone(plugin, obj);
-      }
-      else if (obj->body.otype == plugin->uris.jm_removeZone) {
         LV2_Atom* params = NULL;
 
-        lv2_atom_object_get(obj, plugin->uris.jm_params, &params, 0);
+        lv2_atom_object_get(obj, sampler->uris.jm_params, &params, 0);
+        LV2_Atom* a = lv2_atom_tuple_begin((LV2_Atom_Tuple*) params);
+        int index = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+        a = lv2_atom_tuple_next(a);
+        int key = reinterpret_cast<LV2_Atom_Int*>(a)->body;
+        a = lv2_atom_tuple_next(a);
+        sampler->update_zone(index, key, (char*)(a + 1));
+      }
+      else if (obj->body.otype == sampler->uris.jm_removeZone) {
+        LV2_Atom* params = NULL;
+
+        lv2_atom_object_get(obj, sampler->uris.jm_params, &params, 0);
         int index = ((LV2_Atom_Int*) params)->body;
         //fprintf(stderr, "SAMPLER: remove zone received!! index: %i\n", index);
-        plugin->zones.erase(plugin->zones.begin() + index);
-        jm::send_remove_zone(plugin, index);
+        sampler->zones.erase(sampler->zones.begin() + index);
+        sampler->send_remove_zone(index);
       }
-      else if (obj->body.otype == plugin->uris.jm_addZone) {
+      else if (obj->body.otype == sampler->uris.jm_addZone) {
         //fprintf(stderr, "SAMPLER: add zone received!!\n");
         LV2_Atom* params = NULL;
 
-        lv2_atom_object_get(obj, plugin->uris.jm_params, &params, 0);
+        lv2_atom_object_get(obj, sampler->uris.jm_params, &params, 0);
         LV2_Atom* a = lv2_atom_tuple_begin((LV2_Atom_Tuple*) params);
         int index = ((LV2_Atom_Int*) a)->body;
         a = lv2_atom_tuple_next(a);
         char* path = (char*)(a + 1);
  
-        if (plugin->waves.find(path) == plugin->waves.end()) {
+        if (sampler->waves.find(path) == sampler->waves.end()) {
           worker_msg msg;
           msg.type =  WORKER_LOAD_PATH_WAV;
           msg.i = index;
-          strcpy(plugin->wav_path, path);
-          plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &msg);
+          strcpy(sampler->wav_path, path);
+          sampler->schedule->schedule_work(sampler->schedule->handle, sizeof(worker_msg), &msg);
         }
         else
-          jm::add_zone_from_wave(plugin, index, path);
+          sampler->add_zone_from_wave(index, path);
       }
-      else if (obj->body.otype == plugin->uris.jm_loadPatch) {
+      else if (obj->body.otype == sampler->uris.jm_loadPatch) {
         //fprintf(stderr, "SAMPLER: load patch received!!\n");
         LV2_Atom* params = NULL;
 
-        lv2_atom_object_get(obj, plugin->uris.jm_params, &params, 0);
+        lv2_atom_object_get(obj, sampler->uris.jm_params, &params, 0);
         char* path = (char*)(params + 1);
         worker_msg msg;
         msg.type =  WORKER_LOAD_PATCH;
-        strcpy(plugin->patch_path, path);
-        plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &msg);
+        strcpy(sampler->patch_path, path);
+        sampler->schedule->schedule_work(sampler->schedule->handle, sizeof(worker_msg), &msg);
       }
-      else if (obj->body.otype == plugin->uris.jm_savePatch) {
+      else if (obj->body.otype == sampler->uris.jm_savePatch) {
         LV2_Atom* params = NULL;
 
-        lv2_atom_object_get(obj, plugin->uris.jm_params, &params, 0);
+        lv2_atom_object_get(obj, sampler->uris.jm_params, &params, 0);
         char* path = (char*)(params + 1);
         worker_msg msg;
         msg.type =  WORKER_SAVE_PATCH;
-        strcpy(plugin->patch_path, path);
-        plugin->schedule->schedule_work(plugin->schedule->handle, sizeof(worker_msg), &msg);
+        strcpy(sampler->patch_path, path);
+        sampler->schedule->schedule_work(sampler->schedule->handle, sizeof(worker_msg), &msg);
       }
     }
   }
 
-  plugin->sampler->pre_process(n_samples);
+  sampler->pre_process(n_samples);
 
-  LV2_Atom_Event* ev = lv2_atom_sequence_begin(&plugin->control_port->body);
+  LV2_Atom_Event* ev = lv2_atom_sequence_begin(&sampler->control_port->body);
 
   // loop over frames in this callback window
   for (uint32_t n = 0; n < n_samples; ++n) {
-    if (!lv2_atom_sequence_is_end(&plugin->control_port->body, plugin->control_port->atom.size, ev)) {
+    if (!lv2_atom_sequence_is_end(&sampler->control_port->body, sampler->control_port->atom.size, ev)) {
       // procces next event if it applies to current time (frame)
       while (n == ev->time.frames) {
-        if (ev->body.type == plugin->uris.midi_Event) {
+        if (ev->body.type == sampler->uris.midi_Event) {
           const uint8_t* const msg = (const uint8_t*)(ev + 1);
           // only consider events from current channel
-          if ((msg[0] & 0x0f) == (int) *plugin->channel) {
+          if ((msg[0] & 0x0f) == (int) *sampler->channel) {
             // process note on
             if (lv2_midi_message_type(msg) == LV2_MIDI_MSG_NOTE_ON) {
               // yes, using mutex here violates the laws of real time ..BUT..
               // we don't expect a musician to tweak zones during an actual take!
               // this allows for demoing zone changes in thread safe way in *almost* real time
               // we can safely assume this mutex will be unlocked in a real take
-              pthread_mutex_lock(&plugin->zone_lock);
-              plugin->sampler->handle_note_on(msg, n_samples, n);
-              pthread_mutex_unlock(&plugin->zone_lock);
+              pthread_mutex_lock(&sampler->zone_lock);
+              sampler->handle_note_on(msg, n_samples, n);
+              pthread_mutex_unlock(&sampler->zone_lock);
             }
             // process note off
             else if (lv2_midi_message_type(msg) == LV2_MIDI_MSG_NOTE_OFF)
-              plugin->sampler->handle_note_off(msg);
+              sampler->handle_note_off(msg);
             // process sustain pedal
             else if (lv2_midi_message_type(msg) == LV2_MIDI_MSG_CONTROLLER && msg[1] == LV2_MIDI_CTL_SUSTAIN)
-              plugin->sampler->handle_sustain(msg);
+              sampler->handle_sustain(msg);
             // just print messages we don't currently handle
             else if (lv2_midi_message_type(msg) != LV2_MIDI_MSG_ACTIVE_SENSE)
               fprintf(stderr, "event: 0x%x\n", msg[0]);
@@ -408,23 +351,23 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         }
         // get next midi event or break if none left
         ev = lv2_atom_sequence_next(ev);
-        if (lv2_atom_sequence_is_end(&plugin->control_port->body, plugin->control_port->atom.size, ev))
+        if (lv2_atom_sequence_is_end(&sampler->control_port->body, sampler->control_port->atom.size, ev))
           break;
       }
     }
 
-    plugin->sampler->process_frame(n, get_amp(*plugin->volume), plugin->out1, plugin->out2);
+    sampler->process_frame(n, get_amp(*sampler->volume), sampler->out1, sampler->out2);
   }
 
-  //lv2_atom_forge_pop(&plugin->forge, &seq_frame);
-  //lv2_atom_forge_pop(&plugin->forge, &plugin->seq_frame);
+  //lv2_atom_forge_pop(&sampler->forge, &seq_frame);
+  //lv2_atom_forge_pop(&sampler->forge, &sampler->seq_frame);
 }
 
 static LV2_State_Status save(LV2_Handle instance, LV2_State_Store_Function store,
     LV2_State_Handle handle, uint32_t, const LV2_Feature* const* features) {
-  jm::sampler_plugin* plugin = static_cast<jm::sampler_plugin*>(instance);
+  LV2Sampler* sampler = static_cast<LV2Sampler*>(instance);
 
-  if (plugin->patch_path[0] == '\0')
+  if (sampler->patch_path[0] == '\0')
     return LV2_STATE_SUCCESS;
 
   LV2_State_Map_Path* map_path = NULL;
@@ -437,10 +380,10 @@ static LV2_State_Status save(LV2_Handle instance, LV2_State_Store_Function store
   if (map_path == NULL)
     return LV2_STATE_ERR_NO_FEATURE;
 
-  char* apath = map_path->abstract_path(map_path->handle, plugin->patch_path);
+  char* apath = map_path->abstract_path(map_path->handle, sampler->patch_path);
 
-  store(handle, plugin->uris.jm_patchFile, apath, strlen(apath) + 1,
-    plugin->uris.atom_String, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE);
+  store(handle, sampler->uris.jm_patchFile, apath, strlen(apath) + 1,
+    sampler->uris.atom_String, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE);
 
   delete apath;
 
@@ -449,12 +392,12 @@ static LV2_State_Status save(LV2_Handle instance, LV2_State_Store_Function store
 
 static LV2_State_Status restore(LV2_Handle instance, LV2_State_Retrieve_Function retrieve,
     LV2_State_Handle handle, uint32_t, const LV2_Feature* const* features) {
-  jm::sampler_plugin* plugin = static_cast<jm::sampler_plugin*>(instance);
+  LV2Sampler* sampler = static_cast<LV2Sampler*>(instance);
 
   size_t   size;
   uint32_t type;
   uint32_t valflags;
-  const void* value = retrieve(handle, plugin->uris.jm_patchFile, &size, &type, &valflags);
+  const void* value = retrieve(handle, sampler->uris.jm_patchFile, &size, &type, &valflags);
 
   if (value == NULL)
     return LV2_STATE_SUCCESS;
@@ -472,10 +415,10 @@ static LV2_State_Status restore(LV2_Handle instance, LV2_State_Retrieve_Function
   const char* apath = static_cast<const char*>(value);
   char* path = map_path->absolute_path(map_path->handle, apath);
 
-  strcpy(plugin->patch_path, path);
+  strcpy(sampler->patch_path, path);
   delete path;
 
-  jm::parse_patch(plugin);
+  sampler->load_patch();
 
   return LV2_STATE_SUCCESS;
 }
