@@ -27,8 +27,6 @@
 
 #include "lv2sampler.h"
 
-#define VOL_STEPS 17
-
 enum {
   SAMPLER_CONTROL = 0,
   SAMPLER_VOLUME = 1,
@@ -48,10 +46,6 @@ struct worker_msg {
   worker_msg_type type;
   int i;
 };
-
-static inline float get_amp(int index) {
-  return index == 0 ? 0.f: 1 / 100.f * pow(10.f, 2 * index / (VOL_STEPS - 1.0f));
-}
 
 static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const char*,
     const LV2_Feature* const* features) {
@@ -350,7 +344,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
       }
     }
 
-    sampler->process_frame(n, get_amp(*sampler->volume), sampler->out1, sampler->out2);
+    sampler->process_frame(n, sampler->out1, sampler->out2);
   }
 
   //lv2_atom_forge_pop(&sampler->forge, &seq_frame);

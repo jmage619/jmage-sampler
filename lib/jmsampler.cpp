@@ -383,9 +383,10 @@ void JMSampler::handle_sustain(const unsigned char* midi_msg) {
   }
 }
 
-void JMSampler::process_frame(size_t curframe, float amp, float* out1, float* out2) {
+void JMSampler::process_frame(size_t curframe, float* out1, float* out2) {
   // loop sound gens and fill audio buffer at current time (frame) position
   for (sg_list_el* sg_el = sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
+    float amp = get_amp(*volume);
     float values[2];
     sg_el->sg->get_values(values);
     out1[curframe] += amp * values[0];

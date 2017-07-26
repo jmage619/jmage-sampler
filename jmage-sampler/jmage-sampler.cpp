@@ -24,14 +24,7 @@
 
 #include "jacksampler.h"
 
-#define VOL_STEPS 17
-
 typedef jack_default_audio_sample_t sample_t;
-
-// this should go inside sampler
-float get_amp(int index) {
-  return index == 0 ? 0.f: 1 / 100.f * pow(10.f, 2 * index / (VOL_STEPS - 1.0f));
-}
 
 int process_callback(jack_nframes_t nframes, void* arg) {
   JackSampler* sampler = static_cast<JackSampler*>(arg);
@@ -95,7 +88,7 @@ int process_callback(jack_nframes_t nframes, void* arg) {
         jack_midi_event_get(&event, midi_buf, cur_event);
       }
     }
-    sampler->process_frame(n, get_amp(*sampler->volume), buffer1, buffer2);
+    sampler->process_frame(n, buffer1, buffer2);
   }
 
   return 0;
@@ -117,7 +110,6 @@ int main() {
   jack_nframes_t jack_buf_size = jack_get_buffer_size(client);
   JackSampler* sampler = new JackSampler(sample_rate, jack_buf_size, jack_buf_size);
 
-  // a bunch of this could go into jacksampler constructor
   jack_set_process_callback(client, process_callback, sampler);
   sampler->input_port = jack_port_register(client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
   sampler->output_port1 = jack_port_register(client, "out1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
