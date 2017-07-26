@@ -34,6 +34,7 @@ class JMSampler {
     virtual void send_add_zone(int index) = 0;
     void add_zone_from_wave(int index, const char* path);
     void add_zone_from_region(const std::map<std::string, SFZValue>& region);
+    void remove_zone(int index);
     void load_patch(const char* path);
     void save_patch(const char* path);
     void update_zone(int index, int key, const char* val);

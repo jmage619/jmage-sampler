@@ -268,7 +268,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         lv2_atom_object_get(obj, sampler->uris.jm_params, &params, 0);
         int index = ((LV2_Atom_Int*) params)->body;
         //fprintf(stderr, "SAMPLER: remove zone received!! index: %i\n", index);
-        sampler->zones.erase(sampler->zones.begin() + index);
+        sampler->remove_zone(index);
         sampler->send_remove_zone(index);
       }
       else if (obj->body.otype == sampler->uris.jm_addZone) {

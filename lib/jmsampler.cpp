@@ -134,6 +134,12 @@ void JMSampler::add_zone_from_region(const std::map<std::string, SFZValue>& regi
   pthread_mutex_unlock(&zone_lock);
 }
 
+void JMSampler::remove_zone(int index) {
+  pthread_mutex_lock(&zone_lock);
+  zones.erase(zones.begin() + index);
+  pthread_mutex_unlock(&zone_lock);
+}
+
 void JMSampler::load_patch(const char* path) {
   SFZParser* parser;
 

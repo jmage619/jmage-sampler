@@ -207,9 +207,7 @@ int main() {
     }
     else if (!strncmp(buf, "remove_zone:", 12)) {
       int index = atoi(buf + 12);
-      pthread_mutex_lock(&sampler->zone_lock);
-      sampler->zones.erase(sampler->zones.begin() + index);
-      pthread_mutex_unlock(&sampler->zone_lock);
+      sampler->remove_zone(index);
 
       fprintf(fout, "remove_zone:%i\n", index);
       fflush(fout);
