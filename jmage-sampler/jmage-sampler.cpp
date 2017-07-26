@@ -24,7 +24,6 @@
 
 #include "jacksampler.h"
 
-#define MSG_Q_SIZE 32
 #define VOL_STEPS 17
 
 typedef jack_default_audio_sample_t sample_t;
@@ -42,8 +41,8 @@ int process_callback(jack_nframes_t nframes, void* arg) {
   memset(buffer2, 0, sizeof(sample_t) * nframes);
 
   // handle any UI messages
-  while (!sampler->msg_q->empty()) {
-    jm_msg msg = sampler->msg_q->remove();
+  while (!sampler->msg_q.empty()) {
+    jm_msg msg = sampler->msg_q.remove();
     switch (msg.type) {
       case MT_VOLUME:
         *sampler->volume = msg.data.i;
@@ -130,14 +129,11 @@ int main() {
   sampler->output_port1 = jack_port_register(client, "out1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
   sampler->output_port2 = jack_port_register(client, "out2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 
-  sampler->msg_q = new JMQueue<jm_msg>(MSG_Q_SIZE);
-
   if (jack_activate(client)) {
     jack_port_unregister(client, sampler->input_port);
     jack_port_unregister(client, sampler->output_port1);
     jack_port_unregister(client, sampler->output_port2);
     jack_client_close(client);
-    delete sampler->msg_q;
     delete sampler;
     std::cerr <<"cannot activate jack client" << std::endl;
     return 1;
@@ -189,14 +185,14 @@ int main() {
       msg.type = MT_VOLUME;
       msg.data.i = atoi(buf + 11);
 
-      sampler->msg_q->add(msg);
+      sampler->msg_q.add(msg);
     }
     else if (!strncmp(buf, "update_chan:", 12)) {
       jm_msg msg;
       msg.type = MT_CHANNEL;
       msg.data.i = atoi(buf + 12);
 
-      sampler->msg_q->add(msg);
+      sampler->msg_q.add(msg);
     }
     else if (!strncmp(buf, "add_zone:", 9)) {
       char* p = strtok(buf + 9, ",");
@@ -269,7 +265,6 @@ int main() {
   jack_port_unregister(client, sampler->output_port2);
   jack_client_close(client);
 
-  delete sampler->msg_q;
   delete sampler;
 
   return 0;

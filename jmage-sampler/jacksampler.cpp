@@ -10,10 +10,13 @@
 #include <lib/sfzparser.h>
 #include "jacksampler.h"
 
+#define MSG_Q_SIZE 32
+
 JackSampler::JackSampler(int sample_rate, size_t in_nframes, size_t out_nframes):
     JMSampler(sample_rate, in_nframes, out_nframes),
     _volume(16),
-    _channel(0) {
+    _channel(0),
+    msg_q(MSG_Q_SIZE) {
 
   volume = &_volume;
   channel = &_channel;
