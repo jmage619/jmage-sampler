@@ -27,8 +27,10 @@ class LV2Sampler: public JMSampler {
     LV2_Atom_Forge forge;
     LV2_Atom_Forge_Frame seq_frame;
     char wav_path[256];
+    char patch_path[256];
 
-    LV2Sampler(int sample_rate, size_t in_nframes, size_t out_nframes): JMSampler(sample_rate, in_nframes, out_nframes) {};
+    LV2Sampler(int sample_rate, size_t in_nframes, size_t out_nframes):
+      JMSampler(sample_rate, in_nframes, out_nframes) {patch_path[0] = '\0';};
     void send_sample_rate();
     void send_zone_vect();
     void send_add_zone(int index);

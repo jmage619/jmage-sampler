@@ -21,7 +21,6 @@ JMSampler::JMSampler(int sample_rate, size_t in_nframes, size_t out_nframes):
     playhead_pool(POLYPHONY),
     amp_gen_pool(POLYPHONY),
     sample_rate(sample_rate) {
-  patch_path[0] = '\0';
   // pre-allocate vector to prevent allocations later in RT thread
   zones.reserve(100);
   pthread_mutex_init(&zone_lock, NULL);
@@ -135,15 +134,15 @@ void JMSampler::add_zone_from_region(const std::map<std::string, SFZValue>& regi
   pthread_mutex_unlock(&zone_lock);
 }
 
-void JMSampler::load_patch() {
+void JMSampler::load_patch(const char* path) {
   SFZParser* parser;
 
-  int len = strlen(patch_path);
-  if (!strcmp(patch_path + len - 4, ".jmz"))
-    parser = new JMZParser(patch_path);
+  int len = strlen(path);
+  if (!strcmp(path + len - 4, ".jmz"))
+    parser = new JMZParser(path);
   // assumed it could ony eitehr be jmz or sfz
   else
-    parser = new SFZParser(patch_path);
+    parser = new SFZParser(path);
 
   // consider error handling here
   patch = parser->parse();
@@ -166,12 +165,12 @@ void JMSampler::load_patch() {
   }
 }
 
-void JMSampler::save_patch() {
-  int len = strlen(patch_path);
+void JMSampler::save_patch(const char* path) {
+  int len = strlen(path);
 
   sfz::sfz save_patch;
 
-  bool is_jmz = !strcmp(patch_path + len - 4, ".jmz");
+  bool is_jmz = !strcmp(path + len - 4, ".jmz");
   if (is_jmz) {
     save_patch.control["jm_vol"] = (int) *volume;
     save_patch.control["jm_chan"] = (int) *channel + 1;
@@ -208,7 +207,7 @@ void JMSampler::save_patch() {
     save_patch.regions.push_back(region);
   }
 
-  std::ofstream fout(patch_path);
+  std::ofstream fout(path);
 
   sfz::write(&save_patch, fout);
   fout.close();

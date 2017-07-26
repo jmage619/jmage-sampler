@@ -25,7 +25,6 @@ class JMSampler {
     int sample_rate;
     float* volume;
     float* channel;
-    char patch_path[256];
     sfz::sfz patch;
     std::map<std::string, jm::wave> waves;
     std::vector<jm::zone> zones;
@@ -35,8 +34,8 @@ class JMSampler {
     virtual void send_add_zone(int index) = 0;
     void add_zone_from_wave(int index, const char* path);
     void add_zone_from_region(const std::map<std::string, SFZValue>& region);
-    void load_patch();
-    void save_patch();
+    void load_patch(const char* path);
+    void save_patch(const char* path);
     void update_zone(int index, int key, const char* val);
     void pre_process(size_t nframes);
     void handle_note_on(const unsigned char* midi_msg, size_t nframes, size_t curframe);

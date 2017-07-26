@@ -229,8 +229,7 @@ int main() {
       sampler->update_zone(index, key, p);
     }
     else if (!strncmp(buf, "load_patch:", 11)) {
-      strcpy(sampler->patch_path, buf + 11);
-      sampler->load_patch();
+      sampler->load_patch(buf + 11);
 
       fprintf(fout, "clear_zones\n");
       fflush(fout);
@@ -257,8 +256,7 @@ int main() {
         sampler->send_add_zone(i);
     }
     else if (!strncmp(buf, "save_patch:", 11)) {
-      strcpy(sampler->patch_path, buf + 11);
-      sampler->save_patch();
+      sampler->save_patch(buf + 11);
     }
   }
 

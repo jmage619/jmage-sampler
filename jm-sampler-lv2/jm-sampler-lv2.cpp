@@ -171,12 +171,12 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
     fprintf(stderr, "SAMPLER: work loading patch: %s\n", sampler->patch_path);
-    sampler->load_patch();
+    sampler->load_patch(sampler->patch_path);
 
     respond(handle, sizeof(worker_msg), msg); 
   }
   else if (msg->type == WORKER_SAVE_PATCH) {
-    sampler->save_patch();
+    sampler->save_patch(sampler->patch_path);
     // probably should notify UI here that we finished!
   }
 
@@ -418,7 +418,7 @@ static LV2_State_Status restore(LV2_Handle instance, LV2_State_Retrieve_Function
   strcpy(sampler->patch_path, path);
   delete path;
 
-  sampler->load_patch();
+  sampler->load_patch(sampler->patch_path);
 
   return LV2_STATE_SUCCESS;
 }
