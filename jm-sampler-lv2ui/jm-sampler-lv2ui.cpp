@@ -86,81 +86,12 @@ static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
   return obj;
 }
 
-static void add_ui_zone(jm_sampler_ui* ui, int i) {
+static void send_add_zone(jm_sampler_ui* ui, int index) {
   char outstr[256];
-  memset(outstr, 0, 256);
   char* p = outstr;
   sprintf(p, "add_zone:");
-  // index
   p += strlen(p);
-  sprintf(p, "%i,", i);
-  // wave length
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].wave_length);
-  // name
-  p += strlen(p);
-  sprintf(p, "%s,", (*ui->zones)[i].name);
-  std::cerr << "UI: adding ui zone!! " << (*ui->zones)[i].name << std::endl;
-  // amp
-  p += strlen(p);
-  sprintf(p, "%f,", (*ui->zones)[i].amp);
-  // origin
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].origin);
-  // low key
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].low_key);
-  // high key
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].high_key);
-  // low vel
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].low_vel);
-  // high vel
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].high_vel);
-  // pitch
-  p += strlen(p);
-  sprintf(p, "%f,", (*ui->zones)[i].pitch_corr);
-  // start
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].start);
-  // left
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].left);
-  // right
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].right);
-  // loop mode
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].loop_mode);
-  // crossfade
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].crossfade);
-  // group
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].group);
-  // off group
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].off_group);
-  // attack
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].attack);
-  // hold
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].hold);
-  // decay
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].decay);
-  // sustain
-  p += strlen(p);
-  sprintf(p, "%f,", (*ui->zones)[i].sustain);
-  // release
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[i].release);
-  // path
-  p += strlen(p);
-  sprintf(p, "%s\n", (*ui->zones)[i].path);
+  jm::build_zone_str(p, *ui->zones, index);
   fprintf(ui->fout, outstr);
   fflush(ui->fout);
 }
@@ -271,7 +202,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       std::cerr << "UI: received zone pointer!! " << ui->zones << std::endl;
       int num_zones = ui->zones->size();
       for (int i = 0; i < num_zones; ++i) {
-        add_ui_zone(ui, i);
+        send_add_zone(ui, i);
       }
     }
     else if (obj->body.otype == ui->uris.jm_getSampleRate) {
@@ -293,7 +224,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       int i = ((LV2_Atom_Int*) params)->body;
       fprintf(stderr, "UI addZone received!! %i\n", i);
 
-      add_ui_zone(ui, i);
+      send_add_zone(ui, i);
     }
     else if (obj->body.otype == ui->uris.jm_removeZone) {
       LV2_Atom* params = NULL;

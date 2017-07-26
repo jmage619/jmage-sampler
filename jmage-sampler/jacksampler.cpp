@@ -21,7 +21,10 @@ JackSampler::JackSampler(int sample_rate, size_t in_nframes, size_t out_nframes)
 
 void JackSampler::send_add_zone(int index) {
   char outstr[256];
-  build_zone_str(outstr, zones, index);
+  char* p = outstr;
+  sprintf(p, "add_zone:");
+  p += strlen(p);
+  jm::build_zone_str(p, zones, index);
   fprintf(fout, outstr);
   fflush(fout);
 }

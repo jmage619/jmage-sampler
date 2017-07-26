@@ -104,9 +104,7 @@ namespace jm {
 
   inline void build_zone_str(char* outstr, const std::vector<jm::zone>& zones, int i) {
     char* p = outstr;
-    sprintf(p, "add_zone:");
     // index
-    p += strlen(p);
     sprintf(p, "%i,", i);
     // wave length
     p += strlen(p);
