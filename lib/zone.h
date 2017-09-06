@@ -16,6 +16,8 @@ namespace jm {
   enum zone_params {
     ZONE_NAME,
     ZONE_AMP,
+    ZONE_MUTE,
+    ZONE_SOLO,
     ZONE_ORIGIN,
     ZONE_LOW_KEY,
     ZONE_HIGH_KEY,
@@ -59,6 +61,8 @@ namespace jm {
     int low_vel;
     int high_vel;
     float amp;
+    int mute;
+    int solo;
     int attack;
     int hold;
     int decay;
@@ -84,6 +88,8 @@ namespace jm {
     zone->low_vel = VEL_MIN;
     zone->high_vel = VEL_MAX;
     zone->amp = 1.0;
+    zone->mute = 0;
+    zone->solo = 0;
     zone->attack = 0;
     zone->hold = 0;
     zone->decay = 0;

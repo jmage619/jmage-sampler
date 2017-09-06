@@ -17,6 +17,7 @@
 JMSampler::JMSampler(int sample_rate, size_t in_nframes, size_t out_nframes):
     zone_number(1),
     sustain_on(false),
+    solo_count(0),
     sound_gens(POLYPHONY),
     playhead_pool(POLYPHONY),
     amp_gen_pool(POLYPHONY),
@@ -228,6 +229,13 @@ void JMSampler::update_zone(int index, int key, const char* val) {
     case jm::ZONE_AMP:
       zones[index].amp = atof(val);
       break;
+    case jm::ZONE_MUTE:
+      zones[index].mute = atoi(val);
+      break;
+    case jm::ZONE_SOLO:
+      zones[index].solo = atoi(val);
+      zones[index].solo ? ++solo_count: --solo_count;
+      break;
     case jm::ZONE_ORIGIN:
       zones[index].origin = atoi(val);
       break;
@@ -311,7 +319,8 @@ void JMSampler::handle_note_on(const unsigned char* midi_msg, size_t nframes, si
   pthread_mutex_lock(&zone_lock);
   std::vector<jm::zone>::const_iterator it;
   for (it = zones.begin(); it != zones.end(); ++it) {
-    if (jm::zone_contains(&*it, midi_msg[1], midi_msg[2])) {
+    if (jm::zone_contains(&*it, midi_msg[1], midi_msg[2]) && 
+        (it->solo || (!solo_count && !it->mute))) {
       fprintf(stderr, "sg num: %li\n", sound_gens.size());
       // oops we hit polyphony, remove oldest sound gen in the queue to make room
       if (sound_gens.size() >= POLYPHONY) {

@@ -17,6 +17,7 @@ class JMSampler {
     int zone_number;
     // state
     bool sustain_on;
+    int solo_count;
     SoundGenList sound_gens;
 
     JMStack<Playhead*> playhead_pool;
