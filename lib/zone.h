@@ -121,6 +121,12 @@ namespace jm {
     // amp
     p += strlen(p);
     sprintf(p, "%f,", zones[i].amp);
+    // mute
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].mute);
+    // solo
+    p += strlen(p);
+    sprintf(p, "%i,", zones[i].solo);
     // origin
     p += strlen(p);
     sprintf(p, "%i,", zones[i].origin);
