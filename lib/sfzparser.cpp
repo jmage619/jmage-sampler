@@ -300,6 +300,8 @@ void JMZParser::update_control(std::map<std::string, SFZValue>& control, const s
 void JMZParser::update_region(std::map<std::string, SFZValue>& region, const std::string& field, const std::string& data) {
   if (field == "jm_name")
     region["jm_name"] = data.c_str();
+  else if (field == "jm_mute" || field == "jm_solo")
+    region[field] = strtod(data.c_str(), NULL);
   // don't know what it is; let parent handle it
   else
     SFZParser::update_region(region, field, data);
