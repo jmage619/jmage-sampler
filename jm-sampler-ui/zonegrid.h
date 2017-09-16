@@ -10,7 +10,7 @@
 
 class QString;
 
-#define NUM_ZONE_ATTRS 22
+#define NUM_ZONE_ATTRS 24
 
 enum roles {
   MAX_ROLE = Qt::UserRole

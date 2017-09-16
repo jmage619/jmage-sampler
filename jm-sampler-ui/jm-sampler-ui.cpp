@@ -37,6 +37,10 @@ void InputThread::run() {
       std::getline(sin, field, ',');
       z.amp = atof(field.c_str());
       std::getline(sin, field, ',');
+      z.mute = atoi(field.c_str()) ? Qt::Checked: Qt::Unchecked;
+      std::getline(sin, field, ',');
+      z.solo = atoi(field.c_str()) ? Qt::Checked: Qt::Unchecked;
+      std::getline(sin, field, ',');
       z.origin = atoi(field.c_str());
       std::getline(sin, field, ',');
       z.low_key = atoi(field.c_str());

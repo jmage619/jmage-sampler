@@ -104,7 +104,7 @@ void SingleClickView::mousePressEvent(QMouseEvent *event) {
 
 void ZoneTableView::updateFrozenTableGeometry() {
   frozen_view->setGeometry(frameWidth(), frameWidth(),
-    verticalHeader()->width() + columnWidth(0) + columnWidth(1),
+    verticalHeader()->width() + columnWidth(0) + columnWidth(1) + columnWidth(2) + columnWidth(3),
     viewport()->height()+horizontalHeader()->height());
 }
 
@@ -118,11 +118,13 @@ void ZoneTableView::init() {
   viewport()->stackUnder(frozen_view);
 
   frozen_view->setSelectionModel(selectionModel());
-  for (int col = 2; col < model()->columnCount(); ++col)
+  for (int col = 4; col < model()->columnCount(); ++col)
         frozen_view->setColumnHidden(col, true);
 
   frozen_view->setColumnWidth(0, columnWidth(0));
   frozen_view->setColumnWidth(1, columnWidth(1));
+  frozen_view->setColumnWidth(2, columnWidth(2));
+  frozen_view->setColumnWidth(3, columnWidth(3));
 
   frozen_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   frozen_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -175,17 +177,19 @@ void ZoneTableView::resizeEvent(QResizeEvent* event) {
 QModelIndex ZoneTableView::moveCursor(CursorAction cursorAction, Qt::KeyboardModifiers modifiers) {
   QModelIndex current = QTableView::moveCursor(cursorAction, modifiers);
 
-  if (cursorAction == MoveLeft && current.column() > 1
-      && visualRect(current).topLeft().x() < frozen_view->columnWidth(0) + frozen_view->columnWidth(1)) {
+  if (cursorAction == MoveLeft && current.column() > 3
+      && visualRect(current).topLeft().x() < frozen_view->columnWidth(0) + frozen_view->columnWidth(1)
+      + frozen_view->columnWidth(2) + frozen_view->columnWidth(3)) {
     const int newValue = horizontalScrollBar()->value() + visualRect(current).topLeft().x()
-                         - (frozen_view->columnWidth(0) + frozen_view->columnWidth(1));
+      - (frozen_view->columnWidth(0) + frozen_view->columnWidth(1) +
+      frozen_view->columnWidth(2) + frozen_view->columnWidth(3));
     horizontalScrollBar()->setValue(newValue);
   }
   return current;
 }
 
 void ZoneTableView::scrollTo(const QModelIndex& index, ScrollHint hint) {
-  if (index.column() > 1)
+  if (index.column() > 3)
     QTableView::scrollTo(index, hint);
 }
 
@@ -197,6 +201,8 @@ void ZoneTableView::updateFrozenSectionWidth(int logicalIndex, int /* oldSize */
   switch (logicalIndex) {
     case 0:
     case 1:
+    case 2:
+    case 3:
       frozen_view->setColumnWidth(logicalIndex, newSize);
       updateFrozenTableGeometry();
       break;
@@ -499,7 +505,14 @@ Qt::ItemFlags ZoneTableModel::flags(const QModelIndex &index) const {
   if (!index.isValid())
     return Qt::ItemIsEnabled;
 
-  return QAbstractItemModel::flags(index) | (index.column() == jm::ZONE_LONG_TAIL ? Qt::ItemIsUserCheckable: Qt::ItemIsEditable);
+  switch (index.column()) {
+    case jm::ZONE_MUTE:
+    case jm::ZONE_SOLO:
+    case jm::ZONE_LONG_TAIL:
+      return QAbstractItemModel::flags(index) | Qt::ItemIsUserCheckable;
+    default:
+      return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
+  }
 }
 
 bool ZoneTableModel::insertRows(int row, int count, const QModelIndex&) {
@@ -531,6 +544,10 @@ QVariant ZoneTableModel::headerData(int section, Qt::Orientation orientation, in
           return "Name";
         case jm::ZONE_AMP:
           return "Vol (db)";
+        case jm::ZONE_MUTE:
+          return "M";
+        case jm::ZONE_SOLO:
+          return "S";
         case jm::ZONE_ORIGIN:
           return "Origin";
         case jm::ZONE_LOW_KEY:
@@ -593,6 +610,10 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
 
   if (role == Qt::CheckStateRole) {
     switch (index.column()) {
+      case jm::ZONE_MUTE:
+        return zones[index.row()].mute;
+      case jm::ZONE_SOLO:
+        return zones[index.row()].solo;
       case jm::ZONE_LONG_TAIL:
         return zones[index.row()].long_tail;
     }
@@ -669,6 +690,14 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
 bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, int role) {
   if (index.isValid() && role == Qt::CheckStateRole) {
     switch (index.column()) {
+      case jm::ZONE_MUTE:
+        zones[index.row()].mute = value.toInt();
+        std::cout << "update_zone:" << index.row() << "," << index.column() << "," << zones[index.row()].mute << std::endl;
+        break;
+      case jm::ZONE_SOLO:
+        zones[index.row()].solo = value.toInt();
+        std::cout << "update_zone:" << index.row() << "," << index.column() << "," << zones[index.row()].solo << std::endl;
+        break;
       // long tail special case; used for UI only, don't send a message out
       case jm::ZONE_LONG_TAIL:
         zones[index.row()].long_tail = value.toInt();
