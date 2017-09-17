@@ -39,6 +39,7 @@ class JMSampler {
     void remove_zone(int index);
     void load_patch(const char* path);
     void save_patch(const char* path);
+    void reload_waves();
     void update_zone(int index, int key, const char* val);
     void pre_process(size_t nframes);
     void handle_note_on(const unsigned char* midi_msg, size_t nframes, size_t curframe);

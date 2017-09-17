@@ -234,6 +234,25 @@ void JMSampler::save_patch(const char* path) {
   fout.close();
 }
 
+void JMSampler::reload_waves() {
+  pthread_mutex_lock(&zone_lock);
+
+  std::map<std::string, jm::wave>::iterator it;
+  for (it = waves.begin(); it != waves.end(); ++it)
+    jm::free_wave(it->second);
+
+  waves.clear();
+
+  std::vector<jm::zone>::const_iterator zit;
+  for (zit = zones.begin(); zit != zones.end(); ++zit) {
+    if (waves.find(zit->path) == waves.end()) {
+      waves[zit->path] = jm::parse_wave(zit->path);
+    }
+  }
+
+  pthread_mutex_unlock(&zone_lock);
+}
+
 void JMSampler::update_zone(int index, int key, const char* val) {
   pthread_mutex_lock(&zone_lock);
   switch (key) {
