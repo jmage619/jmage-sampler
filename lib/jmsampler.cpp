@@ -100,6 +100,11 @@ void JMSampler::add_zone_from_region(const std::map<std::string, SFZValue>& regi
   else
     sprintf(zone.name, "Zone %i", zone_number++);
 
+  it = region.find("jm_mute");
+  zone.mute = it != region.end() ? it->second.get_int(): 0;
+  it = region.find("jm_solo");
+  zone.solo = it != region.end() ? it->second.get_int(): 0;
+
   strcpy(zone.path, region.find("sample")->second.get_str().c_str());
   zone.amp = pow(10., region.find("volume")->second.get_double() / 20.);
   zone.low_key = region.find("lokey")->second.get_int();
@@ -187,8 +192,11 @@ void JMSampler::save_patch(const char* path) {
   for (it = zones.begin(); it != zones.end(); ++it) {
     std::map<std::string, SFZValue> region;
 
-    if (is_jmz)
+    if (is_jmz) {
       region["jm_name"] = it->name;
+      region["jm_mute"] = it->mute;
+      region["jm_solo"] = it->solo;
+    }
 
     region["sample"] = it->path;
     region["volume"] = 20. * log10(it->amp);
