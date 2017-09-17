@@ -104,6 +104,8 @@ void JMSampler::add_zone_from_region(const std::map<std::string, SFZValue>& regi
   zone.mute = it != region.end() ? it->second.get_int(): 0;
   it = region.find("jm_solo");
   zone.solo = it != region.end() ? it->second.get_int(): 0;
+  if (zone.solo)
+    ++solo_count;
 
   strcpy(zone.path, region.find("sample")->second.get_str().c_str());
   zone.amp = pow(10., region.find("volume")->second.get_double() / 20.);
@@ -162,6 +164,7 @@ void JMSampler::load_patch(const char* path) {
   delete parser;
 
   zone_number = 1;
+  solo_count = 0;
 
   pthread_mutex_lock(&zone_lock);
   zones.erase(zones.begin(), zones.end());
