@@ -105,6 +105,9 @@ SamplerUI::SamplerUI() {
   QPushButton* load_button = new QPushButton("load");
   connect(load_button, &QAbstractButton::clicked, this, &SamplerUI::sendLoadPatch);
   h_layout->addWidget(load_button);
+  QPushButton* refresh_button = new QPushButton("refresh");
+  connect(refresh_button, &QAbstractButton::clicked, this, &SamplerUI::sendRefresh);
+  h_layout->addWidget(refresh_button);
   h_layout->addStretch();
   v_layout->addLayout(h_layout);
 
@@ -201,6 +204,10 @@ void SamplerUI::sendSavePatch() {
   QString path = QFileDialog::getSaveFileName(this, tr("Save a FUCKING patch already!!"), "", tr("Patch Files (*.sfz *.jmz);;SFZ (*.sfz);;JMZ (*.jmz)"));
   if (!path.isNull())
     std::cout << "save_patch:" << path.toStdString() << std::endl;
+}
+
+void SamplerUI::sendRefresh() {
+  std::cout << "reload" << std::endl;
 }
 
 void SamplerUI::sendUpdateVol(double val) {
