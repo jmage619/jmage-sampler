@@ -207,7 +207,7 @@ void SamplerUI::sendSavePatch() {
 }
 
 void SamplerUI::sendRefresh() {
-  std::cout << "reload" << std::endl;
+  std::cout << "refresh" << std::endl;
 }
 
 void SamplerUI::sendUpdateVol(double val) {

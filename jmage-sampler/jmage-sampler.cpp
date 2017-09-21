@@ -238,7 +238,7 @@ int main() {
     else if (!strncmp(buf, "save_patch:", 11)) {
       sampler->save_patch(buf + 11);
     }
-    else if (!strncmp(buf, "reload", 6)) {
+    else if (!strncmp(buf, "refresh", 7)) {
       sampler->reload_waves();
     }
   }

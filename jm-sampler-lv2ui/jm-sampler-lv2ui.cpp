@@ -412,6 +412,12 @@ static int ui_idle(LV2UI_Handle handle) {
           lv2_atom_forge_string(&ui->forge, ui->buf + 11, strlen(ui->buf + 11));
           lv2_atom_forge_pop(&ui->forge, &obj_frame);
         }
+        else if (!strncmp(ui->buf, "refresh", 7)) {
+          //fprintf(stderr, "UI: ui refresh");
+          LV2_Atom_Forge_Frame obj_frame;
+          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_refresh);
+          lv2_atom_forge_pop(&ui->forge, &obj_frame);
+        }
         ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
       }
       // shift left to prepare next value

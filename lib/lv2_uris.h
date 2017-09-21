@@ -21,6 +21,7 @@
 #define JM_SAMPLER__updateZone JM_SAMPLER_URI "#updateZone"
 #define JM_SAMPLER__loadPatch JM_SAMPLER_URI "#loadPatch"
 #define JM_SAMPLER__savePatch JM_SAMPLER_URI "#savePatch"
+#define JM_SAMPLER__refresh JM_SAMPLER_URI "#refresh"
 #define JM_SAMPLER__patchFile JM_SAMPLER_URI "#patchFile"
 #define JM_SAMPLER__updateVol JM_SAMPLER_URI "#updateVol"
 #define JM_SAMPLER__updateChan JM_SAMPLER_URI "#updateChan"
@@ -42,6 +43,7 @@ namespace jm {
     LV2_URID jm_updateZone;
     LV2_URID jm_loadPatch;
     LV2_URID jm_savePatch;
+    LV2_URID jm_refresh;
     LV2_URID jm_patchFile;
     LV2_URID jm_updateVol;
     LV2_URID jm_updateChan;
@@ -63,6 +65,7 @@ namespace jm {
     uris->jm_updateZone = map->map(map->handle, JM_SAMPLER__updateZone);
     uris->jm_loadPatch = map->map(map->handle, JM_SAMPLER__loadPatch);
     uris->jm_savePatch = map->map(map->handle, JM_SAMPLER__savePatch);
+    uris->jm_refresh = map->map(map->handle, JM_SAMPLER__refresh);
     uris->jm_patchFile = map->map(map->handle, JM_SAMPLER__patchFile);
     uris->jm_updateVol = map->map(map->handle, JM_SAMPLER__updateVol);
     uris->jm_updateChan = map->map(map->handle, JM_SAMPLER__updateChan);

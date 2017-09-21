@@ -39,7 +39,8 @@ enum {
 enum worker_msg_type {
   WORKER_LOAD_PATH_WAV,
   WORKER_LOAD_PATCH,
-  WORKER_SAVE_PATCH
+  WORKER_SAVE_PATCH,
+  WORKER_REFRESH
 };
 
 struct worker_msg {
@@ -173,6 +174,10 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
     sampler->save_patch(sampler->patch_path);
     // probably should notify UI here that we finished!
   }
+  else if (msg->type == WORKER_REFRESH) {
+    sampler->reload_waves();
+    // probably should notify UI here that we finished!
+  }
 
   return LV2_WORKER_SUCCESS;
 }
@@ -304,6 +309,11 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         worker_msg msg;
         msg.type =  WORKER_SAVE_PATCH;
         strcpy(sampler->patch_path, path);
+        sampler->schedule->schedule_work(sampler->schedule->handle, sizeof(worker_msg), &msg);
+      }
+      else if (obj->body.otype == sampler->uris.jm_refresh) {
+        worker_msg msg;
+        msg.type =  WORKER_REFRESH;
         sampler->schedule->schedule_work(sampler->schedule->handle, sizeof(worker_msg), &msg);
       }
     }
