@@ -191,6 +191,11 @@ int main() {
 
       sampler->add_zone_from_wave(index, p);
     }
+    else if (!strncmp(buf, "dup_zone:", 9)) {
+      char* p = strtok(buf + 9, ",");
+      int index = atoi(p);
+      sampler->duplicate_zone(index);
+    }
     else if (!strncmp(buf, "remove_zone:", 12)) {
       int index = atoi(buf + 12);
       sampler->remove_zone(index);

@@ -142,6 +142,18 @@ void JMSampler::add_zone_from_region(const std::map<std::string, SFZValue>& regi
   pthread_mutex_unlock(&zone_lock);
 }
 
+void JMSampler::duplicate_zone(int index) {
+  jm::zone zone;
+  zone = zones[index];
+  if (zones[index].solo)
+    ++solo_count;
+
+  pthread_mutex_lock(&zone_lock);
+  zones.insert(zones.begin() + index + 1, zone);
+  pthread_mutex_unlock(&zone_lock);
+  send_add_zone(index + 1);
+}
+
 void JMSampler::remove_zone(int index) {
   pthread_mutex_lock(&zone_lock);
   std::vector<jm::zone>::iterator it = zones.begin() + index;
