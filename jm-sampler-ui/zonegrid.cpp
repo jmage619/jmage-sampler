@@ -217,6 +217,7 @@ void ZoneTableView::handleVertHeaderClick(const QPoint& pos) {
   QMenu menu;
   menu.addAction(tr("delete"));
   menu.addAction(tr("new zone before"));
+  menu.addAction(tr("duplicate"));
   QAction* action = menu.exec(verticalHeader()->mapToGlobal(pos));
   if (action != 0) {
     if (action->text() == "delete")
@@ -225,6 +226,9 @@ void ZoneTableView::handleVertHeaderClick(const QPoint& pos) {
       QString path = QFileDialog::getOpenFileName(this, tr("Open a FUCKING WAV already!!"), "", tr("Sound Files (*.wav *.aiff *.flac)"));
       if (!path.isNull())
         std::cout << "add_zone:" << verticalHeader()->logicalIndexAt(pos) << "," << path.toStdString() << std::endl;
+    }
+    else if (action->text() == "duplicate") {
+      std::cout << "dup_zone:" << verticalHeader()->logicalIndexAt(pos) << std::endl;
     }
   }
 }
