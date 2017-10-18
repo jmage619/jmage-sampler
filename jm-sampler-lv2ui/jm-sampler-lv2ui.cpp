@@ -397,6 +397,15 @@ static int ui_idle(LV2UI_Handle handle) {
           lv2_atom_forge_pop(&ui->forge, &tuple_frame);
           lv2_atom_forge_pop(&ui->forge, &obj_frame);
         }
+        else if (!strncmp(ui->buf, "dup_zone:", 9)) {
+          //fprintf(stderr, "UI: ui dup zone: %s\n", ui->buf + 9);
+          LV2_Atom_Forge_Frame obj_frame;
+          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_dupZone);
+          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
+          int index = atoi(ui->buf + 9);
+          lv2_atom_forge_int(&ui->forge, index);
+          lv2_atom_forge_pop(&ui->forge, &obj_frame);
+        }
         else if (!strncmp(ui->buf, "load_patch:", 11)) {
           //fprintf(stderr, "UI: ui add zone: %s; len: %i\n", ui->buf + 9, strlen(ui->buf + 9));
           LV2_Atom_Forge_Frame obj_frame;

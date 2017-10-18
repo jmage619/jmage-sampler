@@ -14,6 +14,7 @@
 #define JM_SAMPLER_URI "https://github.com/jmage619/jmage-sampler"
 #define JM_SAMPLER__getSampleRate JM_SAMPLER_URI "#setSampleRate"
 #define JM_SAMPLER__addZone JM_SAMPLER_URI "#addZone"
+#define JM_SAMPLER__dupZone JM_SAMPLER_URI "#dupZone"
 #define JM_SAMPLER__removeZone JM_SAMPLER_URI "#removeZone"
 #define JM_SAMPLER__clearZones JM_SAMPLER_URI "#clearZones"
 #define JM_SAMPLER__params JM_SAMPLER_URI "#params"
@@ -37,6 +38,7 @@ namespace jm {
     LV2_URID bufsize_nominalBlockLength;
     LV2_URID jm_getSampleRate;
     LV2_URID jm_addZone;
+    LV2_URID jm_dupZone;
     LV2_URID jm_removeZone;
     LV2_URID jm_clearZones;
     LV2_URID jm_params;
@@ -59,6 +61,7 @@ namespace jm {
     uris->bufsize_nominalBlockLength = map->map(map->handle, LV2_BUF_SIZE__nominalBlockLength);
     uris->jm_getSampleRate = map->map(map->handle, JM_SAMPLER__getSampleRate);
     uris->jm_addZone = map->map(map->handle, JM_SAMPLER__addZone);
+    uris->jm_dupZone = map->map(map->handle, JM_SAMPLER__dupZone);
     uris->jm_removeZone = map->map(map->handle, JM_SAMPLER__removeZone);
     uris->jm_clearZones = map->map(map->handle, JM_SAMPLER__clearZones);
     uris->jm_params = map->map(map->handle, JM_SAMPLER__params);

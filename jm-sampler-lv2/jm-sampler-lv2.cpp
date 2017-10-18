@@ -290,6 +290,14 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         else
           sampler->add_zone_from_wave(index, path);
       }
+      else if (obj->body.otype == sampler->uris.jm_dupZone) {
+        LV2_Atom* params = NULL;
+
+        lv2_atom_object_get(obj, sampler->uris.jm_params, &params, 0);
+        int index = ((LV2_Atom_Int*) params)->body;
+        //fprintf(stderr, "SAMPLER: dup zone received!! index: %i\n", index);
+        sampler->duplicate_zone(index);
+      }
       else if (obj->body.otype == sampler->uris.jm_loadPatch) {
         //fprintf(stderr, "SAMPLER: load patch received!!\n");
         LV2_Atom* params = NULL;
