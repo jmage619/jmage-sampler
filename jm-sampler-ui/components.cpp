@@ -224,7 +224,6 @@ WavPopup::WavPopup(QWidget* parent): QFrame(parent) {
   this->setFrameStyle(QFrame::Box | QFrame::Plain);
   this->setLineWidth(2);
 
-  // todo fill dir field with current wav
   file_dialog = new QFileDialog(this, tr("Open a FUCKING WAV already!!"));
   file_dialog->setModal(true);
   file_dialog->setFileMode(QFileDialog::ExistingFile);
