@@ -8,6 +8,7 @@
 class QLineEdit;
 class QAction;
 class QMenu;
+class QFileDialog;
 
 class HDoubleSlider: public QWidget {
   Q_OBJECT
@@ -81,4 +82,22 @@ class NotePopup: public QFrame {
     void setCurrentText(const QString& text);
     void mousePressEvent(QMouseEvent *event);
 };
+
+class WavPopup: public QFrame {
+  Q_OBJECT
+
+  private:
+    QFileDialog* file_dialog;
+
+  signals:
+    void accepted();
+
+  public:
+    WavPopup(QWidget* parent = Q_NULLPTR);
+    void showPopup();
+    void setPath(const QString& path);
+    QString path();
+    void mousePressEvent(QMouseEvent *event);
+};
+
 #endif

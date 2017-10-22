@@ -325,6 +325,11 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
+    case jm::ZONE_PATH: {
+      WavPopup* popup = new WavPopup(parent);
+      connect(popup, &WavPopup::accepted, this, &ZoneTableDelegate::commitAndCloseEditor);
+      return popup;
+    }
     default:
       return QStyledItemDelegate::createEditor(parent, option, index);
   }
@@ -367,6 +372,12 @@ void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
       int y = option.rect.y() + (option.rect.height() - combo->height()) / 2;
       // set width to grid cell
       combo->setGeometry(option.rect.x(), y, option.rect.width(), combo->height());
+      break;
+    }
+    case jm::ZONE_PATH: {
+      WavPopup* popup = static_cast<WavPopup*>(editor);
+      popup->setGeometry(option.rect);
+      popup->showPopup();
       break;
     }
     default:
@@ -417,6 +428,11 @@ void ZoneTableDelegate::setEditorData(QWidget* editor, const QModelIndex& index)
       combo->showPopup();
       break;
     }
+    case jm::ZONE_PATH: {
+      WavPopup* popup = static_cast<WavPopup*>(editor);
+      popup->setPath(index.data(Qt::EditRole).toString());
+      break;
+    }
     default:
       QStyledItemDelegate::setEditorData(editor, index);
   }
@@ -458,6 +474,11 @@ void ZoneTableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model,
     case jm::ZONE_OFF_GROUP: {
       QComboBox* combo = static_cast<QComboBox*>(editor);
       model->setData(index, combo->currentText(), Qt::EditRole);
+      break;
+    }
+    case jm::ZONE_PATH: {
+      WavPopup* popup = static_cast<WavPopup*>(editor);
+      model->setData(index, popup->path(), Qt::EditRole);
       break;
     }
     default:

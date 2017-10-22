@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdio>
 #include <QtWidgets>
+#include <libgen.h>
 
 #include "components.h"
 
@@ -209,6 +210,48 @@ void NotePopup::setCurrentText(const QString& text) {
 }
 
 void NotePopup::mousePressEvent(QMouseEvent *event) {
+  if (event->button() == Qt::LeftButton) {
+    showPopup();
+  }
+}
+
+/************
+*
+* WavPopup
+*
+**/
+WavPopup::WavPopup(QWidget* parent): QFrame(parent) {
+  this->setFrameStyle(QFrame::Box | QFrame::Plain);
+  this->setLineWidth(2);
+
+  // todo fill dir field with current wav
+  file_dialog = new QFileDialog(this, tr("Open a FUCKING WAV already!!"));
+  file_dialog->setModal(true);
+  file_dialog->setFileMode(QFileDialog::ExistingFile);
+  file_dialog->setNameFilter(tr("Sound Files (*.wav *.aiff *.flac)"));
+
+  // use accepted instead of fileSelected because fileSel sends 2x (GNOME BUG?)
+  connect(file_dialog, &QDialog::accepted, this, &WavPopup::accepted);
+}
+
+void WavPopup::showPopup() {
+  file_dialog->show();
+}
+
+QString WavPopup::path() {
+  return file_dialog->selectedFiles()[0];
+}
+
+void WavPopup::setPath(const QString& path) {
+  char* tmp_str = strdup(path.toStdString().c_str());
+  file_dialog->setDirectory(dirname(tmp_str));
+  free(tmp_str);
+  tmp_str = strdup(path.toStdString().c_str());
+  file_dialog->selectFile(basename(tmp_str));
+  free(tmp_str);
+}
+
+void WavPopup::mousePressEvent(QMouseEvent *event) {
   if (event->button() == Qt::LeftButton) {
     showPopup();
   }
