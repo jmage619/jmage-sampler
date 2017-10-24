@@ -84,6 +84,24 @@ void InputThread::run() {
 
       emit receivedAddZone(index, z);
     }
+    else if (!input.compare(0, 12, "update_wave:")) {
+      std::istringstream sin(input.substr(12));
+      std::string field;
+      std::getline(sin, field, ',');
+      int index = atoi(field.c_str());
+      std::getline(sin, field, ',');
+      QString path = QString::fromStdString(field);
+      std::getline(sin, field, ',');
+      int wave_length = atoi(field.c_str());
+      std::getline(sin, field, ',');
+      int start = atoi(field.c_str());
+      std::getline(sin, field, ',');
+      int left = atoi(field.c_str());
+      std::getline(sin, field, ',');
+      int right = atoi(field.c_str());
+
+      emit receivedUpdateWave(index, path, wave_length, start, left, right);
+    }
     else if (!input.compare(0, 12, "remove_zone:"))
       emit receivedRemoveZone(atoi(input.substr(12).c_str()));
     else if (!input.compare(0, 11, "clear_zones"))
@@ -149,6 +167,7 @@ SamplerUI::SamplerUI() {
   qRegisterMetaType<jm::zone>();
   connect(in_thread, &InputThread::receivedSampleRate, &zone_model, &ZoneTableModel::setSampleRate);
   connect(in_thread, &InputThread::receivedAddZone, &zone_model, &ZoneTableModel::addNewZone);
+  connect(in_thread, &InputThread::receivedUpdateWave, &zone_model, &ZoneTableModel::updateWave);
   connect(in_thread, &InputThread::receivedRemoveZone, &zone_model, &ZoneTableModel::removeZone);
   connect(in_thread, &InputThread::receivedClearZones, &zone_model, &ZoneTableModel::clearZones);
   connect(in_thread, &InputThread::receivedUpdateVol, this, &SamplerUI::checkAndUpdateVol);

@@ -88,6 +88,7 @@ class ZoneTableModel: public QAbstractTableModel {
   public slots:
     void setSampleRate(int sample_rate) {this->sample_rate = sample_rate;}
     void addNewZone(int i, const jm::zone& z);
+    void updateWave(int i, const QString& path, int wave_length, int start, int left, int right);
     void removeZone(int i);
     void clearZones();
 };

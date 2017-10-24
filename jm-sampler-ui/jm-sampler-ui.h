@@ -22,6 +22,7 @@ class InputThread: public QThread {
     //void receivedValue(int val);
     void receivedSampleRate(int sample_rate);
     void receivedAddZone(int i, const jm::zone& z);
+    void receivedUpdateWave(int i, const QString& path, int wave_length, int start, int left, int right);
     void receivedRemoveZone(int i);
     void receivedClearZones();
     void receivedUpdateVol(double val);

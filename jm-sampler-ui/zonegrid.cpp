@@ -847,6 +847,14 @@ void ZoneTableModel::addNewZone(int i, const jm::zone& z) {
   emit dataChanged(index(i, 0), index(i, NUM_ZONE_ATTRS - 1));
 }
 
+void ZoneTableModel::updateWave(int i, const QString& path, int wave_length, int start, int left, int right) {
+  strcpy(zones[i].path, path.toStdString().c_str());
+  zones[i].wave_length = wave_length;
+  zones[i].start = start;
+  zones[i].left = left;
+  zones[i].right = right;
+}
+
 void ZoneTableModel::removeZone(int i) {
   removeRows(i, 1);
 }
