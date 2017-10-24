@@ -147,33 +147,16 @@ SamplerUI::SamplerUI() {
 
   InputThread* in_thread = new InputThread;
   qRegisterMetaType<jm::zone>();
-  connect(in_thread, &InputThread::receivedSampleRate, this, &SamplerUI::setSampleRate);
-  connect(in_thread, &InputThread::receivedAddZone, this, &SamplerUI::addNewZone);
-  connect(in_thread, &InputThread::receivedRemoveZone, this, &SamplerUI::removeZone);
-  connect(in_thread, &InputThread::receivedClearZones, this, &SamplerUI::clearZones);
+  connect(in_thread, &InputThread::receivedSampleRate, &zone_model, &ZoneTableModel::setSampleRate);
+  connect(in_thread, &InputThread::receivedAddZone, &zone_model, &ZoneTableModel::addNewZone);
+  connect(in_thread, &InputThread::receivedRemoveZone, &zone_model, &ZoneTableModel::removeZone);
+  connect(in_thread, &InputThread::receivedClearZones, &zone_model, &ZoneTableModel::clearZones);
   connect(in_thread, &InputThread::receivedUpdateVol, this, &SamplerUI::checkAndUpdateVol);
   connect(in_thread, &InputThread::receivedUpdateChan, this, &SamplerUI::checkAndUpdateChan);
   connect(in_thread, &QThread::finished, in_thread, &QObject::deleteLater);
   connect(in_thread, &QThread::finished, this, &QWidget::close);
   connect(in_thread, &QThread::finished, &QApplication::quit);
   in_thread->start();
-}
-
-void SamplerUI::setSampleRate(int sample_rate) {
-  zone_model.setSampleRate(sample_rate);
-}
-
-void SamplerUI::addNewZone(int i, const jm::zone& z) {
-  zone_model.insertRows(i, 1);
-  zone_model.setZone(i, z);
-}
-
-void SamplerUI::removeZone(int i) {
-  zone_model.removeRows(i, 1);
-}
-
-void SamplerUI::clearZones() {
-  zone_model.removeRows(0, zone_model.rowCount());
 }
 
 void SamplerUI::checkAndUpdateVol(double val) {

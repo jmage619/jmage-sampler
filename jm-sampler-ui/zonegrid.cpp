@@ -841,7 +841,17 @@ bool ZoneTableModel::setData(const QModelIndex &index, const QVariant &value, in
   return false;
 }
 
-void ZoneTableModel::setZone(int row, const jm::zone& z) {
-  zones[row] = z;
-  emit dataChanged(index(row, 0), index(row, NUM_ZONE_ATTRS - 1));
+void ZoneTableModel::addNewZone(int i, const jm::zone& z) {
+  insertRows(i, 1);
+  zones[i] = z;
+  emit dataChanged(index(i, 0), index(i, NUM_ZONE_ATTRS - 1));
 }
+
+void ZoneTableModel::removeZone(int i) {
+  removeRows(i, 1);
+}
+
+void ZoneTableModel::clearZones() {
+  removeRows(0, rowCount());
+}
+
