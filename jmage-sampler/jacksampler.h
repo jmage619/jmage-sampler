@@ -38,6 +38,7 @@ class JackSampler: public JMSampler {
 
     JackSampler(int sample_rate, size_t in_nframes, size_t out_nframes);
     void send_add_zone(int index);
+    void send_update_wave(int index);
 };
 
 #endif

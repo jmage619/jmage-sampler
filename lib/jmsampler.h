@@ -33,7 +33,8 @@ class JMSampler {
     pthread_mutex_t zone_lock;
     JMSampler(int sample_rate, size_t in_nframes, size_t out_nframes);
     virtual ~JMSampler();
-    virtual void send_add_zone(int index) = 0;
+    virtual void send_add_zone(int index) {};
+    virtual void send_update_wave(int index) {};
     void add_zone_from_wave(int index, const char* path);
     void add_zone_from_region(const std::map<std::string, SFZValue>& region);
     void duplicate_zone(int index);

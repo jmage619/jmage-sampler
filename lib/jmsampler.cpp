@@ -335,6 +335,24 @@ void JMSampler::update_zone(int index, int key, const char* val) {
     case jm::ZONE_RELEASE:
       zones[index].release = atoi(val);
       break;
+    case jm::ZONE_PATH:
+      jm::wave& wav = waves[val];
+      zones[index].wave = wav.wave;
+      zones[index].num_channels = wav.num_channels;
+      zones[index].sample_rate = wav.sample_rate;
+      zones[index].wave_length = wav.length;
+
+      if (zones[index].start > wav.length)
+        zones[index].start = wav.length;
+      if (zones[index].left > wav.length)
+        zones[index].left = wav.length;
+      if (zones[index].right > wav.length)
+        zones[index].right = wav.length;
+
+      strcpy(zones[index].path, val);
+
+      send_update_wave(index);
+      break;
   }
   pthread_mutex_unlock(&zone_lock);
 }

@@ -211,6 +211,13 @@ int main() {
 
       p = strtok(NULL, ",");
 
+      // special case, update wave
+      if (key == jm::ZONE_PATH) {
+        if (sampler->waves.find(p) == sampler->waves.end()) {
+          sampler->waves[p] = jm::parse_wave(p);
+        }
+      }
+
       sampler->update_zone(index, key, p);
     }
     else if (!strncmp(buf, "load_patch:", 11)) {
