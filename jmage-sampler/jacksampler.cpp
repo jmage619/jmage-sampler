@@ -54,7 +54,6 @@ void JackSampler::send_update_wave(int index) {
   // right
   p += strlen(p);
   sprintf(p, "%i\n", zones[index].right);
-  std::cout << outstr << std::endl;
   fprintf(fout, outstr);
   fflush(fout);
 }

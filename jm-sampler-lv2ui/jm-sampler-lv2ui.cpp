@@ -96,6 +96,32 @@ static void send_add_zone(jm_sampler_ui* ui, int index) {
   fflush(ui->fout);
 }
 
+static void send_update_wave(jm_sampler_ui* ui, int index) {
+  char outstr[256];
+  char* p = outstr;
+  sprintf(p, "update_wave:");
+  // index
+  p += strlen(p);
+  sprintf(p, "%i,", index);
+  // path
+  p += strlen(p);
+  sprintf(p, "%s,", (*ui->zones)[index].path);
+  // wave length
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[index].wave_length);
+  // start
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[index].start);
+  // left
+  p += strlen(p);
+  sprintf(p, "%i,", (*ui->zones)[index].left);
+  // right
+  p += strlen(p);
+  sprintf(p, "%i\n", (*ui->zones)[index].right);
+  fprintf(ui->fout, outstr);
+  fflush(ui->fout);
+}
+
 static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
     const char*, const char*,
     LV2UI_Write_Function write_function, LV2UI_Controller controller,
@@ -225,6 +251,17 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       fprintf(stderr, "UI addZone received!! %i\n", i);
 
       send_add_zone(ui, i);
+    }
+    else if (obj->body.otype == ui->uris.jm_updateWave) {
+      LV2_Atom* params = NULL;
+
+      lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
+
+      // index
+      int i = ((LV2_Atom_Int*) params)->body;
+      fprintf(stderr, "UI updateWave received!! %i\n", i);
+
+      send_update_wave(ui, i);
     }
     else if (obj->body.otype == ui->uris.jm_removeZone) {
       LV2_Atom* params = NULL;

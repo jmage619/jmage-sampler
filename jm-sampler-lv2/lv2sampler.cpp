@@ -48,6 +48,17 @@ void LV2Sampler::send_add_zone(int index) {
   fprintf(stderr, "SAMPLER: add zone sent!! %i: %s\n", index, zones[index].name);
 }
 
+void LV2Sampler::send_update_wave(int index) {
+  lv2_atom_forge_frame_time(&forge, 0);
+  LV2_Atom_Forge_Frame obj_frame;
+  lv2_atom_forge_object(&forge, &obj_frame, 0, uris.jm_updateWave);
+  lv2_atom_forge_key(&forge, uris.jm_params);
+  lv2_atom_forge_int(&forge, index);
+  lv2_atom_forge_pop(&forge, &obj_frame);
+
+  fprintf(stderr, "SAMPLER: update wave sent!! %i: %s\n", index, zones[index].path);
+}
+
 void LV2Sampler::send_remove_zone(int index) {
   lv2_atom_forge_frame_time(&forge, 0);
   LV2_Atom_Forge_Frame obj_frame;

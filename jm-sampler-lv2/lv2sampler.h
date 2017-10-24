@@ -34,6 +34,7 @@ class LV2Sampler: public JMSampler {
     void send_sample_rate();
     void send_zone_vect();
     void send_add_zone(int index);
+    void send_update_wave(int index);
     void send_remove_zone(int index);
     void send_clear_zones();
     void send_update_vol(float vol);

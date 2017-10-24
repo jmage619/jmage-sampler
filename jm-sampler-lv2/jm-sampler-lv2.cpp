@@ -38,6 +38,7 @@ enum {
 
 enum worker_msg_type {
   WORKER_LOAD_PATH_WAV,
+  WORKER_UPDATE_WAV,
   WORKER_LOAD_PATCH,
   WORKER_SAVE_PATCH,
   WORKER_REFRESH
@@ -161,6 +162,12 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
   if (msg->type == WORKER_LOAD_PATH_WAV) {
     sampler->waves[sampler->wav_path] = jm::parse_wave(sampler->wav_path);
 
+    respond(handle, sizeof(worker_msg), msg);
+    //fprintf(stderr, "SAMPLER: work completed; parsed: %s\n", path);
+  }
+  else if (msg->type == WORKER_UPDATE_WAV) {
+    sampler->waves[sampler->wav_path] = jm::parse_wave(sampler->wav_path);
+
     respond(handle, sizeof(worker_msg), msg); 
     //fprintf(stderr, "SAMPLER: work completed; parsed: %s\n", path);
   }
@@ -192,6 +199,9 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
     sampler->add_zone_from_wave(msg->i, sampler->wav_path);
     //lv2_atom_forge_pop(&plugin->forge, &seq_frame);
     //fprintf(stderr, "SAMPLER: response completed; added: %s\n", path);
+  }
+  else if (msg->type == WORKER_UPDATE_WAV) {
+    sampler->update_zone(msg->i, jm::ZONE_PATH, sampler->wav_path);
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
     fprintf(stderr, "SAMPLER load patch response!! num regions: %i\n", (int) sampler->patch.regions.size());
@@ -259,7 +269,22 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         a = lv2_atom_tuple_next(a);
         int key = reinterpret_cast<LV2_Atom_Int*>(a)->body;
         a = lv2_atom_tuple_next(a);
-        sampler->update_zone(index, key, (char*)(a + 1));
+
+        // special case, update wave
+        if (key == jm::ZONE_PATH) {
+          char* path = (char*)(a + 1);
+          if (sampler->waves.find(path) == sampler->waves.end()) {
+            worker_msg msg;
+            msg.type =  WORKER_UPDATE_WAV;
+            msg.i = index;
+            strcpy(sampler->wav_path, path);
+            sampler->schedule->schedule_work(sampler->schedule->handle, sizeof(worker_msg), &msg);
+          }
+          else
+            sampler->update_zone(index, key, path);
+        }
+        else
+          sampler->update_zone(index, key, (char*)(a + 1));
       }
       else if (obj->body.otype == sampler->uris.jm_removeZone) {
         LV2_Atom* params = NULL;
