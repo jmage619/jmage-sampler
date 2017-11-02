@@ -134,7 +134,7 @@ SamplerUI::SamplerUI() {
   label->setText(tr("Vol:"));
   h_layout->addWidget(label);
 
-  vol_slider = new HDoubleSlider(Q_NULLPTR, 0, 16, 17);
+  vol_slider = new HDoubleSlider(Q_NULLPTR, -144, 6, 151);
   connect(vol_slider, &HDoubleSlider::sliderMoved, this, &SamplerUI::sendUpdateVol);
   h_layout->addWidget(vol_slider);
 

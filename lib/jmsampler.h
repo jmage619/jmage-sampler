@@ -2,6 +2,7 @@
 #define JMSAMPLER_H
 
 #include <pthread.h>
+#include <cmath>
 
 #include "zone.h"
 #include "wave.h"
@@ -51,7 +52,7 @@ class JMSampler {
 };
 
 inline float get_amp(int index) {
-  return index == 0 ? 0.f: 1 / 100.f * pow(10.f, 2 * index / (VOL_STEPS - 1.0f));
+  return powf(10.f, index / 20.f);
 }
 
 #endif

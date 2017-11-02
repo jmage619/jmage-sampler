@@ -232,7 +232,7 @@ int main() {
         *sampler-> channel =  sampler->patch.control["jm_chan"].get_int() - 1;
       }
       else {
-        *sampler->volume = 16;
+        *sampler->volume = 0;
         *sampler->channel = 0;
       }
 

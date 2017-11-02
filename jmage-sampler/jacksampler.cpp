@@ -14,7 +14,7 @@
 
 JackSampler::JackSampler(int sample_rate, size_t in_nframes, size_t out_nframes):
     JMSampler(sample_rate, in_nframes, out_nframes),
-    _volume(16),
+    _volume(0),
     _channel(0),
     msg_q(MSG_Q_SIZE) {
 
