@@ -38,7 +38,7 @@ int process_callback(jack_nframes_t nframes, void* arg) {
     jm_msg msg = sampler->msg_q.remove();
     switch (msg.type) {
       case MT_VOLUME:
-        *sampler->volume = msg.data.i;
+        *sampler->volume = msg.data.f;
         break;
       case MT_CHANNEL:
         *sampler->channel = msg.data.i;
@@ -156,7 +156,7 @@ int main() {
   fprintf(fout, "set_sample_rate:%i\n", sampler->sample_rate);
   fflush(fout);
 
-  fprintf(fout, "update_vol:%i\n", (int) *sampler->volume);
+  fprintf(fout, "update_vol:%f\n", *sampler->volume);
   fflush(fout);
 
   fprintf(fout, "update_chan:%i\n", (int) *sampler->channel);
@@ -169,7 +169,7 @@ int main() {
     if (!strncmp(buf, "update_vol:", 11)) {
       jm_msg msg;
       msg.type = MT_VOLUME;
-      msg.data.i = atoi(buf + 11);
+      msg.data.f = atof(buf + 11);
 
       sampler->msg_q.add(msg);
     }
@@ -236,7 +236,7 @@ int main() {
         *sampler->channel = 0;
       }
 
-      fprintf(fout, "update_vol:%i\n", (int) *sampler->volume);
+      fprintf(fout, "update_vol:%f\n", *sampler->volume);
       fflush(fout);
 
       fprintf(fout, "update_chan:%i\n", (int) *sampler->channel);

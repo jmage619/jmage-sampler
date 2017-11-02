@@ -51,7 +51,7 @@ class JMSampler {
     void process_frame(size_t curframe, float* out1, float* out2);
 };
 
-inline float get_amp(int index) {
+inline float get_amp(float index) {
   return powf(10.f, index / 20.f);
 }
 

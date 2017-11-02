@@ -23,6 +23,7 @@ struct jm_msg {
   msg_type type;
   union {
     int i;
+    float f;
   } data;
 };
 
