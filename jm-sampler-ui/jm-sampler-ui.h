@@ -6,7 +6,7 @@
 #include <lib/zone.h>
 #include "zonegrid.h"
 
-class HDoubleSlider;
+class HVolumeSlider;
 class QComboBox;
 
 Q_DECLARE_METATYPE(jm::zone)
@@ -33,7 +33,7 @@ class SamplerUI: public QWidget {
   Q_OBJECT
 
   private:
-    HDoubleSlider* vol_slider;
+    HVolumeSlider* vol_slider;
     QComboBox* chan_combo;
     ZoneTableModel zone_model;
 

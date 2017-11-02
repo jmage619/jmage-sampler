@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <QtWidgets>
 #include <libgen.h>
+#include <cmath>
 
 #include "components.h"
 
@@ -50,6 +51,77 @@ void HDoubleSlider::setValue(double val) {
     slider->setValue(slider->maximum() * (val - min) / (max - min) + 0.05);
 
   out->setText(QString::number(value()));
+}
+
+void HVolumeSlider::handleMove(int i) {
+  index = i;
+  out->setText(QString::number(map[index]));
+  emit sliderMoved(map[index]);
+}
+
+HVolumeSlider::HVolumeSlider(QWidget* parent):
+    QWidget(parent), index(87) {
+
+  map[99] = 6.;
+
+  // top portion of curve is exponential
+  for (int i = 98; i >= 17; --i) {
+    map[i] = map[i + 1] - 0.5;
+  }
+
+  // below -35db it is linear; extrapolate from prev 2 vals
+  double y1 = pow(10., map[17] / 20.);
+  double y2 = pow(10., map[18] / 20.);
+
+  double del = y2 - y1;
+
+  double next_factor = y1 - del;
+
+  for (int i = 16; i >=1; --i) {
+    map[i] = 20 * log10(next_factor);
+    next_factor -= del;
+  }
+
+  // call -144db "zero"
+  map[0] = -144.;
+
+  QHBoxLayout* h_layout = new QHBoxLayout;
+  out = new QLineEdit;
+  out->setFixedWidth(50);
+  out->setAlignment(Qt::AlignRight);
+  h_layout->addWidget(out, 0, Qt::AlignLeft);
+
+  slider = new QSlider(Qt::Horizontal);
+  slider->setMinimum(0);
+  slider->setMaximum(99);
+  slider->setFixedWidth(200);
+  slider->setValue(index);
+  h_layout->addWidget(slider, 0, Qt::AlignLeft);
+
+  out->setText(QString::number(map[index]));
+
+  setLayout(h_layout);
+
+  connect(slider, &QSlider::sliderMoved, this, &HVolumeSlider::handleMove);
+}
+
+void HVolumeSlider::setValue(double val) {
+  if (val < map[0])
+    index = 0;
+  else if (val >= map[99])
+    index = 99;
+
+  else {
+    for (int i = 0; i <= 98; ++i) {
+      if (val >= map[i] && val < map[i + 1]) {
+        index = (val - map[i] < map[i + 1] - val) ? map[i]: map[i + 1];
+        break;
+      }
+    }
+  }
+
+  slider->setValue(index);
+  out->setText(QString::number(map[index]));
 }
 
 /************

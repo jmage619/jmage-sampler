@@ -35,6 +35,30 @@ class HDoubleSlider: public QWidget {
     void setValue(double val);
 };
 
+class HVolumeSlider: public QWidget {
+  Q_OBJECT
+
+  private:
+    double map[100];
+
+    QLineEdit* out;
+    QSlider* slider;
+
+  signals:
+    void sliderMoved(double val);
+
+  private slots:
+    void handleMove(int val);
+
+  public:
+    int index;
+    HVolumeSlider(QWidget* parent = Q_NULLPTR);
+    double value(){return map[index];}
+
+  public slots:
+    void setValue(double val);
+};
+
 class DragBox: public QFrame {
   Q_OBJECT
 
