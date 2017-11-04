@@ -215,7 +215,7 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
     }
     // reset to reasonable defaults if not defined
     else {
-      sampler->send_update_vol(16);
+      sampler->send_update_vol(0.f);
       sampler->send_update_chan(0);
     }
 

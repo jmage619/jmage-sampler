@@ -178,7 +178,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
   lv2_atom_forge_init(&ui->forge, ui->map);
 
   ui->spawned = false;
-  ui->volume = 16;
+  ui->volume = 0.f;
   ui->channel = 0;
 
   std::cerr << get_time_str() << " UI: ui instantiated" << std::endl;
