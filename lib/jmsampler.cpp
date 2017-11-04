@@ -202,7 +202,7 @@ void JMSampler::save_patch(const char* path) {
 
   bool is_jmz = !strcmp(path + len - 4, ".jmz");
   if (is_jmz) {
-    save_patch.control["jm_vol"] = (int) *volume;
+    save_patch.control["jm_vol"] = (double) *volume;
     save_patch.control["jm_chan"] = (int) *channel + 1;
   }
 

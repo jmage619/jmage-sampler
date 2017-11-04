@@ -114,7 +114,7 @@ void HVolumeSlider::setValue(double val) {
   else {
     for (int i = 0; i <= 98; ++i) {
       if (val >= map[i] && val < map[i + 1]) {
-        index = (val - map[i] < map[i + 1] - val) ? map[i]: map[i + 1];
+        index = (val - map[i] < map[i + 1] - val) ? i: i + 1;
         break;
       }
     }

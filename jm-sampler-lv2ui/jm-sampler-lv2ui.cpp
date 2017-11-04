@@ -285,7 +285,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
 
       float val = ((LV2_Atom_Float*) params)->body;
       ui->write(ui->controller, 1, sizeof(float), 0, &val);
-      fprintf(ui->fout, "update_vol:%i\n", (int) val);
+      fprintf(ui->fout, "update_vol:%f\n", val);
       fflush(ui->fout);
     }
     else if (obj->body.otype == ui->uris.jm_updateChan) {

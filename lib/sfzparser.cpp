@@ -272,7 +272,7 @@ sfz::sfz SFZParser::parse() {
 
 void JMZParser::set_control_defaults(std::map<std::string, SFZValue>& control) {
   SFZParser::set_control_defaults(control);
-  control["jm_vol"] = 16;
+  control["jm_vol"] = 0.;
   control["jm_chan"] = 1;
 }
 
@@ -282,11 +282,8 @@ void JMZParser::set_region_defaults(std::map<std::string, SFZValue>& region) {
 }
 
 void JMZParser::update_control(std::map<std::string, SFZValue>& control, const std::string& field, const std::string& data) {
-  if (field == "jm_vol") {
-    long val = strtol(data.c_str(), NULL, 10);
-    validate_int(field, val, 0, 16);
-    control["jm_vol"] = (int) val;
-  }
+  if (field == "jm_vol")
+    control["jm_vol"] = strtod(data.c_str(), NULL);
   else if (field == "jm_chan") {
     long val = strtol(data.c_str(), NULL, 10);
     validate_int(field, val, 1, 16);

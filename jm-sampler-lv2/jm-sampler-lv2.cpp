@@ -210,7 +210,7 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
 
     std::map<std::string, SFZValue>::iterator c_it = sampler->patch.control.find("jm_vol");
     if (c_it != sampler->patch.control.end()) {
-      sampler->send_update_vol(c_it->second.get_int());
+      sampler->send_update_vol(c_it->second.get_double());
       sampler->send_update_chan(sampler->patch.control["jm_chan"].get_int() - 1);
     }
     // reset to reasonable defaults if not defined

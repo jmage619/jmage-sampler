@@ -228,8 +228,8 @@ int main() {
 
       std::map<std::string, SFZValue>::iterator c_it = sampler->patch.control.find("jm_vol");
       if (c_it != sampler->patch.control.end()) {
-        *sampler->volume = c_it->second.get_int();
-        *sampler-> channel =  sampler->patch.control["jm_chan"].get_int() - 1;
+        *sampler->volume = c_it->second.get_double();
+        *sampler->channel =  sampler->patch.control["jm_chan"].get_int() - 1;
       }
       else {
         *sampler->volume = 0;
