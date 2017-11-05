@@ -63,12 +63,12 @@ class DragBox: public QFrame {
   Q_OBJECT
 
   private:
-    int index;
     int prev_y;
-    double min;
-    double max;
-    int steps;
     QLineEdit* out;
+
+  protected:
+    int index;
+    int steps;
 
   signals:
     void released(double value);
@@ -78,10 +78,24 @@ class DragBox: public QFrame {
     void mousePressEvent(QMouseEvent* e);
 
   public:
-    DragBox(QWidget* parent = Q_NULLPTR, double min = 0.0, double max = 100.0, int steps = 101);
+    DragBox(int steps, QWidget* parent = Q_NULLPTR);
     bool eventFilter(QObject *obj, QEvent *event);
     void setGeometry(const QRect& rect);
     void showPopup();
+    void updateText();
+    virtual void setValue(double val) = 0;
+    virtual double value() = 0;
+};
+
+class LinearDragBox: public DragBox {
+  Q_OBJECT
+
+  private:
+    double min;
+    double max;
+
+  public:
+    LinearDragBox(QWidget* parent = Q_NULLPTR, double min = 0.0, double max = 100.0, int steps = 101);
     void setValue(double val);
     double value();
 };

@@ -242,11 +242,11 @@ void ZoneTableView::handleVertHeaderClick(const QPoint& pos) {
 QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option,
     const QModelIndex& index) const {
 
-  DragBox* dbox;
+  LinearDragBox* dbox;
   QComboBox* combo;
   switch (index.column()) {
     case jm::ZONE_AMP:
-      dbox = new DragBox(parent, -144, 6, 151);
+      dbox = new LinearDragBox(parent, -144, 6, 151);
       // update model immediately on text change
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       // force editor close when release dragbox
@@ -263,19 +263,19 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
     }
     case jm::ZONE_LOW_VEL:
     case jm::ZONE_HIGH_VEL:
-      dbox = new DragBox(parent, 0, 127, 128);
+      dbox = new LinearDragBox(parent, 0, 127, 128);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
     case jm::ZONE_PITCH:
-      dbox = new DragBox(parent, -.5, .5);
+      dbox = new LinearDragBox(parent, -.5, .5);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
     case jm::ZONE_START:
     case jm::ZONE_LEFT:
     case jm::ZONE_RIGHT:
-      dbox = new DragBox(parent, 0.0, index.data(MAX_ROLE).toDouble());
+      dbox = new LinearDragBox(parent, 0.0, index.data(MAX_ROLE).toDouble());
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
@@ -298,13 +298,13 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
       connect(combo, static_cast<void (QComboBox::*)(int)>(&QComboBox::activated), this, &ZoneTableDelegate::commitAndCloseEditor);
       return combo;
     case jm::ZONE_CROSSFADE:
-      dbox = new DragBox(parent, 0, 1000);
+      dbox = new LinearDragBox(parent, 0, 1000);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
     case jm::ZONE_ATTACK:
     case jm::ZONE_HOLD:
-      dbox = new DragBox(parent, 0.0, 2.0);
+      dbox = new LinearDragBox(parent, 0.0, 2.0);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
@@ -313,15 +313,15 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
       const QAbstractItemModel* model = index.model();
       QModelIndex i = model->index(index.row(), jm::ZONE_LONG_TAIL);
       if (i.data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        dbox = new DragBox(parent, 0.0, 20.0);
+        dbox = new LinearDragBox(parent, 0.0, 20.0);
       else
-        dbox = new DragBox(parent, 0.0, 2.0);
+        dbox = new LinearDragBox(parent, 0.0, 2.0);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
     }
     case jm::ZONE_SUSTAIN:
-      dbox = new DragBox(parent, 0.0, 1.0);
+      dbox = new LinearDragBox(parent, 0.0, 1.0);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
@@ -351,7 +351,7 @@ void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
     case jm::ZONE_DECAY:
     case jm::ZONE_SUSTAIN:
     case jm::ZONE_RELEASE: {
-      DragBox* dbox = static_cast<DragBox*>(editor);
+      LinearDragBox* dbox = static_cast<LinearDragBox*>(editor);
       dbox->setGeometry(option.rect); // have to cast because setGeometry isn't virtual
       dbox->showPopup();
       break;
@@ -404,7 +404,7 @@ void ZoneTableDelegate::setEditorData(QWidget* editor, const QModelIndex& index)
     case jm::ZONE_DECAY:
     case jm::ZONE_SUSTAIN:
     case jm::ZONE_RELEASE: {
-      DragBox* dbox = static_cast<DragBox*>(editor);
+      LinearDragBox* dbox = static_cast<LinearDragBox*>(editor);
 
       double val = index.data(Qt::EditRole).toDouble();
 
@@ -457,7 +457,7 @@ void ZoneTableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model,
     case jm::ZONE_DECAY:
     case jm::ZONE_SUSTAIN:
     case jm::ZONE_RELEASE: {
-      DragBox* dbox = static_cast<DragBox*>(editor);
+      LinearDragBox* dbox = static_cast<LinearDragBox*>(editor);
 
       model->setData(index, dbox->value(), Qt::EditRole);
       break;

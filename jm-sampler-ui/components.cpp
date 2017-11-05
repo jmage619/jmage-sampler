@@ -134,17 +134,13 @@ void DragBox::mousePressEvent(QMouseEvent*) {
   showPopup();
 }
 
-DragBox::DragBox(QWidget* parent, double min, double max, int steps):
+DragBox::DragBox(int steps, QWidget* parent):
     QFrame(parent),
-    index(0),
-    min(min),
-    max(max),
     steps(steps) {
   setFrameStyle(QFrame::Box | QFrame::Plain);
   setLineWidth(2);
   out = new QLineEdit(this);
   out->setWindowFlags(Qt::Popup);
-  out->setText("0");
   out->installEventFilter(this);
 }
 
@@ -192,7 +188,18 @@ void DragBox::showPopup() {
   out->show();
 }
 
-void DragBox::setValue(double val) {
+void DragBox::updateText() {
+  out->setText(QString::number(value()));
+}
+
+LinearDragBox::LinearDragBox(QWidget* parent, double min, double max, int steps):
+    DragBox(steps, parent),
+    min(min),
+    max(max) {
+  setValue(min);
+}
+
+void LinearDragBox::setValue(double val) {
   if (val < min)
     index = 0;
   else if (val > max)
@@ -201,10 +208,10 @@ void DragBox::setValue(double val) {
   else
     index = (steps - 1) * (val - min) / (max - min) + 0.05;
 
-  out->setText(QString::number(value()));
+  updateText();
 }
 
-double DragBox::value() {
+double LinearDragBox::value() {
   return (max - min) / (steps - 1) * index + min;
 }
 
