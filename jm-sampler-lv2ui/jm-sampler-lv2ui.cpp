@@ -17,7 +17,7 @@
 #include <lv2/lv2plug.in/ns/ext/atom/util.h>
 #include <lv2/lv2plug.in/ns/extensions/ui/ui.h>
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
-//#include <lv2/lv2plug.in/ns/ext/options/options.h>
+#include <lv2/lv2plug.in/ns/ext/options/options.h>
 
 #include <config.h>
 #include <lib/zone.h>
@@ -131,16 +131,15 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
   // Scan host features for URID map
   LV2_URID_Map* map = NULL;
   //LV2_URID_Unmap* unmap = NULL;
-  //LV2_Options_Option* opt = NULL;
+  LV2_Options_Option* opt = NULL;
 
   for (int i = 0; features[i]; ++i) {
     if (!strcmp(features[i]->URI, LV2_URID__map))
       map = (LV2_URID_Map*)features[i]->data;
-    /*else if (!strcmp(features[i]->URI, LV2_URID__unmap))
-      unmap = (LV2_URID_Unmap*)features[i]->data;
+    //else if (!strcmp(features[i]->URI, LV2_URID__unmap))
+    //  unmap = (LV2_URID_Unmap*)features[i]->data;
     else if (!strcmp(features[i]->URI, LV2_OPTIONS__options))
       opt = (LV2_Options_Option*)features[i]->data;
-    */
   }
   if (!map) {
     std::cerr << "Host does not support urid:map." << std::endl;
@@ -152,25 +151,28 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
     free(ui);
     return NULL;
   }
-  if (!opt) {
-    fprintf(stderr, "Host does not support options:options\n");
-    free(ui);
-    return NULL;
-  }
-
-  int index = 0;
-  while (1) {
-    if (opt[index].key == 0)
-      break;
-
-    fprintf(stderr, "UI host option: %s\n", unmap->unmap(unmap->handle, opt[index].key));
-    ++index;    
-  }
   */
 
   // Map URIS
   ui->map = map;
   jm::map_uris(ui->map, &ui->uris);
+
+  int index = 0;
+
+  if (opt != NULL) {
+    while (1) {
+      if (opt[index].key == 0)
+        break;
+
+      //fprintf(stderr, "UI host option: %s\n", unmap->unmap(unmap->handle, opt[index].key));
+      if (opt[index].key == ui->uris.ui_windowTitle) {
+        fprintf(stderr, "UI window title: %s\n", (const char*) opt[index].value);
+        break;
+      }
+      ++index;
+    }
+  }
+
 
   ui->write = write_function;
   ui->controller = controller;

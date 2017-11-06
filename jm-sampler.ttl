@@ -78,6 +78,8 @@
 	lv2:requiredFeature urid:map ,
     ui:idleInterace ,
     ui:showInterface ;
+	lv2:optionalFeature opts:options ;
+  opts:supportedOption ui:windowTitle ;
   lv2:extensionData ui:idleInterface ,
     ui:showInterface ;
 	ui:portNotification [

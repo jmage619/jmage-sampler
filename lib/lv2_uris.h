@@ -5,6 +5,7 @@
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
 #include <lv2/lv2plug.in/ns/ext/midi/midi.h>
 #include <lv2/lv2plug.in/ns/ext/buf-size/buf-size.h>
+#include <lv2/lv2plug.in/ns/extensions/ui/ui.h>
 
 // nominal not defined until 1.14
 #ifndef LV2_BUF_SIZE__nominalBlockLength
@@ -37,6 +38,7 @@ namespace jm {
     LV2_URID midi_Event;
     LV2_URID bufsize_maxBlockLength;
     LV2_URID bufsize_nominalBlockLength;
+    LV2_URID ui_windowTitle;
     LV2_URID jm_getSampleRate;
     LV2_URID jm_addZone;
     LV2_URID jm_updateWave;
@@ -61,6 +63,7 @@ namespace jm {
     uris->midi_Event = map->map(map->handle, LV2_MIDI__MidiEvent);
     uris->bufsize_maxBlockLength = map->map(map->handle, LV2_BUF_SIZE__maxBlockLength);
     uris->bufsize_nominalBlockLength = map->map(map->handle, LV2_BUF_SIZE__nominalBlockLength);
+    uris->ui_windowTitle = map->map(map->handle, LV2_UI__windowTitle);
     uris->jm_getSampleRate = map->map(map->handle, JM_SAMPLER__getSampleRate);
     uris->jm_addZone = map->map(map->handle, JM_SAMPLER__addZone);
     uris->jm_updateWave = map->map(map->handle, JM_SAMPLER__updateWave);
