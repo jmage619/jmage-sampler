@@ -41,6 +41,7 @@ struct jm_sampler_ui {
   pid_t pid;
   int tot_read;
   char buf[BUF_SIZE];
+  char title[256];
   const std::vector<jm::zone>* zones;
   bool spawned;
   float volume;
@@ -167,8 +168,12 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
       //fprintf(stderr, "UI host option: %s\n", unmap->unmap(unmap->handle, opt[index].key));
       if (opt[index].key == ui->uris.ui_windowTitle) {
         fprintf(stderr, "UI window title: %s\n", (const char*) opt[index].value);
+        strcpy(ui->title, (const char*) opt[index].value);
         break;
       }
+      else
+        ui->title[0] = '\0';
+
       ++index;
     }
   }
@@ -326,7 +331,10 @@ static int ui_show(LV2UI_Handle handle) {
     dup2(to_child_pipe[0], 0);
     close(to_child_pipe[1]);
 
-    execl(CONFIG_INSTALL_PREFIX "/libexec/jm-sampler-ui", "jm-sampler-ui", NULL);
+    if (strlen(ui->title) == 0)
+      execl(CONFIG_INSTALL_PREFIX "/libexec/jm-sampler-ui", "jm-sampler-ui", NULL);
+    else
+      execl(CONFIG_INSTALL_PREFIX "/libexec/jm-sampler-ui", "jm-sampler-ui", ui->title, NULL);
   }
   // i'm the parent
   close(from_child_pipe[1]);
