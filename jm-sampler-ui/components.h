@@ -10,6 +10,9 @@ class QAction;
 class QMenu;
 class QFileDialog;
 
+void init_vol_map(double* map);
+int vol_map_find(const double* map, double val);
+
 class HDoubleSlider: public QWidget {
   Q_OBJECT
 
@@ -98,6 +101,18 @@ class LinearDragBox: public DragBox {
     LinearDragBox(QWidget* parent = Q_NULLPTR, double min = 0.0, double max = 100.0, int steps = 101);
     void setValue(double val);
     double value();
+};
+
+class VolumeDragBox: public DragBox {
+  Q_OBJECT
+
+  private:
+    double map[100];
+
+  public:
+    VolumeDragBox(QWidget* parent = Q_NULLPTR);
+    void setValue(double val);
+    double value(){return map[index];}
 };
 
 class NotePopup: public QFrame {

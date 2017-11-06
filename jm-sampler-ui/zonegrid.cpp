@@ -242,11 +242,11 @@ void ZoneTableView::handleVertHeaderClick(const QPoint& pos) {
 QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option,
     const QModelIndex& index) const {
 
-  LinearDragBox* dbox;
+  DragBox* dbox;
   QComboBox* combo;
   switch (index.column()) {
     case jm::ZONE_AMP:
-      dbox = new LinearDragBox(parent, -144, 6, 151);
+      dbox = new VolumeDragBox(parent);
       // update model immediately on text change
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       // force editor close when release dragbox
@@ -351,7 +351,7 @@ void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
     case jm::ZONE_DECAY:
     case jm::ZONE_SUSTAIN:
     case jm::ZONE_RELEASE: {
-      LinearDragBox* dbox = static_cast<LinearDragBox*>(editor);
+      DragBox* dbox = static_cast<DragBox*>(editor);
       dbox->setGeometry(option.rect); // have to cast because setGeometry isn't virtual
       dbox->showPopup();
       break;
@@ -404,7 +404,7 @@ void ZoneTableDelegate::setEditorData(QWidget* editor, const QModelIndex& index)
     case jm::ZONE_DECAY:
     case jm::ZONE_SUSTAIN:
     case jm::ZONE_RELEASE: {
-      LinearDragBox* dbox = static_cast<LinearDragBox*>(editor);
+      DragBox* dbox = static_cast<DragBox*>(editor);
 
       double val = index.data(Qt::EditRole).toDouble();
 
@@ -457,7 +457,7 @@ void ZoneTableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model,
     case jm::ZONE_DECAY:
     case jm::ZONE_SUSTAIN:
     case jm::ZONE_RELEASE: {
-      LinearDragBox* dbox = static_cast<LinearDragBox*>(editor);
+      DragBox* dbox = static_cast<DragBox*>(editor);
 
       model->setData(index, dbox->value(), Qt::EditRole);
       break;

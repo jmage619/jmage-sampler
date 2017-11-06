@@ -6,6 +6,50 @@
 
 #include "components.h"
 
+void init_vol_map(double* map) {
+  map[99] = 6.;
+
+  // top portion of curve is exponential
+  for (int i = 98; i >= 17; --i) {
+    map[i] = map[i + 1] - 0.5;
+  }
+
+  // below -35db it is linear; extrapolate from prev 2 vals
+  double y1 = pow(10., map[17] / 20.);
+  double y2 = pow(10., map[18] / 20.);
+
+  double del = y2 - y1;
+
+  double next_factor = y1 - del;
+
+  for (int i = 16; i >=1; --i) {
+    map[i] = 20 * log10(next_factor);
+    next_factor -= del;
+  }
+
+  // call -144db "zero"
+  map[0] = -144.;
+}
+
+int vol_map_find(const double* map, double val) {
+  int index;
+  if (val < map[0])
+    index = 0;
+  else if (val >= map[99])
+    index = 99;
+
+  else {
+    for (int i = 0; i <= 98; ++i) {
+      if (val >= map[i] && val < map[i + 1]) {
+        index = (val - map[i] < map[i + 1] - val) ? i: i + 1;
+        break;
+      }
+    }
+  }
+
+  return index;
+}
+
 /************
 *
 * HDoubleSlider
@@ -62,28 +106,7 @@ void HVolumeSlider::handleMove(int i) {
 HVolumeSlider::HVolumeSlider(QWidget* parent):
     QWidget(parent), index(87) {
 
-  map[99] = 6.;
-
-  // top portion of curve is exponential
-  for (int i = 98; i >= 17; --i) {
-    map[i] = map[i + 1] - 0.5;
-  }
-
-  // below -35db it is linear; extrapolate from prev 2 vals
-  double y1 = pow(10., map[17] / 20.);
-  double y2 = pow(10., map[18] / 20.);
-
-  double del = y2 - y1;
-
-  double next_factor = y1 - del;
-
-  for (int i = 16; i >=1; --i) {
-    map[i] = 20 * log10(next_factor);
-    next_factor -= del;
-  }
-
-  // call -144db "zero"
-  map[0] = -144.;
+  init_vol_map(map);
 
   QHBoxLayout* h_layout = new QHBoxLayout;
   out = new QLineEdit;
@@ -106,19 +129,7 @@ HVolumeSlider::HVolumeSlider(QWidget* parent):
 }
 
 void HVolumeSlider::setValue(double val) {
-  if (val < map[0])
-    index = 0;
-  else if (val >= map[99])
-    index = 99;
-
-  else {
-    for (int i = 0; i <= 98; ++i) {
-      if (val >= map[i] && val < map[i + 1]) {
-        index = (val - map[i] < map[i + 1] - val) ? i: i + 1;
-        break;
-      }
-    }
-  }
+  index = vol_map_find(map, val);
 
   slider->setValue(index);
   out->setText(QString::number(map[index]));
@@ -213,6 +224,17 @@ void LinearDragBox::setValue(double val) {
 
 double LinearDragBox::value() {
   return (max - min) / (steps - 1) * index + min;
+}
+
+VolumeDragBox::VolumeDragBox(QWidget* parent):
+    DragBox(100, parent) {
+  init_vol_map(map);
+  setValue(87);
+}
+
+void VolumeDragBox::setValue(double val) {
+  index = vol_map_find(map, val);
+  updateText();
 }
 
 /************
