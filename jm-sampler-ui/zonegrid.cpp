@@ -651,6 +651,26 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
         return (float) zones[index.row()].wave_length / sample_rate;
     }
   }
+  else if (role == Qt::TextAlignmentRole) {
+    switch (index.column()) {
+      case jm::ZONE_AMP:
+      case jm::ZONE_LOW_VEL:
+      case jm::ZONE_HIGH_VEL:
+      case jm::ZONE_PITCH:
+      case jm::ZONE_START:
+      case jm::ZONE_LEFT:
+      case jm::ZONE_RIGHT:
+      case jm::ZONE_ATTACK:
+      case jm::ZONE_HOLD:
+      case jm::ZONE_DECAY:
+      case jm::ZONE_SUSTAIN:
+      case jm::ZONE_RELEASE: {
+        // not sure why QVariant doesn't like combined aligns until casted
+        return (int) (Qt::AlignRight | Qt::AlignVCenter);
+        break;
+      }
+    }
+  }
   else if (role == Qt::DisplayRole || role == Qt::EditRole) {
     switch (index.column()) {
       case jm::ZONE_NAME:
