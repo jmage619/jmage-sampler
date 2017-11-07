@@ -110,7 +110,7 @@ void ZoneTableView::updateFrozenTableGeometry() {
 
 void ZoneTableView::init() {
   frozen_view->setModel(model());
-  ZoneTableDelegate* frozenDelegate = new ZoneTableDelegate(frozen_view);
+  ZoneTableDelegate* frozenDelegate = new ZoneTableDelegate(frozen_view, 1);
   frozen_view->setItemDelegate(frozenDelegate);
   frozen_view->setFrameStyle(QFrame::NoFrame);
   frozen_view->setFocusPolicy(Qt::NoFocus);
@@ -141,6 +141,10 @@ ZoneTableView::ZoneTableView(QAbstractItemModel* model) {
   setModel(model);
   ZoneTableDelegate* delegate = new ZoneTableDelegate(this);
   setItemDelegate(delegate);
+  ZoneTableDelegate* p3_delegate = new ZoneTableDelegate(this, 3);
+  setItemDelegateForColumn(jm::ZONE_START, p3_delegate);
+  setItemDelegateForColumn(jm::ZONE_LEFT, p3_delegate);
+  setItemDelegateForColumn(jm::ZONE_RIGHT, p3_delegate);
 
   frozen_view = new SingleClickView(this);
 
@@ -485,6 +489,13 @@ void ZoneTableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model,
       QStyledItemDelegate::setModelData(editor, model, index);
   }
   //std::cout << "model updated\n";
+}
+
+QString ZoneTableDelegate::displayText(const QVariant &value, const QLocale &locale) const {
+  if (value.type() == QVariant::Double || (enum QMetaType::Type) value.type() == QMetaType::Float)
+    return locale.toString(value.toDouble(), 'f', precision);
+
+  return QStyledItemDelegate::displayText(value, locale);
 }
 
 void ZoneTableDelegate::updateData() {

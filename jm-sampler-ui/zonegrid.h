@@ -54,8 +54,12 @@ class ZoneTableView: public SingleClickView {
 class ZoneTableDelegate: public QStyledItemDelegate {
   Q_OBJECT
 
+  private:
+    int precision;
+
   public:
-    ZoneTableDelegate(QObject* parent = Q_NULLPTR): QStyledItemDelegate(parent) {}
+    ZoneTableDelegate(QObject* parent = Q_NULLPTR, int precision = 2):
+      QStyledItemDelegate(parent), precision(precision) {}
     QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option,
         const QModelIndex& index) const;
     void updateEditorGeometry(QWidget* editor,
@@ -63,11 +67,13 @@ class ZoneTableDelegate: public QStyledItemDelegate {
     void setEditorData(QWidget* editor, const QModelIndex& index) const;
     void setModelData(QWidget* editor, QAbstractItemModel* model,
         const QModelIndex& index) const;
+    QString displayText(const QVariant &value, const QLocale &locale) const;
 
   public slots:
     void updateData();
     void forceClose();
     void commitAndCloseEditor();
+
 };
 
 class ZoneTableModel: public QAbstractTableModel {
