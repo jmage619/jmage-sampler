@@ -36,7 +36,7 @@ void sfz::write(const sfz* s, std::ostream& out) {
 
   out << std::endl;
 
-  std::vector<std::map<std::string, SFZValue>>::const_iterator v_it;
+  std::vector<std::map<std::string, SFZValue> >::const_iterator v_it;
   for (v_it = s->regions.begin(); v_it != s->regions.end(); ++v_it) {
     out << "<region>";
     for (it = v_it->begin(); it != v_it->end(); ++it) {
@@ -192,7 +192,7 @@ sfz::sfz SFZParser::parse() {
   dir_path += dirname(tmp_str);
   dir_path += "/";
 
-  std::ifstream fin(path);
+  std::ifstream fin(path.c_str());
   sfz::sfz s;
   std::map<std::string, SFZValue> cur_control;
   set_control_defaults(cur_control);

@@ -12,7 +12,7 @@ class SFZValue;
 namespace sfz {
   struct sfz {
     std::map<std::string, SFZValue> control;
-    std::vector<std::map<std::string, SFZValue>> regions;
+    std::vector<std::map<std::string, SFZValue> > regions;
   };
 
   void write(const sfz* s, std::ostream& out);

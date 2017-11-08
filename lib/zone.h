@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cstring>
+#include <cstdio>
 
 #define MAX_NAME 32
 #define MAX_PATH 256

@@ -2,6 +2,7 @@
 #include <fstream>
 
 #include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <stdexcept> 
 
@@ -185,7 +186,7 @@ void JMSampler::load_patch(const char* path) {
   zones.erase(zones.begin(), zones.end());
   pthread_mutex_unlock(&zone_lock);
 
-  std::vector<std::map<std::string, SFZValue>>::iterator it;
+  std::vector<std::map<std::string, SFZValue> >::iterator it;
   for (it = patch.regions.begin(); it != patch.regions.end(); ++it) {
     std::string wav_path = (*it)["sample"].get_str();
     if (waves.find(wav_path) == waves.end()) {
