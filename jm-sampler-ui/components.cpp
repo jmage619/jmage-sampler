@@ -97,9 +97,13 @@ void HDoubleSlider::setValue(double val) {
   out->setText(QString::number(value()));
 }
 
+void HVolumeSlider::updateText() {
+  out->setText(QString::number(value(), 'f', 1));
+}
+
 void HVolumeSlider::handleMove(int i) {
   index = i;
-  out->setText(QString::number(map[index]));
+  updateText();
   emit sliderMoved(map[index]);
 }
 
@@ -110,7 +114,7 @@ HVolumeSlider::HVolumeSlider(QWidget* parent):
 
   QHBoxLayout* h_layout = new QHBoxLayout;
   out = new QLineEdit;
-  out->setFixedWidth(50);
+  out->setFixedWidth(57);
   out->setAlignment(Qt::AlignRight);
   h_layout->addWidget(out, 0, Qt::AlignLeft);
 
@@ -121,7 +125,7 @@ HVolumeSlider::HVolumeSlider(QWidget* parent):
   slider->setValue(index);
   h_layout->addWidget(slider, 0, Qt::AlignLeft);
 
-  out->setText(QString::number(map[index]));
+  updateText();
 
   setLayout(h_layout);
 
@@ -132,7 +136,7 @@ void HVolumeSlider::setValue(double val) {
   index = vol_map_find(map, val);
 
   slider->setValue(index);
-  out->setText(QString::number(map[index]));
+  updateText();
 }
 
 /************

@@ -46,6 +46,7 @@ class HVolumeSlider: public QWidget {
 
     QLineEdit* out;
     QSlider* slider;
+    void updateText();
 
   signals:
     void sliderMoved(double val);
