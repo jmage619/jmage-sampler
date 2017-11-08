@@ -272,14 +272,14 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
     case jm::ZONE_PITCH:
-      dbox = new LinearDragBox(parent, -.5, .5);
+      dbox = new LinearDragBox(parent, -.5, .5, 101, 2);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
     case jm::ZONE_START:
     case jm::ZONE_LEFT:
     case jm::ZONE_RIGHT:
-      dbox = new LinearDragBox(parent, 0.0, index.data(MAX_ROLE).toDouble());
+      dbox = new LinearDragBox(parent, 0.0, index.data(MAX_ROLE).toDouble(), 101, 3);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
@@ -308,7 +308,7 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
       return dbox;
     case jm::ZONE_ATTACK:
     case jm::ZONE_HOLD:
-      dbox = new LinearDragBox(parent, 0.0, 2.0);
+      dbox = new LinearDragBox(parent, 0.0, 2.0, 101, 2);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
@@ -317,15 +317,15 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
       const QAbstractItemModel* model = index.model();
       QModelIndex i = model->index(index.row(), jm::ZONE_LONG_TAIL);
       if (i.data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        dbox = new LinearDragBox(parent, 0.0, 20.0);
+        dbox = new LinearDragBox(parent, 0.0, 20.0, 101, 2);
       else
-        dbox = new LinearDragBox(parent, 0.0, 2.0);
+        dbox = new LinearDragBox(parent, 0.0, 2.0, 101, 2);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
     }
     case jm::ZONE_SUSTAIN:
-      dbox = new LinearDragBox(parent, 0.0, 1.0);
+      dbox = new LinearDragBox(parent, 0.0, 1.0, 101, 2);
       connect(dbox, &DragBox::dragged, this, &ZoneTableDelegate::updateData);
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
@@ -671,6 +671,7 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
       case jm::ZONE_START:
       case jm::ZONE_LEFT:
       case jm::ZONE_RIGHT:
+      case jm::ZONE_CROSSFADE:
       case jm::ZONE_ATTACK:
       case jm::ZONE_HOLD:
       case jm::ZONE_DECAY:

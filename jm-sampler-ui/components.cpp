@@ -145,12 +145,14 @@ void DragBox::mousePressEvent(QMouseEvent*) {
   showPopup();
 }
 
-DragBox::DragBox(int steps, QWidget* parent):
+DragBox::DragBox(int steps, QWidget* parent, int precision):
     QFrame(parent),
+    precision(precision),
     steps(steps) {
   setFrameStyle(QFrame::Box | QFrame::Plain);
   setLineWidth(2);
   out = new QLineEdit(this);
+  out->setAlignment(Qt::AlignRight);
   out->setWindowFlags(Qt::Popup);
   out->installEventFilter(this);
 }
@@ -200,11 +202,11 @@ void DragBox::showPopup() {
 }
 
 void DragBox::updateText() {
-  out->setText(QString::number(value()));
+  out->setText(QString::number(value(), 'f', precision));
 }
 
-LinearDragBox::LinearDragBox(QWidget* parent, double min, double max, int steps):
-    DragBox(steps, parent),
+LinearDragBox::LinearDragBox(QWidget* parent, double min, double max, int steps, int precision):
+    DragBox(steps, parent, precision),
     min(min),
     max(max) {
   setValue(min);
@@ -227,7 +229,7 @@ double LinearDragBox::value() {
 }
 
 VolumeDragBox::VolumeDragBox(QWidget* parent):
-    DragBox(100, parent) {
+    DragBox(100, parent, 1) {
   init_vol_map(map);
   setValue(87);
 }
