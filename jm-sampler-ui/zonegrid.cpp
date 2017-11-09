@@ -195,7 +195,7 @@ ZoneTableView::ZoneTableView(QAbstractItemModel* model) {
   setColumnWidth(jm::ZONE_DECAY, 65);
   setColumnWidth(jm::ZONE_SUSTAIN, 65);
   setColumnWidth(jm::ZONE_RELEASE, 65);
-  setColumnWidth(jm::ZONE_LONG_TAIL, 65);
+  setColumnWidth(jm::ZONE_LONG_TAIL, 30);
 }
 
 bool ZoneTableView::eventFilter(QObject *obj, QEvent *event) {
@@ -658,7 +658,7 @@ QVariant ZoneTableModel::headerData(int section, Qt::Orientation orientation, in
         case jm::ZONE_RELEASE:
           return "Release";
         case jm::ZONE_LONG_TAIL:
-          return "20s Tail";
+          return "20s";
         case jm::ZONE_PATH:
           return "Path";
         default:
