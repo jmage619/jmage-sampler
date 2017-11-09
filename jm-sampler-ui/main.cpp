@@ -13,6 +13,8 @@ int main(int argc, char *argv[]) {
   else
     sampler.setWindowTitle("JMAGE Sampler");
 
+  sampler.resize(660, 430);
+
   sampler.show();
   return app.exec();
 }

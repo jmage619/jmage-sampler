@@ -43,6 +43,7 @@ class ZoneTableView: public SingleClickView {
     void scrollTo(const QModelIndex& index, ScrollHint hint = EnsureVisible);
   public:
     ZoneTableView(QAbstractItemModel* model);
+    bool eventFilter(QObject *obj, QEvent *event);
     void setSelectionMode(QAbstractItemView::SelectionMode mode);
   private slots:
     void updateSectionWidth(int logicalIndex, int oldSize, int newSize);

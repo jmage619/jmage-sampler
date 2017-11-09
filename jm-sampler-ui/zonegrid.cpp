@@ -106,6 +106,9 @@ void ZoneTableView::updateFrozenTableGeometry() {
   frozen_view->setGeometry(frameWidth(), frameWidth(),
     verticalHeader()->width() + columnWidth(0) + columnWidth(1) + columnWidth(2) + columnWidth(3),
     viewport()->height()+horizontalHeader()->height());
+
+  //std::cout << "     hor w: " << horizontalHeader()->width() << ";      hor x: " << horizontalHeader()->x() << std::endl;
+  //std::cout << "froz hor w: " << frozen_view->horizontalHeader()->width() << "; froz hor x: " << frozen_view->horizontalHeader()->x() << std::endl;
 }
 
 void ZoneTableView::init() {
@@ -166,6 +169,40 @@ ZoneTableView::ZoneTableView(QAbstractItemModel* model) {
     verticalScrollBar(), &QAbstractSlider::setValue);
   connect(verticalScrollBar(), &QAbstractSlider::valueChanged,
     frozen_view->verticalScrollBar(), &QAbstractSlider::setValue);
+
+  // horizontal header moves right when zones are present and back to 0 when empty
+  // trigger a updateFrozenTableGeometry when this happens
+  horizontalHeader()->installEventFilter(this);
+
+  setColumnWidth(jm::ZONE_AMP, 65);
+  setColumnWidth(jm::ZONE_MUTE, 30);
+  setColumnWidth(jm::ZONE_SOLO, 30);
+  setColumnWidth(jm::ZONE_ORIGIN, 55);
+  setColumnWidth(jm::ZONE_LOW_KEY, 55);
+  setColumnWidth(jm::ZONE_HIGH_KEY, 55);
+  setColumnWidth(jm::ZONE_LOW_VEL, 55);
+  setColumnWidth(jm::ZONE_HIGH_VEL, 55);
+  setColumnWidth(jm::ZONE_PITCH, 55);
+  setColumnWidth(jm::ZONE_START, 65);
+  setColumnWidth(jm::ZONE_LEFT, 65);
+  setColumnWidth(jm::ZONE_RIGHT, 65);
+  setColumnWidth(jm::ZONE_LOOP_MODE, 65);
+  setColumnWidth(jm::ZONE_CROSSFADE, 55);
+  setColumnWidth(jm::ZONE_GROUP, 65);
+  setColumnWidth(jm::ZONE_OFF_GROUP, 65);
+  setColumnWidth(jm::ZONE_ATTACK, 65);
+  setColumnWidth(jm::ZONE_HOLD, 65);
+  setColumnWidth(jm::ZONE_DECAY, 65);
+  setColumnWidth(jm::ZONE_SUSTAIN, 65);
+  setColumnWidth(jm::ZONE_RELEASE, 65);
+  setColumnWidth(jm::ZONE_LONG_TAIL, 65);
+}
+
+bool ZoneTableView::eventFilter(QObject *obj, QEvent *event) {
+  if (event->type() == QEvent::Move)
+    updateFrozenTableGeometry();
+
+  return QObject::eventFilter(obj, event);
 }
 
 void ZoneTableView::setSelectionMode(QAbstractItemView::SelectionMode mode) {
@@ -609,7 +646,7 @@ QVariant ZoneTableModel::headerData(int section, Qt::Orientation orientation, in
         case jm::ZONE_GROUP:
           return "Group";
         case jm::ZONE_OFF_GROUP:
-          return "Off Group";
+          return "Off Grp";
         case jm::ZONE_ATTACK:
           return "Attack";
         case jm::ZONE_HOLD:
