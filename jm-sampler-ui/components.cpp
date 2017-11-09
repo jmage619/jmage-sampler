@@ -283,7 +283,6 @@ NotePopup::NotePopup(QWidget* parent): QFrame(parent) {
 }
 
 void NotePopup::showPopup() {
-  menu->setFixedWidth(width());
 
   // line up height below cell
   // eventually figure out how to draw box in cur cell for visibility
