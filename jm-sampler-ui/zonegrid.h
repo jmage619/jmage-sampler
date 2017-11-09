@@ -20,21 +20,21 @@ enum roles {
 QString note_to_string(int note);
 int string_to_note(const QString& str);
 
-class SingleClickView: public QTableView {
+class MouseHandleView: public QTableView {
   Q_OBJECT
 
   protected:
     void mousePressEvent(QMouseEvent *event);
 
   public:
-    SingleClickView(QWidget* parent = Q_NULLPTR): QTableView(parent) {}
+    MouseHandleView(QWidget* parent = Q_NULLPTR): QTableView(parent) {}
 };
 
-class ZoneTableView: public SingleClickView {
+class ZoneTableView: public MouseHandleView {
   Q_OBJECT
 
   private:
-    SingleClickView* frozen_view;
+    MouseHandleView* frozen_view;
     void updateFrozenTableGeometry();
     void init();
   protected:

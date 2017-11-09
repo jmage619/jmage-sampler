@@ -80,18 +80,29 @@ int string_to_note(const QString& str) {
 
 /************
 *
-* SingleClickView
+* MouseHandleView
 *
 **/
 
-void SingleClickView::mousePressEvent(QMouseEvent *event) {
+void MouseHandleView::mousePressEvent(QMouseEvent *event) {
   if (event->button() == Qt::LeftButton) {
-      QModelIndex index = indexAt(event->pos());
-      if (index.isValid()) {
-        setCurrentIndex(index);
-        if (index.flags() & Qt::ItemIsEditable)
-          edit(index);
+    QModelIndex index = indexAt(event->pos());
+    if (index.isValid()) {
+      setCurrentIndex(index);
+      if (index.flags() & Qt::ItemIsEditable)
+        edit(index);
+    }
+  }
+  else if (event->button() == Qt::MidButton) {
+    QModelIndex index = indexAt(event->pos());
+    if (index.isValid()) {
+      switch (index.column()) {
+        case jm::ZONE_AMP:
+        case jm::ZONE_PITCH:
+          model()->setData(index, 0.0, Qt::EditRole);
+          break;
       }
+    }
   }
   QTableView::mousePressEvent(event);
 }
@@ -149,7 +160,7 @@ ZoneTableView::ZoneTableView(QAbstractItemModel* model) {
   setItemDelegateForColumn(jm::ZONE_LEFT, p3_delegate);
   setItemDelegateForColumn(jm::ZONE_RIGHT, p3_delegate);
 
-  frozen_view = new SingleClickView(this);
+  frozen_view = new MouseHandleView(this);
 
   init();
 
