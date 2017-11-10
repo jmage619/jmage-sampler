@@ -58,6 +58,7 @@ class HVolumeSlider: public QWidget {
     int index;
     HVolumeSlider(QWidget* parent = Q_NULLPTR);
     double value(){return map[index];}
+    bool eventFilter(QObject *obj, QEvent *event);
 
   public slots:
     void setValue(double val);

@@ -125,11 +125,25 @@ HVolumeSlider::HVolumeSlider(QWidget* parent):
   slider->setValue(index);
   h_layout->addWidget(slider, 0, Qt::AlignLeft);
 
+  slider->installEventFilter(this);
+
   updateText();
 
   setLayout(h_layout);
 
   connect(slider, &QSlider::sliderMoved, this, &HVolumeSlider::handleMove);
+}
+
+bool HVolumeSlider::eventFilter(QObject *obj, QEvent *event) {
+  if (event->type() == QEvent::MouseButtonPress) {
+    QMouseEvent* me = static_cast<QMouseEvent*>(event);
+    if (me->button() == Qt::MidButton) {
+      setValue(0.0);
+      return true;
+    }
+  }
+
+  return QObject::eventFilter(obj, event);
 }
 
 void HVolumeSlider::setValue(double val) {
