@@ -25,6 +25,7 @@ class MouseHandleView: public QTableView {
 
   protected:
     void mousePressEvent(QMouseEvent *event);
+    void wheelEvent(QWheelEvent *event);
 
   public:
     MouseHandleView(QWidget* parent = Q_NULLPTR): QTableView(parent) {}

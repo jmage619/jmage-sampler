@@ -13,6 +13,29 @@ class QFileDialog;
 void init_vol_map(double* map);
 int vol_map_find(const double* map, double val);
 
+class Control {
+  protected:
+    int steps;
+    int index;
+
+  public:
+    Control(int steps): steps(steps) {}
+    virtual void setValue(double val) = 0;
+    virtual double value() = 0;
+    void increase(int i);
+};
+
+class LinearControl: public Control {
+  private:
+    double min;
+    double max;
+
+  public:
+    LinearControl(double min = 0.0, double max = 100.0, int steps = 101);
+    void setValue(double val);
+    double value();
+};
+
 class HDoubleSlider: public QWidget {
   Q_OBJECT
 

@@ -50,6 +50,36 @@ int vol_map_find(const double* map, double val) {
   return index;
 }
 
+void Control::increase(int i) {
+  if (index + i > steps - 1)
+    index = steps - 1;
+  else if (index + i < 0)
+    index = 0;
+  else
+    index += i;
+}
+
+LinearControl::LinearControl(double min, double max, int steps):
+    Control(steps),
+    min(min),
+    max(max) {
+  setValue(min);
+}
+
+void LinearControl::setValue(double val) {
+  if (val < min)
+    index = 0;
+  else if (val > max)
+    index = steps - 1;
+  // 0.05 is epsilon to deal with truncation errors...might be too big?
+  else
+    index = (steps - 1) * (val - min) / (max - min) + 0.05;
+}
+
+double LinearControl::value() {
+  return (max - min) / (steps - 1) * index + min;
+}
+
 /************
 *
 * HDoubleSlider
