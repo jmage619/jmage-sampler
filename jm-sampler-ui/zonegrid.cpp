@@ -111,13 +111,21 @@ void MouseHandleView::wheelEvent(QWheelEvent *event) {
   QModelIndex index = indexAt(event->pos());
   if (index.isValid()) {
     switch (index.column()) {
-      case jm::ZONE_PITCH:
+      case jm::ZONE_AMP: {
+        VolumeControl vc;
+        vc.setValue(index.data().toDouble());
+        vc.increase(event->angleDelta().y() / 120);
+        model()->setData(index, vc.value(), Qt::EditRole);
+        break;
+      }
+      case jm::ZONE_PITCH: {
         LinearControl lc(-.5, .5);
         lc.setValue(index.data().toDouble());
         // mouse wheel clicks are 120 at a time
         lc.increase(event->angleDelta().y() / 120);
         model()->setData(index, lc.value(), Qt::EditRole);
         break;
+      }
     }
   }
 
