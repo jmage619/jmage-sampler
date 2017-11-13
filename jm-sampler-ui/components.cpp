@@ -5,6 +5,7 @@
 #include <cmath>
 
 #include "components.h"
+#include "mappings.h"
 
 void init_vol_map(double* map) {
   map[99] = 6.;
@@ -277,8 +278,7 @@ double LinearDragBox::value() {
 }
 
 VolumeDragBox::VolumeDragBox(QWidget* parent):
-    DragBox(100, parent, 1) {
-  init_vol_map(map);
+    DragBox(100, parent, 1), map(VOLUME_MAP) {
   setValue(87);
 }
 

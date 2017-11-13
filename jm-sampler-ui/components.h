@@ -133,7 +133,7 @@ class VolumeDragBox: public DragBox {
   Q_OBJECT
 
   private:
-    double map[100];
+    const double* map;
 
   public:
     VolumeDragBox(QWidget* parent = Q_NULLPTR);
