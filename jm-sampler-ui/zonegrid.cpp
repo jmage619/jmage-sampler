@@ -109,33 +109,54 @@ void MouseHandleView::mousePressEvent(QMouseEvent *event) {
 
 void MouseHandleView::wheelEvent(QWheelEvent *event) {
   QModelIndex index = indexAt(event->pos());
+
+  Control* cont = NULL;
+
   if (index.isValid()) {
     switch (index.column()) {
-      case jm::ZONE_AMP: {
-        VolumeControl vc;
-        vc.setValue(index.data().toDouble());
-        // mouse wheel clicks are 120 at a time
-        vc.increase(event->angleDelta().y() / 120);
-        model()->setData(index, vc.value(), Qt::EditRole);
+      case jm::ZONE_AMP:
+        cont = new VolumeControl;
         break;
-      }
-      case jm::ZONE_PITCH: {
-        LinearControl lc(-.5, .5);
-        lc.setValue(index.data().toDouble());
-        lc.increase(event->angleDelta().y() / 120);
-        model()->setData(index, lc.value(), Qt::EditRole);
+      case jm::ZONE_LOW_VEL:
+      case jm::ZONE_HIGH_VEL:
+        cont = new LinearControl(0, 127, 128);
         break;
-      }
+      case jm::ZONE_PITCH:
+        cont = new LinearControl(-.5, .5);
+        break;
       case jm::ZONE_START:
       case jm::ZONE_LEFT:
-      case jm::ZONE_RIGHT: {
-        LinearControl lc(0, index.data(MAX_ROLE).toDouble());
-        lc.setValue(index.data().toDouble());
-        lc.increase(event->angleDelta().y() / 120);
-        model()->setData(index, lc.value(), Qt::EditRole);
+      case jm::ZONE_RIGHT:
+        cont = new LinearControl(0, index.data(MAX_ROLE).toDouble());
+        break;
+      case jm::ZONE_CROSSFADE:
+        cont = new LinearControl(0, 1000);
+        break;
+      case jm::ZONE_ATTACK:
+      case jm::ZONE_HOLD:
+        cont = new LinearControl(0, 2);
+        break;
+      case jm::ZONE_DECAY:
+      case jm::ZONE_RELEASE: {
+        QModelIndex i = model()->index(index.row(), jm::ZONE_LONG_TAIL);
+        if (i.data(Qt::CheckStateRole).toInt() == Qt::Checked)
+          cont = new LinearControl(0, 20);
+        else
+          cont = new LinearControl(0, 2);
         break;
       }
+      case jm::ZONE_SUSTAIN:
+        cont = new LinearControl(0, 1);
+        break;
     }
+  }
+
+  if (cont != NULL) {
+    cont->setValue(index.data().toDouble());
+    // mouse wheel clicks are 120 at a time
+    cont->increase(event->angleDelta().y() / 120);
+    model()->setData(index, cont->value(), Qt::EditRole);
+    delete cont;
   }
 
   event->accept();

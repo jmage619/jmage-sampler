@@ -45,6 +45,7 @@ class Control {
 
   public:
     Control(int steps): steps(steps) {}
+    virtual ~Control(){}
     virtual void setValue(double val) = 0;
     virtual double value() = 0;
     void increase(int i);
