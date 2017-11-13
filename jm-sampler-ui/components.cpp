@@ -7,31 +7,6 @@
 #include "components.h"
 #include "mappings.h"
 
-void init_vol_map(double* map) {
-  map[99] = 6.;
-
-  // top portion of curve is exponential
-  for (int i = 98; i >= 17; --i) {
-    map[i] = map[i + 1] - 0.5;
-  }
-
-  // below -35db it is linear; extrapolate from prev 2 vals
-  double y1 = pow(10., map[17] / 20.);
-  double y2 = pow(10., map[18] / 20.);
-
-  double del = y2 - y1;
-
-  double next_factor = y1 - del;
-
-  for (int i = 16; i >=1; --i) {
-    map[i] = 20 * log10(next_factor);
-    next_factor -= del;
-  }
-
-  // call -144db "zero"
-  map[0] = -144.;
-}
-
 int vol_map_find(const double* map, double val) {
   int index;
   if (val < map[0])
@@ -139,9 +114,7 @@ void HVolumeSlider::handleMove(int i) {
 }
 
 HVolumeSlider::HVolumeSlider(QWidget* parent):
-    QWidget(parent), index(87) {
-
-  init_vol_map(map);
+    QWidget(parent), map(VOLUME_MAP), index(87) {
 
   QHBoxLayout* h_layout = new QHBoxLayout;
   out = new QLineEdit;

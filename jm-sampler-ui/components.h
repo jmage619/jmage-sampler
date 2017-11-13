@@ -10,7 +10,6 @@ class QAction;
 class QMenu;
 class QFileDialog;
 
-void init_vol_map(double* map);
 int vol_map_find(const double* map, double val);
 
 class Control {
@@ -65,7 +64,7 @@ class HVolumeSlider: public QWidget {
   Q_OBJECT
 
   private:
-    double map[100];
+    const double* map;
 
     QLineEdit* out;
     QSlider* slider;
