@@ -12,6 +12,32 @@ class QFileDialog;
 
 int vol_map_find(const double* map, double val);
 
+class HVolumeSlider: public QWidget {
+  Q_OBJECT
+
+  private:
+    const double* map;
+
+    QLineEdit* out;
+    QSlider* slider;
+    void updateText();
+
+  signals:
+    void sliderMoved(double val);
+
+  private slots:
+    void handleMove(int val);
+
+  public:
+    int index;
+    HVolumeSlider(QWidget* parent = Q_NULLPTR);
+    double value(){return map[index];}
+    bool eventFilter(QObject *obj, QEvent *event);
+
+  public slots:
+    void setValue(double val);
+};
+
 class Control {
   protected:
     int steps;
@@ -43,57 +69,6 @@ class VolumeControl: public Control {
     VolumeControl();
     void setValue(double val) {index = vol_map_find(map, val);}
     double value(){return map[index];}
-};
-
-class HDoubleSlider: public QWidget {
-  Q_OBJECT
-
-  private:
-    double min;
-    double max;
-    QLineEdit* out;
-    QSlider* slider;
-
-    double indexToVal(int i) {return (max - min) / slider->maximum() * i + min;}
-
-  signals:
-    void sliderMoved(double val);
-
-  private slots:
-    void handleMove(int val);
-
-  public:
-    HDoubleSlider(QWidget* parent = Q_NULLPTR, double min = 0.0, double max = 100.0, int steps = 101);
-    double value(){return indexToVal(slider->value());}
-
-  public slots:
-    void setValue(double val);
-};
-
-class HVolumeSlider: public QWidget {
-  Q_OBJECT
-
-  private:
-    const double* map;
-
-    QLineEdit* out;
-    QSlider* slider;
-    void updateText();
-
-  signals:
-    void sliderMoved(double val);
-
-  private slots:
-    void handleMove(int val);
-
-  public:
-    int index;
-    HVolumeSlider(QWidget* parent = Q_NULLPTR);
-    double value(){return map[index];}
-    bool eventFilter(QObject *obj, QEvent *event);
-
-  public slots:
-    void setValue(double val);
 };
 
 class DragBox: public QFrame {
