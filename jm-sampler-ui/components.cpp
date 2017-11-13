@@ -72,8 +72,28 @@ bool HVolumeSlider::eventFilter(QObject *obj, QEvent *event) {
     QMouseEvent* me = static_cast<QMouseEvent*>(event);
     if (me->button() == Qt::MidButton) {
       setValue(0.0);
+      emit sliderMoved(map[index]);
       return true;
     }
+  }
+  if (event->type() == QEvent::Wheel) {
+    QWheelEvent* we = static_cast<QWheelEvent*>(event);
+    // mouse wheel clicks are 120 at a time
+    int delta = we->angleDelta().y() / 120;
+
+    if (index + delta > 99)
+      index = 99;
+    else if (index + delta < 0)
+      index = 0;
+    else
+      index += delta;
+
+    slider->setValue(index);
+    updateText();
+    emit sliderMoved(map[index]);
+
+    we->accept();
+    return true;
   }
 
   return QObject::eventFilter(obj, event);
