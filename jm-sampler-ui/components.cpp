@@ -56,6 +56,12 @@ double LinearControl::value() {
   return (max - min) / (steps - 1) * index + min;
 }
 
+VolumeControl::VolumeControl():
+    Control(100),
+    map(VOLUME_MAP) {
+  setValue(87);
+}
+
 /************
 *
 * HDoubleSlider
@@ -253,11 +259,6 @@ double LinearDragBox::value() {
 VolumeDragBox::VolumeDragBox(QWidget* parent):
     DragBox(100, parent, 1), map(VOLUME_MAP) {
   setValue(87);
-}
-
-void VolumeDragBox::setValue(double val) {
-  index = vol_map_find(map, val);
-  updateText();
 }
 
 /************

@@ -35,6 +35,16 @@ class LinearControl: public Control {
     double value();
 };
 
+class VolumeControl: public Control {
+  private:
+    const double* map;
+
+  public:
+    VolumeControl();
+    void setValue(double val) {index = vol_map_find(map, val);}
+    double value(){return map[index];}
+};
+
 class HDoubleSlider: public QWidget {
   Q_OBJECT
 
@@ -136,7 +146,7 @@ class VolumeDragBox: public DragBox {
 
   public:
     VolumeDragBox(QWidget* parent = Q_NULLPTR);
-    void setValue(double val);
+    void setValue(double val) {index = vol_map_find(map, val);updateText();}
     double value(){return map[index];}
 };
 
