@@ -727,7 +727,7 @@ QVariant ZoneTableModel::headerData(int section, Qt::Orientation orientation, in
         case jm::ZONE_LONG_TAIL:
           return "20s";
         case jm::ZONE_PATH:
-          return "Path";
+          return "File";
         default:
           return section;
       }
