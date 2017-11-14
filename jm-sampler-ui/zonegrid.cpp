@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cmath>
 #include <QtWidgets>
+#include <libgen.h>
 
 #include <lib/zone.h>
 #include "components.h"
@@ -785,6 +786,14 @@ QVariant ZoneTableModel::data(const QModelIndex &index, int role) const {
         break;
       }
     }
+  }
+  else if (role == Qt::ToolTipRole && index.column() == jm::ZONE_PATH) {
+    return zones[index.row()].path;
+  }
+  else if (role == Qt::DisplayRole && index.column() == jm::ZONE_PATH) {
+    char tmp[MAX_PATH];
+    strcpy(tmp, zones[index.row()].path);
+    return basename(tmp);
   }
   else if (role == Qt::DisplayRole || role == Qt::EditRole) {
     switch (index.column()) {
