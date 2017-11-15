@@ -335,7 +335,7 @@ WavPopup::WavPopup(QWidget* parent): QFrame(parent) {
   this->setFrameStyle(QFrame::Box | QFrame::Plain);
   this->setLineWidth(2);
 
-  file_dialog = new QFileDialog(this, tr("Open a FUCKING WAV already!!"));
+  file_dialog = new QFileDialog(this, tr("Open a fucking WAV already!!"));
   file_dialog->setModal(true);
   file_dialog->setFileMode(QFileDialog::ExistingFile);
   file_dialog->setNameFilter(tr("Sound Files (*.wav *.aiff *.flac)"));

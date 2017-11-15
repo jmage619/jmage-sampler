@@ -205,7 +205,7 @@ void SamplerUI::checkAndUpdateChan(int index) {
 }
 
 void SamplerUI::sendAddZone() {
-  QString path = QFileDialog::getOpenFileName(this, tr("Open a FUCKING WAV already!!"), "", tr("Sound Files (*.wav *.aiff *.flac)"));
+  QString path = QFileDialog::getOpenFileName(this, tr("Open a fucking WAV already!!"), "", tr("Sound Files (*.wav *.aiff *.flac)"));
   if (!path.isNull()) {
     std::cout << "add_zone:-1," << path.toStdString() << std::endl;
     setWindowModified(true);
@@ -213,7 +213,7 @@ void SamplerUI::sendAddZone() {
 }
 
 void SamplerUI::sendLoadPatch() {
-  QString path = QFileDialog::getOpenFileName(this, tr("Open a FUCKING patch already!!"), "", tr("Patch Files (*.sfz *.jmz);;SFZ (*.sfz);;JMZ (*.jmz)"));
+  QString path = QFileDialog::getOpenFileName(this, tr("Open a fucking PATCH already!!"), "", tr("Patch Files (*.sfz *.jmz);;SFZ (*.sfz);;JMZ (*.jmz)"));
   if (!path.isNull()) {
     std::cout << "load_patch:" << path.toStdString() << std::endl;
     setWindowModified(false);
@@ -221,7 +221,7 @@ void SamplerUI::sendLoadPatch() {
 }
 
 void SamplerUI::sendSavePatch() {
-  QString path = QFileDialog::getSaveFileName(this, tr("Save a FUCKING patch already!!"), "", tr("Patch Files (*.sfz *.jmz);;SFZ (*.sfz);;JMZ (*.jmz)"));
+  QString path = QFileDialog::getSaveFileName(this, tr("Save a fucking PATCH already!!"), "", tr("Patch Files (*.sfz *.jmz);;SFZ (*.sfz);;JMZ (*.jmz)"));
   if (!path.isNull()) {
     std::cout << "save_patch:" << path.toStdString() << std::endl;
     setWindowModified(false);

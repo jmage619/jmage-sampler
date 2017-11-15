@@ -341,7 +341,7 @@ void ZoneTableView::handleVertHeaderClick(const QPoint& pos) {
       emit userUpdate();
     }
     else if (action->text() == "new zone before") {
-      QString path = QFileDialog::getOpenFileName(this, tr("Open a FUCKING WAV already!!"), "", tr("Sound Files (*.wav *.aiff *.flac)"));
+      QString path = QFileDialog::getOpenFileName(this, tr("Open a fucking WAV already!!"), "", tr("Sound Files (*.wav *.aiff *.flac)"));
       if (!path.isNull()) {
         std::cout << "add_zone:" << verticalHeader()->logicalIndexAt(pos) << "," << path.toStdString() << std::endl;
         emit userUpdate();
