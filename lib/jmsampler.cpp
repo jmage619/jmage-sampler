@@ -4,6 +4,10 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstdio>
+#include <iostream>
+using std::cerr;
+using std::endl;
+
 #include <stdexcept> 
 
 #include <pthread.h>
@@ -385,10 +389,10 @@ void JMSampler::handle_note_on(const unsigned char* midi_msg, size_t nframes, si
   for (it = zones.begin(); it != zones.end(); ++it) {
     if (jm::zone_contains(&*it, midi_msg[1], midi_msg[2]) && 
         (it->solo || (!solo_count && !it->mute))) {
-      fprintf(stderr, "sg num: %li\n", sound_gens.size());
+      //cerr << "sg num: " << sound_gens.size() << endl;
       // oops we hit polyphony, remove oldest sound gen in the queue to make room
       if (sound_gens.size() >= POLYPHONY) {
-        fprintf(stderr, "hit poly lim!\n");
+        //cerr << "hit poly lim!" << endl;
         sound_gens.get_tail_ptr()->sg->release_resources();
         sound_gens.remove_last();
       }
@@ -406,20 +410,20 @@ void JMSampler::handle_note_on(const unsigned char* midi_msg, size_t nframes, si
       Playhead* ph = playhead_pool.pop();
       ph->init(*it, midi_msg[1]);
       ag->init(ph, *it, midi_msg[1], midi_msg[2]);
-      fprintf(stderr, "pre process start\n");
+      //cerr << "pre process start" << endl;
       ag->pre_process(nframes - curframe);
-      fprintf(stderr, "pre process finish\n");
+      //cerr << "pre process finish" << endl;
 
       // add sound gen to queue
       sound_gens.add(ag);
-      fprintf(stderr, "event: channel: %i; note on;  note: %i; vel: %i\n", midi_msg[0] & 0x0F, midi_msg[1], midi_msg[2]);
+      //cerr << "event: channel: " << (midi_msg[0] & 0x0F) << "; note on;  note: " << midi_msg[1] << "; vel: " << midi_msg[2] << endl;
     }
   }
   pthread_mutex_unlock(&zone_lock);
 }
 
 void JMSampler::handle_note_off(const unsigned char* midi_msg) {
-  fprintf(stderr, "event: note off; note: %i\n", midi_msg[1]);
+  //cerr << "event: note off; note: " << midi_msg[1] << endl;
   // find all sound gens assigned to this pitch
   for (sg_list_el* sg_el = sound_gens.get_head_ptr(); sg_el != NULL; sg_el = sg_el->next) {
     if (sg_el->sg->pitch == midi_msg[1]) {
@@ -441,7 +445,7 @@ void JMSampler::handle_sustain(const unsigned char* midi_msg) {
   // >= 64 turns on sustain
   if (midi_msg[2] >= 64) {
     sustain_on = true;
-    fprintf(stderr, "sustain on\n");
+    //cerr << "sustain on" << endl;
   }
   // < 64 turns ustain off
   else {
@@ -452,7 +456,7 @@ void JMSampler::handle_sustain(const unsigned char* midi_msg) {
     }
 
     sustain_on = false;
-    fprintf(stderr, "sustain off\n");
+    //cerr << "sustain off" << endl;
   }
 }
 

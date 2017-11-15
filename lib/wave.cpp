@@ -1,6 +1,9 @@
 #include <stdexcept>
 #include <sstream>
-#include <cstdio>
+#include <iostream>
+using std::cerr;
+using std::endl;
+
 #include <sndfile.h>
 
 #include "wave.h"
@@ -29,7 +32,7 @@ jm::wave jm::parse_wave(const char* path) {
 
   SF_INSTRUMENT inst;
   if (sf_command(sf_wav, SFC_GET_INSTRUMENT, &inst, sizeof(inst)) == SF_FALSE) {
-    fprintf(stderr, "wav %s: no instrument info found, assuming 0 loop points\n", path);
+    //cerr << "wav " << path << ": no instrument info found, assuming 0 loop points" << endl;
     sf_close(sf_wav);
     return wav;
   } 

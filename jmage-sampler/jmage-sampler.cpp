@@ -1,4 +1,7 @@
 #include <iostream>
+using std::cerr;
+using std::endl;
+
 #include <vector>
 #include <map>
 
@@ -100,7 +103,7 @@ int main() {
   // init jack
   jack_status_t status;
   if ((client = jack_client_open("jmage-sampler", JackNullOption, &status)) == NULL) {
-    std::cerr << "failed to open jack client" << std::endl;
+    cerr << "failed to open jack client" << endl;
     return 1;
   }
 
@@ -121,7 +124,7 @@ int main() {
     jack_port_unregister(client, sampler->output_port2);
     jack_client_close(client);
     delete sampler;
-    std::cerr <<"cannot activate jack client" << std::endl;
+    cerr <<"cannot activate jack client" << endl;
     return 1;
   }
   
@@ -165,7 +168,7 @@ int main() {
   while (fgets(buf, 256, fin) != NULL) {
     // kill newline char
     buf[strlen(buf) - 1] = '\0';
-    std::cout << "UI: " << buf << std::endl;
+    //cerr << "UI: " << buf << endl;
     if (!strncmp(buf, "update_vol:", 11)) {
       jm_msg msg;
       msg.type = MT_VOLUME;
