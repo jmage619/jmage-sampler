@@ -41,6 +41,7 @@ class SamplerUI: public QWidget {
     SamplerUI();
 
   public slots:
+    void handleUserUpdate();
     void checkAndUpdateVol(double val);
     void checkAndUpdateChan(int index);
     void sendAddZone();

@@ -157,6 +157,8 @@ SamplerUI::SamplerUI() {
   view->setSelectionMode(QAbstractItemView::NoSelection);
 
   v_layout->addWidget(view);
+
+  connect(view, &MouseHandleView::userUpdate, this, &SamplerUI::handleUserUpdate);
   QPushButton* add_button = new QPushButton("+");
   connect(add_button, &QAbstractButton::clicked, this, &SamplerUI::sendAddZone);
   v_layout->addWidget(add_button, 0, Qt::AlignLeft);
@@ -176,6 +178,10 @@ SamplerUI::SamplerUI() {
   connect(in_thread, &QThread::finished, this, &QWidget::close);
   connect(in_thread, &QThread::finished, &QApplication::quit);
   in_thread->start();
+}
+
+void SamplerUI::handleUserUpdate() {
+  setWindowModified(true);
 }
 
 void SamplerUI::checkAndUpdateVol(double val) {
@@ -198,14 +204,18 @@ void SamplerUI::sendAddZone() {
 
 void SamplerUI::sendLoadPatch() {
   QString path = QFileDialog::getOpenFileName(this, tr("Open a FUCKING patch already!!"), "", tr("Patch Files (*.sfz *.jmz);;SFZ (*.sfz);;JMZ (*.jmz)"));
-  if (!path.isNull())
+  if (!path.isNull()) {
     std::cout << "load_patch:" << path.toStdString() << std::endl;
+    setWindowModified(false);
+  }
 }
 
 void SamplerUI::sendSavePatch() {
   QString path = QFileDialog::getSaveFileName(this, tr("Save a FUCKING patch already!!"), "", tr("Patch Files (*.sfz *.jmz);;SFZ (*.sfz);;JMZ (*.jmz)"));
-  if (!path.isNull())
+  if (!path.isNull()) {
     std::cout << "save_patch:" << path.toStdString() << std::endl;
+    setWindowModified(false);
+  }
 }
 
 void SamplerUI::sendRefresh() {

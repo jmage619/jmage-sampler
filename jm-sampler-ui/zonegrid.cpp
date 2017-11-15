@@ -101,6 +101,7 @@ void MouseHandleView::mousePressEvent(QMouseEvent *event) {
         case jm::ZONE_AMP:
         case jm::ZONE_PITCH:
           model()->setData(index, 0.0, Qt::EditRole);
+          emit userUpdate();
           break;
       }
     }
@@ -158,6 +159,7 @@ void MouseHandleView::wheelEvent(QWheelEvent *event) {
     cont->increase(event->angleDelta().y() / 120);
     model()->setData(index, cont->value(), Qt::EditRole);
     delete cont;
+    emit userUpdate();
   }
 
   event->accept();
@@ -181,6 +183,7 @@ void ZoneTableView::updateFrozenTableGeometry() {
 void ZoneTableView::init() {
   frozen_view->setModel(model());
   ZoneTableDelegate* frozenDelegate = new ZoneTableDelegate(frozen_view, 1);
+  connect(frozenDelegate, &QAbstractItemDelegate::commitData, this, &MouseHandleView::userUpdate);
   frozen_view->setItemDelegate(frozenDelegate);
   frozen_view->setFrameStyle(QFrame::NoFrame);
   frozen_view->setFocusPolicy(Qt::NoFocus);
@@ -216,9 +219,14 @@ ZoneTableView::ZoneTableView(QAbstractItemModel* model) {
   setItemDelegateForColumn(jm::ZONE_LEFT, p3_delegate);
   setItemDelegateForColumn(jm::ZONE_RIGHT, p3_delegate);
 
+  connect(delegate, &QAbstractItemDelegate::commitData, this, &MouseHandleView::userUpdate);
+  connect(p3_delegate, &QAbstractItemDelegate::commitData, this, &MouseHandleView::userUpdate);
+
   frozen_view = new MouseHandleView(this);
 
   init();
+
+  connect(frozen_view, &MouseHandleView::userUpdate, this, &MouseHandleView::userUpdate);
 
   frozen_view->verticalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
 
@@ -328,15 +336,20 @@ void ZoneTableView::handleVertHeaderClick(const QPoint& pos) {
   menu.addAction(tr("duplicate"));
   QAction* action = menu.exec(verticalHeader()->mapToGlobal(pos));
   if (action != 0) {
-    if (action->text() == "delete")
+    if (action->text() == "delete") {
       std::cout << "remove_zone:" << verticalHeader()->logicalIndexAt(pos) << std::endl;
+      emit userUpdate();
+    }
     else if (action->text() == "new zone before") {
       QString path = QFileDialog::getOpenFileName(this, tr("Open a FUCKING WAV already!!"), "", tr("Sound Files (*.wav *.aiff *.flac)"));
-      if (!path.isNull())
+      if (!path.isNull()) {
         std::cout << "add_zone:" << verticalHeader()->logicalIndexAt(pos) << "," << path.toStdString() << std::endl;
+        emit userUpdate();
+      }
     }
     else if (action->text() == "duplicate") {
       std::cout << "dup_zone:" << verticalHeader()->logicalIndexAt(pos) << std::endl;
+      emit userUpdate();
     }
   }
 }
