@@ -92,11 +92,11 @@ static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const c
 
     if (opt[index].key == uris.bufsize_maxBlockLength) {
       max_block_len = *((int*) opt[index].value);
-      fprintf(stderr, "SAMPLER max block len: %i\n", max_block_len);
+      //fprintf(stderr, "SAMPLER max block len: %i\n", max_block_len);
     }
     else if (opt[index].key == uris.bufsize_nominalBlockLength) {
       nominal_block_len = *((int*) opt[index].value);
-      fprintf(stderr, "SAMPLER nominal block len: %i\n", nominal_block_len);
+      //fprintf(stderr, "SAMPLER nominal block len: %i\n", nominal_block_len);
     }
     ++index;    
   }
@@ -118,7 +118,7 @@ static LV2_Handle instantiate(const LV2_Descriptor*, double sample_rate, const c
   sampler->map = map;
   lv2_atom_forge_init(&sampler->forge, sampler->map);
 
-  fprintf(stderr, "sampler instantiated.\n");
+  //fprintf(stderr, "sampler instantiated.\n");
   return sampler;
 }
 
@@ -172,7 +172,7 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
     //fprintf(stderr, "SAMPLER: work completed; parsed: %s\n", path);
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
-    fprintf(stderr, "SAMPLER: work loading patch: %s\n", sampler->patch_path);
+    //fprintf(stderr, "SAMPLER: work loading patch: %s\n", sampler->patch_path);
     sampler->load_patch(sampler->patch_path);
 
     respond(handle, sizeof(worker_msg), msg); 
@@ -204,7 +204,7 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
     sampler->update_zone(msg->i, jm::ZONE_PATH, sampler->wav_path);
   }
   else if (msg->type == WORKER_LOAD_PATCH) {
-    fprintf(stderr, "SAMPLER load patch response!! num regions: %i\n", (int) sampler->patch.regions.size());
+    //fprintf(stderr, "SAMPLER load patch response!! num regions: %i\n", (int) sampler->patch.regions.size());
 
     sampler->send_clear_zones();
 
@@ -376,8 +376,8 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
             else if (lv2_midi_message_type(msg) == LV2_MIDI_MSG_CONTROLLER && msg[1] == LV2_MIDI_CTL_SUSTAIN)
               sampler->handle_sustain(msg);
             // just print messages we don't currently handle
-            else if (lv2_midi_message_type(msg) != LV2_MIDI_MSG_ACTIVE_SENSE)
-              fprintf(stderr, "event: 0x%x\n", msg[0]);
+            //else if (lv2_midi_message_type(msg) != LV2_MIDI_MSG_ACTIVE_SENSE)
+            //  fprintf(stderr, "event: 0x%x\n", msg[0]);
           }
         }
         // get next midi event or break if none left

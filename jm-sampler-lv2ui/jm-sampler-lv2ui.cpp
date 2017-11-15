@@ -9,6 +9,9 @@
 #include <cmath>
 
 #include <iostream>
+using std::cerr;
+using std::endl;
+
 #include <string>
 #include <vector>
 
@@ -48,13 +51,14 @@ struct jm_sampler_ui {
   float channel;
 };
 
-static std::string get_time_str() {
+/*static std::string get_time_str() {
   char time_str[9];
   time_t cur_time = time(NULL);
   struct tm* loc_time = localtime(&cur_time);
   strftime(time_str, 9, "%H:%M:%S", loc_time);
   return time_str;
 }
+*/
 
 // like strcpy but can destructively overlap
 static void strmov(char* dest, char* source) {
@@ -143,12 +147,12 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
       opt = (LV2_Options_Option*)features[i]->data;
   }
   if (!map) {
-    std::cerr << "Host does not support urid:map." << std::endl;
+    //cerr << "Host does not support urid:map." << endl;
     delete ui;
     return NULL;
   }
   /*if (!unmap) {
-    fprintf(stderr, "Host does not support urid:unmap.\n");
+    cerr << "Host does not support urid:unmap." << endl;
     free(ui);
     return NULL;
   }
@@ -165,9 +169,9 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
       if (opt[index].key == 0)
         break;
 
-      //fprintf(stderr, "UI host option: %s\n", unmap->unmap(unmap->handle, opt[index].key));
+      //cerr << "UI host option: " << unmap->unmap(unmap->handle, opt[index].key) << endl;
       if (opt[index].key == ui->uris.ui_windowTitle) {
-        fprintf(stderr, "UI window title: %s\n", (const char*) opt[index].value);
+        //cerr << "UI window title: " <<  (const char*) opt[index].value << endl;
         strcpy(ui->title, (const char*) opt[index].value);
         break;
       }
@@ -188,7 +192,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
   ui->volume = 0.f;
   ui->channel = 0;
 
-  std::cerr << get_time_str() << " UI: ui instantiated" << std::endl;
+  //cerr << get_time_str() << " UI: ui instantiated" << endl;
 
   return ui;
 }
@@ -196,7 +200,7 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
 static void cleanup(LV2UI_Handle handle) {
   jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
 
-  std::cerr << "UI: " << get_time_str() <<  " cleanup called" << std::endl;
+  //cerr << "UI: " << get_time_str() <<  " cleanup called" << endl;
 
   delete ui;
 }
@@ -232,7 +236,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
 
       ui->zones = reinterpret_cast<const std::vector<jm::zone>*>(((LV2_Atom_Long*) params)->body);
-      std::cerr << "UI: received zone pointer!! " << ui->zones << std::endl;
+      //cerr << "UI: received zone pointer!! " << ui->zones << endl;
       int num_zones = ui->zones->size();
       for (int i = 0; i < num_zones; ++i) {
         send_add_zone(ui, i);
@@ -244,7 +248,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
 
       int sample_rate = ((LV2_Atom_Int*) params)->body;
-      std::cerr << "UI: received sample rate!! " << sample_rate << std::endl;
+      //cerr << "UI: received sample rate!! " << sample_rate << endl;
       fprintf(ui->fout, "set_sample_rate:%i\n", sample_rate);
       fflush(ui->fout);
     }
@@ -255,7 +259,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
 
       // index
       int i = ((LV2_Atom_Int*) params)->body;
-      fprintf(stderr, "UI addZone received!! %i\n", i);
+      //cerr << "UI addZone received!! " << i << endl;
 
       send_add_zone(ui, i);
     }
@@ -266,7 +270,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
 
       // index
       int i = ((LV2_Atom_Int*) params)->body;
-      fprintf(stderr, "UI updateWave received!! %i\n", i);
+      //cerr << "UI updateWave received!! " << i << endl;
 
       send_update_wave(ui, i);
     }
@@ -276,12 +280,12 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
       lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
 
       int index = ((LV2_Atom_Int*) params)->body;
-      std::cerr << "UI: received remove zone!! " << index << std::endl;
+      //cerr << "UI: received remove zone!! " << index << endl;
       fprintf(ui->fout, "remove_zone:%i\n", index);
       fflush(ui->fout);
     }
     else if (obj->body.otype == ui->uris.jm_clearZones) {
-      std::cerr << "UI: received clear zones!!" << std::endl;
+      //cerr << "UI: received clear zones!!" << endl;
       fprintf(ui->fout, "clear_zones\n");
       fflush(ui->fout);
     }
@@ -310,7 +314,7 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
 
 static int ui_show(LV2UI_Handle handle) {
   jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
-  std::cerr << "UI: " << get_time_str() <<  " show called" << std::endl;
+  //cerr << "UI: " << get_time_str() <<  " show called" << endl;
   if (ui->spawned)
     return 0;
 
@@ -373,21 +377,21 @@ static int ui_show(LV2UI_Handle handle) {
 
   ui->spawned = true;
 
-  std::cerr << get_time_str() << " UI: show completed" << std::endl;
+  //cerr << get_time_str() << " UI: show completed" << endl;
   return 0;
 }
 
 static int ui_hide(LV2UI_Handle handle) {
   jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
 
-  std::cerr << "UI: " << get_time_str() <<  " hide called" << std::endl;
+  //cerr << "UI: " << get_time_str() <<  " hide called" << endl;
 
   fclose(ui->fout);
   waitpid(ui->pid, NULL, 0);
 
   ui->spawned = false;
 
-  std::cerr << "UI: " << get_time_str() <<  " ui closed" << std::endl;
+  //cerr << "UI: " << get_time_str() <<  " ui closed" << endl;
 
   return 0;
 }
@@ -395,7 +399,7 @@ static int ui_hide(LV2UI_Handle handle) {
 static int ui_idle(LV2UI_Handle handle) {
   jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
 
-  //std::cerr << "UI: " << get_time_str() <<  " idle called" << std::endl;
+  //cerr << "UI: " << get_time_str() <<  " idle called" << endl;
   int num_read;
   while ((num_read = read(ui->fdin, ui->buf + ui->tot_read, BUF_SIZE - 1 - ui->tot_read)) > 0) {
     // add null char
@@ -415,13 +419,13 @@ static int ui_idle(LV2UI_Handle handle) {
       else {
         uint8_t buf[128];
         lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
-        //fprintf(stderr, "UI: ui stdout message: %s\n", ui->buf);
+        //cerr << "UI: ui stdout message: " << ui->buf << endl;
         LV2_Atom* obj;
         if (!strncmp(ui->buf, "update_zone:", 12)) {
           obj = handle_update_zone(ui, ui->buf + 12);
         }
         else if (!strncmp(ui->buf, "remove_zone:", 12)) {
-          //fprintf(stderr, "UI: ui remove zone: %s\n", ui->buf + 12);
+          //cerr << "UI: ui remove zone: " << ui->buf + 12 << endl;
           LV2_Atom_Forge_Frame obj_frame;
           obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_removeZone);
           lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
@@ -430,7 +434,7 @@ static int ui_idle(LV2UI_Handle handle) {
           lv2_atom_forge_pop(&ui->forge, &obj_frame);
         }
         else if (!strncmp(ui->buf, "add_zone:", 9)) {
-          //fprintf(stderr, "UI: ui add zone: %s; len: %i\n", ui->buf + 9, strlen(ui->buf + 9));
+          //cerr << "UI: ui add zone: " << ui->buf + 9 << "; len: " << strlen(ui->buf + 9) << endl;
           LV2_Atom_Forge_Frame obj_frame;
           obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_addZone);
           lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
@@ -445,7 +449,7 @@ static int ui_idle(LV2UI_Handle handle) {
           lv2_atom_forge_pop(&ui->forge, &obj_frame);
         }
         else if (!strncmp(ui->buf, "dup_zone:", 9)) {
-          //fprintf(stderr, "UI: ui dup zone: %s\n", ui->buf + 9);
+          //cerr << "UI: ui dup zone: " << ui->buf + 9 << endl;
           LV2_Atom_Forge_Frame obj_frame;
           obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_dupZone);
           lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
@@ -454,7 +458,6 @@ static int ui_idle(LV2UI_Handle handle) {
           lv2_atom_forge_pop(&ui->forge, &obj_frame);
         }
         else if (!strncmp(ui->buf, "load_patch:", 11)) {
-          //fprintf(stderr, "UI: ui add zone: %s; len: %i\n", ui->buf + 9, strlen(ui->buf + 9));
           LV2_Atom_Forge_Frame obj_frame;
           obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_loadPatch);
           lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
@@ -469,7 +472,7 @@ static int ui_idle(LV2UI_Handle handle) {
           lv2_atom_forge_pop(&ui->forge, &obj_frame);
         }
         else if (!strncmp(ui->buf, "refresh", 7)) {
-          //fprintf(stderr, "UI: ui refresh");
+          //cerr << "UI: ui refresh" << endl;
           LV2_Atom_Forge_Frame obj_frame;
           obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_refresh);
           lv2_atom_forge_pop(&ui->forge, &obj_frame);

@@ -81,8 +81,8 @@ int process_callback(jack_nframes_t nframes, void* arg) {
             sampler->handle_sustain(event.buffer);
           }
           // just print messages we don't currently handle
-          else if (event.buffer[0] != 0xfe)
-            printf("event: 0x%x\n", event.buffer[0]);
+          //else if (event.buffer[0] != 0xfe)
+          //  printf("event: 0x%x\n", event.buffer[0]);
         }
         // get next midi event or break if none left
         ++cur_event;
