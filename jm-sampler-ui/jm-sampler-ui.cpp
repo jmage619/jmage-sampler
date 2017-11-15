@@ -136,6 +136,7 @@ SamplerUI::SamplerUI() {
 
   vol_slider = new HVolumeSlider(Q_NULLPTR);
   connect(vol_slider, &HVolumeSlider::sliderMoved, this, &SamplerUI::sendUpdateVol);
+  connect(vol_slider, &HVolumeSlider::sliderMoved, this, &SamplerUI::handleUserUpdate);
   h_layout->addWidget(vol_slider);
 
   label = new QLabel;
@@ -146,6 +147,7 @@ SamplerUI::SamplerUI() {
   for (int i = 1; i <= 16; ++i)
     chan_combo->addItem(QString::number(i));
   connect(chan_combo, static_cast<void(QComboBox::*)(int)>(&QComboBox::activated), this, &SamplerUI::sendUpdateChan);
+  connect(chan_combo, static_cast<void(QComboBox::*)(int)>(&QComboBox::activated), this, &SamplerUI::handleUserUpdate);
 
   h_layout->addWidget(chan_combo);
 
@@ -198,8 +200,10 @@ void SamplerUI::checkAndUpdateChan(int index) {
 
 void SamplerUI::sendAddZone() {
   QString path = QFileDialog::getOpenFileName(this, tr("Open a FUCKING WAV already!!"), "", tr("Sound Files (*.wav *.aiff *.flac)"));
-  if (!path.isNull())
+  if (!path.isNull()) {
     std::cout << "add_zone:-1," << path.toStdString() << std::endl;
+    setWindowModified(true);
+  }
 }
 
 void SamplerUI::sendLoadPatch() {
