@@ -47,11 +47,13 @@ HVolumeSlider::HVolumeSlider(QWidget* parent):
 
   QHBoxLayout* h_layout = new QHBoxLayout;
   out = new QLineEdit;
+  out->setFocusPolicy(Qt::NoFocus);
   out->setFixedWidth(57);
   out->setAlignment(Qt::AlignRight);
   h_layout->addWidget(out, 0, Qt::AlignLeft);
 
   slider = new QSlider(Qt::Horizontal);
+  slider->setFocusPolicy(Qt::NoFocus);
   slider->setMinimum(0);
   slider->setMaximum(99);
   slider->setFixedWidth(200);

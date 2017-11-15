@@ -118,12 +118,15 @@ SamplerUI::SamplerUI() {
 
   QHBoxLayout* h_layout = new QHBoxLayout;
   QPushButton* save_button = new QPushButton("save");
+  save_button->setFocusPolicy(Qt::NoFocus);
   connect(save_button, &QAbstractButton::clicked, this, &SamplerUI::sendSavePatch);
   h_layout->addWidget(save_button);
   QPushButton* load_button = new QPushButton("load");
+  load_button->setFocusPolicy(Qt::NoFocus);
   connect(load_button, &QAbstractButton::clicked, this, &SamplerUI::sendLoadPatch);
   h_layout->addWidget(load_button);
   QPushButton* refresh_button = new QPushButton("refresh");
+  refresh_button->setFocusPolicy(Qt::NoFocus);
   connect(refresh_button, &QAbstractButton::clicked, this, &SamplerUI::sendRefresh);
   h_layout->addWidget(refresh_button);
   h_layout->addStretch();
@@ -144,6 +147,7 @@ SamplerUI::SamplerUI() {
   h_layout->addWidget(label);
 
   chan_combo = new QComboBox;
+  chan_combo->setFocusPolicy(Qt::NoFocus);
   for (int i = 1; i <= 16; ++i)
     chan_combo->addItem(QString::number(i));
   connect(chan_combo, static_cast<void(QComboBox::*)(int)>(&QComboBox::activated), this, &SamplerUI::sendUpdateChan);
@@ -156,12 +160,14 @@ SamplerUI::SamplerUI() {
   v_layout->addLayout(h_layout);
   
   ZoneTableView* view = new ZoneTableView(&zone_model);
+  view->setFocusPolicy(Qt::NoFocus);
   view->setSelectionMode(QAbstractItemView::NoSelection);
 
   v_layout->addWidget(view);
 
   connect(view, &MouseHandleView::userUpdate, this, &SamplerUI::handleUserUpdate);
   QPushButton* add_button = new QPushButton("+");
+  add_button->setFocusPolicy(Qt::NoFocus);
   connect(add_button, &QAbstractButton::clicked, this, &SamplerUI::sendAddZone);
   v_layout->addWidget(add_button, 0, Qt::AlignLeft);
 
