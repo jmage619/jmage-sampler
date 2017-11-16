@@ -12,7 +12,7 @@
 <https://github.com/jmage619/jmage-sampler>
 	a lv2:Plugin;
   doap:name "JMAGE Sampler" ;
-  doap:license <http://opensource.org/licenses/isc> ;
+  doap:license <https://opensource.org/licenses/GPL-2.0> ;
 	lv2:requiredFeature urid:map ,
     opts:options,
     work:schedule ;
