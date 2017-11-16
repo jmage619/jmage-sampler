@@ -1,0 +1,8 @@
+v0.3.0 - 2017-11-16
+-------------------
+- available as stand-alone JACK client and LV2 plugin
+- UI rewritten in c++ with Qt 5 for smaller memory footprint (was wxPython)
+
+v0.1.0 - 2016-06-11
+-------------------
+- first release!
