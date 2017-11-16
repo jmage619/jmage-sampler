@@ -1,0 +1,77 @@
+JMAGE Sampler
+=============
+
+JMAGE Sampler is a Linux based sampler. It can be run as stand alone JACK
+application or as an LV2 Plugin. The goal of JMAGE Sampler is to be able to
+create many zoned, multi layered patches quickly from scratch, with all the
+controls up front and tweakable in real time.
+
+What JMAGE Sampler is NOT is a disk streaming sampler. All samples are loaded in
+memory. JMAGE Sampler can read SFZ files, but only parses the fields it
+currently supports. There are NO guarantees that an arbitrary SFZ file will not
+crash the sampler, especially if the patch is intended for disk streaming.
+
+Patches can be saved in SFZ or JMZ format, an extension to SFZ that also stores
+JMAGE Sampler specific fields. JMZ should be preferred for normal usage.
+
+Repo:
+https://github.com/jmage619/jmage-sampler
+
+Building / Installing
+---------------------
+JMAGE Sampler has the following dependencies:
+
+- Jack Audio Connection Kit:
+  http://jackaudio.org/
+
+- libsndfile:
+  http://www.mega-nerd.com/libsndfile/
+
+- libsamplerate:
+  http://www.mega-nerd.com/SRC/
+
+- LV2:
+  http://lv2plug.in/
+
+- Qt 5:
+  http://doc.qt.io/qt-5/
+
+Ensure the libraries and headers for the above are installed
+
+The build also requres the CMake system to be installed:
+https://cmake.org/
+
+To compile, from the jmage-sampler directory, run the commands:
+
+mkdir build
+cd build
+cmake ../
+make
+
+Alternatively if your system requires a suffix for the libdir, e.g.
+/usr/local/lib64:
+
+cmake -DLIB_SUFFIX=64 ../
+
+To install, as the root user, run:
+make install
+
+Support
+-------
+JMAGE Sampler was mostly conceived as a selfish project. The developers created
+this for their own music production purposes. There are no guarantees feature
+requests or bug fixes will be acknowledged or implemented in any kind of timely
+fasion.
+
+Usage
+-----
+Samples are loaded into a grid where all controls are visible. Click the "+"
+button to load an audio file. Supports: *.wav, *.aiff, *.flac, possibly others
+but those were the only types currently tested.
+
+All controls are directly editable. Depending on the field type, clicking may
+pop up a submenu for selection. Most numeric fields can be modded by
+click-dragging the box directly.
+
+Middle clicking fields that have a default position cause them to reset. Mouse
+wheel is supported for most numeric fields.
