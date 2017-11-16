@@ -17,7 +17,8 @@ JMAGE Sampler specific fields. JMZ should be preferred for normal usage.
 Repo:
 https://github.com/jmage619/jmage-sampler
 
-JMAGE Sampler is distributed under the GNU General Public License (GPL) version 2 or later.
+JMAGE Sampler is distributed under the GNU General Public License (GPL) version
+2 or later.
 
 Building / Installing
 ---------------------
