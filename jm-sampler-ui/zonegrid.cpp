@@ -466,9 +466,11 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
       connect(dbox, &DragBox::released, this, &ZoneTableDelegate::forceClose);
       return dbox;
     case jm::ZONE_PATH: {
-      WavPopup* popup = new WavPopup(parent);
-      connect(popup, &WavPopup::accepted, this, &ZoneTableDelegate::commitAndCloseEditor);
-      return popup;
+      QFileDialog* file_dialog = new QFileDialog(parent, tr("Open a fucking WAV already!!"));
+      file_dialog->setModal(true);
+      file_dialog->setFileMode(QFileDialog::ExistingFile);
+      file_dialog->setNameFilter(tr("Sound Files (*.wav *.aiff *.flac)"));
+      return file_dialog;
     }
     default:
       return QStyledItemDelegate::createEditor(parent, option, index);
@@ -515,9 +517,6 @@ void ZoneTableDelegate::updateEditorGeometry(QWidget* editor,
       break;
     }
     case jm::ZONE_PATH: {
-      WavPopup* popup = static_cast<WavPopup*>(editor);
-      popup->setGeometry(option.rect);
-      popup->showPopup();
       break;
     }
     default:
@@ -569,8 +568,14 @@ void ZoneTableDelegate::setEditorData(QWidget* editor, const QModelIndex& index)
       break;
     }
     case jm::ZONE_PATH: {
-      WavPopup* popup = static_cast<WavPopup*>(editor);
-      popup->setPath(index.data(Qt::EditRole).toString());
+      QFileDialog* file_dialog = static_cast<QFileDialog*>(editor);
+      QString path = index.data(Qt::EditRole).toString();
+      char* tmp_str = strdup(path.toStdString().c_str());
+      file_dialog->setDirectory(dirname(tmp_str));
+      free(tmp_str);
+      tmp_str = strdup(path.toStdString().c_str());
+      file_dialog->selectFile(basename(tmp_str));
+      free(tmp_str);
       break;
     }
     default:
@@ -617,8 +622,8 @@ void ZoneTableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model,
       break;
     }
     case jm::ZONE_PATH: {
-      WavPopup* popup = static_cast<WavPopup*>(editor);
-      model->setData(index, popup->path(), Qt::EditRole);
+      QFileDialog* file_dialog = static_cast<QFileDialog*>(editor);
+      model->setData(index, file_dialog->selectedFiles()[0], Qt::EditRole);
       break;
     }
     default:
