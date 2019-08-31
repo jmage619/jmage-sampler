@@ -158,10 +158,16 @@ void SFZParser::update_region(std::map<std::string, SFZValue>& region, const std
     region[field] = strtod(data.c_str(), NULL);
   // int range 0-127
   else if (field == "pitch_keycenter" || field == "lokey" || field == "hikey" ||
-      field == "lovel" || field == "hivel") {
+      field == "lovel" || field == "hivel" || field == "key") {
     long val = strtol(data.c_str(), NULL, 10);
     validate_int(field, val, 0, 127);
-    region[field] = (int) val;
+    if (field == "key") {
+      region["pitch_keycenter"] = (int) val;
+      region["lokey"] = (int) val;
+      region["hikey"] = (int) val;
+    }
+    else
+      region[field] = (int) val;
   }
   // int range -100-100
   else if (field == "tune") {
