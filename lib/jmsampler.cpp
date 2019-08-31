@@ -155,7 +155,7 @@ void JMSampler::add_zone_from_region(const std::map<std::string, SFZValue>& regi
 
   zone.crossfade = sample_rate * region.find("loop_crossfade")->second.get_double();
   zone.group = region.find("group")->second.get_int();
-  zone.off_group = region.find("off_group")->second.get_int();
+  zone.off_group = region.find("off_by")->second.get_int();
   zone.attack = sample_rate * region.find("ampeg_attack")->second.get_double();
   zone.hold = sample_rate * region.find("ampeg_hold")->second.get_double();
   zone.decay = sample_rate * region.find("ampeg_decay")->second.get_double();
@@ -254,7 +254,7 @@ void JMSampler::save_patch(const char* path) {
     region["loop_end"] = it->right;
     region["loop_crossfade"] = (double) it->crossfade / sample_rate;
     region["group"] = it->group;
-    region["off_group"] = it->off_group;
+    region["off_by"] = it->off_group;
     region["ampeg_attack"] = (double) it->attack / sample_rate;
     region["ampeg_hold"] = (double) it->hold / sample_rate;
     region["ampeg_decay"] = (double) it->decay / sample_rate;

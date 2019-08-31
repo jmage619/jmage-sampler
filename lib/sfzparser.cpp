@@ -141,7 +141,7 @@ void SFZParser::set_region_defaults(std::map<std::string, SFZValue>& region) {
   region["loop_mode"] = jm::LOOP_UNSET;
   region["loop_crossfade"] = 0.;
   region["group"] = 0;
-  region["off_group"] = 0;
+  region["off_by"] = 0;
   region["ampeg_attack"] = 0.;
   region["ampeg_hold"] = 0.;
   region["ampeg_decay"] = 0.;
@@ -171,7 +171,7 @@ void SFZParser::update_region(std::map<std::string, SFZValue>& region, const std
   }
   // generic int
   else if (field == "offset" || field == "loop_start" || field == "loop_end" ||
-      field == "group" || field == "off_group")
+      field == "group" || field == "off_by")
     region[field] = (int) strtol(data.c_str(), NULL, 10);
   // loop mode
   else if (field == "loop_mode") {
