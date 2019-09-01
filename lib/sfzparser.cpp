@@ -113,6 +113,9 @@ void SFZParser::save_prev() {
     case CONTROL:
       update_control(*cur_control, cur_op, data);
       break;
+    case GLOBAL:
+      update_region(*cur_global, cur_op, data);
+      break;
     case GROUP:
       update_region(*cur_group, cur_op, data);
       break;
@@ -221,10 +224,12 @@ sfz::sfz SFZParser::parse() {
   sfz::sfz s;
   std::map<std::string, SFZValue> cur_control;
   set_control_defaults(cur_control);
-  std::map<std::string, SFZValue> cur_group;
-  set_region_defaults(cur_group);
+  std::map<std::string, SFZValue> cur_global;
+  set_region_defaults(cur_global);
+  std::map<std::string, SFZValue> cur_group = cur_global;
   std::map<std::string, SFZValue> cur_region = cur_group;
   this->cur_control = &cur_control;
+  this->cur_global = &cur_global;
   this->cur_group = &cur_group;
   this->cur_region = &cur_region;
 
@@ -254,10 +259,15 @@ sfz::sfz SFZParser::parse() {
           set_control_defaults(cur_control);
           state = CONTROL;
         }
+        else if (field == "<global>") {
+          // reset cur_global
+          cur_global = std::map<std::string, SFZValue>();
+          set_region_defaults(cur_global);
+          state = GLOBAL;
+        }
         else if (field == "<group>") {
           // reset cur_group
-          cur_group = std::map<std::string, SFZValue>();
-          set_region_defaults(cur_group);
+          cur_group = cur_global;
           state = GROUP;
         }
         else if (field == "<region>") {

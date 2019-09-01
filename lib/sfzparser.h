@@ -64,6 +64,7 @@ class SFZParser {
   private:
     enum State {
       CONTROL,
+      GLOBAL,
       GROUP,
       REGION
     } state;
@@ -71,6 +72,7 @@ class SFZParser {
     std::string data;
     std::string cur_op;
     std::map<std::string, SFZValue>* cur_control;
+    std::map<std::string, SFZValue>* cur_global;
     std::map<std::string, SFZValue>* cur_group;
     std::map<std::string, SFZValue>* cur_region;
     std::string path;
