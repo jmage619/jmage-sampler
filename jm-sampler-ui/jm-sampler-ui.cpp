@@ -224,7 +224,7 @@ void SamplerUI::checkAndUpdateChan(int index) {
 }
 
 void SamplerUI::sendAddZone() {
-  QString path = QFileDialog::getOpenFileName(this, tr("Open a fucking WAV already!!"), "", tr("Sound Files (*.wav *.aiff *.flac)"));
+  QString path = QFileDialog::getOpenFileName(this, tr("Open a fucking WAV already!!"), "", tr("Sound Files (*.wav *.WAV *.aiff *.flac)"));
   if (!path.isNull()) {
     std::cout << "add_zone:-1," << path.toStdString() << std::endl;
     setWindowModified(true);

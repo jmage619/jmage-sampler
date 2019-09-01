@@ -360,7 +360,7 @@ void ZoneTableView::handleVertHeaderClick(const QPoint& pos) {
       emit userUpdate();
     }
     else if (action->text() == "new zone before") {
-      QString path = QFileDialog::getOpenFileName(this, tr("Open a fucking WAV already!!"), "", tr("Sound Files (*.wav *.aiff *.flac)"));
+      QString path = QFileDialog::getOpenFileName(this, tr("Open a fucking WAV already!!"), "", tr("Sound Files (*.wav *.WAV *.aiff *.flac)"));
       if (!path.isNull()) {
         std::cout << "add_zone:" << verticalHeader()->logicalIndexAt(pos) << "," << path.toStdString() << std::endl;
         emit userUpdate();
@@ -469,7 +469,7 @@ QWidget* ZoneTableDelegate::createEditor(QWidget* parent, const QStyleOptionView
       QFileDialog* file_dialog = new QFileDialog(parent, tr("Open a fucking WAV already!!"));
       file_dialog->setModal(true);
       file_dialog->setFileMode(QFileDialog::ExistingFile);
-      file_dialog->setNameFilter(tr("Sound Files (*.wav *.aiff *.flac)"));
+      file_dialog->setNameFilter(tr("Sound Files (*.wav *.WAV *.aiff *.flac)"));
       return file_dialog;
     }
     default:

@@ -357,7 +357,7 @@ WavPopup::WavPopup(QWidget* parent): QFrame(parent) {
   file_dialog = new QFileDialog(this, tr("Open a fucking WAV already!!"));
   file_dialog->setModal(true);
   file_dialog->setFileMode(QFileDialog::ExistingFile);
-  file_dialog->setNameFilter(tr("Sound Files (*.wav *.aiff *.flac)"));
+  file_dialog->setNameFilter(tr("Sound Files (*.wav *.WAV *.aiff *.flac)"));
 
   // use accepted instead of fileSelected because fileSel sends 2x (GNOME BUG?)
   connect(file_dialog, &QDialog::accepted, this, &WavPopup::accepted);
