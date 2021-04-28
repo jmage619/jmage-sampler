@@ -77,7 +77,8 @@
 	a ui:UI ;
 	lv2:requiredFeature urid:map ,
     ui:idleInterace ,
-    ui:showInterface ;
+    ui:showInterface ,
+    <http://lv2plug.in/ns/ext/instance-access> ;
 	lv2:optionalFeature opts:options ;
   opts:supportedOption ui:windowTitle ;
   lv2:extensionData ui:idleInterface ,

@@ -27,11 +27,10 @@
 #include <lv2/lv2plug.in/ns/ext/atom/forge.h>
 #include <lv2/lv2plug.in/ns/ext/atom/util.h>
 
-#include <lib/zone.h>
-#include <lib/wave.h>
-#include <lib/sfzparser.h>
-#include <lib/lv2_uris.h>
-
+#include "zone.h"
+#include "wave.h"
+#include "sfzparser.h"
+#include "lv2_uris.h"
 #include "lv2sampler.h"
 
 void LV2Sampler::send_sample_rate() {

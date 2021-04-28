@@ -40,10 +40,12 @@ using std::endl;
 #include <lv2/lv2plug.in/ns/extensions/ui/ui.h>
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
 #include <lv2/lv2plug.in/ns/ext/options/options.h>
+#include <lv2/lv2plug.in/ns/ext/instance-access/instance-access.h>
 
 #include <config.h>
 #include <lib/zone.h>
 #include <lib/lv2_uris.h>
+#include <lib/lv2sampler.h>
 
 #define BUF_SIZE 513
 #define SAMPLE_RATE 44100
@@ -51,6 +53,7 @@ using std::endl;
 #define JM_SAMPLER_UI_URI JM_SAMPLER_URI "#ui"
 
 struct jm_sampler_ui {
+  LV2Sampler* sampler;
   LV2_URID_Map* map;
   jm::uris uris;
   LV2UI_Write_Function write;
@@ -164,8 +167,16 @@ static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
     //  unmap = (LV2_URID_Unmap*)features[i]->data;
     else if (!strcmp(features[i]->URI, LV2_OPTIONS__options))
       opt = (LV2_Options_Option*)features[i]->data;
+    else if (!strcmp(features[i]->URI, LV2_INSTANCE_ACCESS_URI)) {
+      ui->sampler = reinterpret_cast<LV2Sampler*>(features[i]->data);
+    }
   }
   if (!map) {
+    //cerr << "Host does not support urid:map." << endl;
+    delete ui;
+    return NULL;
+  }
+  if (!ui->sampler) {
     //cerr << "Host does not support urid:map." << endl;
     delete ui;
     return NULL;

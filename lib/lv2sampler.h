@@ -29,10 +29,10 @@
 #include <lv2/lv2plug.in/ns/ext/worker/worker.h>
 #include <lv2/lv2plug.in/ns/ext/atom/forge.h>
 
-#include <lib/zone.h>
-#include <lib/lv2_uris.h>
-#include <lib/sfzparser.h>
-#include <lib/jmsampler.h>
+#include "zone.h"
+#include "lv2_uris.h"
+#include "sfzparser.h"
+#include "jmsampler.h"
 
 class LV2Sampler: public JMSampler {
   public:

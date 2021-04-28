@@ -43,8 +43,7 @@
 #include <lib/wave.h>
 #include <lib/sfzparser.h>
 #include <lib/jmsampler.h>
-
-#include "lv2sampler.h"
+#include <lib/lv2sampler.h>
 
 enum {
   SAMPLER_CONTROL = 0,

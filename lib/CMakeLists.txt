@@ -14,3 +14,6 @@ set_property(TARGET wave PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(jmsampler OBJECT jmsampler.cpp)
 set_property(TARGET jmsampler PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+add_library(lv2sampler OBJECT lv2sampler.cpp)
+set_property(TARGET lv2sampler PROPERTY POSITION_INDEPENDENT_CODE ON)
