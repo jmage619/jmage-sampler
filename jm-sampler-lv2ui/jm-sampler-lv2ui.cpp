@@ -447,15 +447,30 @@ static int ui_idle(LV2UI_Handle handle) {
         float val = atof(ui->buf + 12);
         ui->write(ui->controller, 2, sizeof(float), 0, &val);
       }
+      else if (!strncmp(ui->buf, "update_zone:", 12)) {
+          char* p = strtok(ui->buf + 12, ",");
+          int index = atoi(p);
+          p = strtok(NULL, ",");
+          int key = atoi(p);
+
+          p = strtok(NULL, ",");
+
+          // special case, update wave
+          if (key == jm::ZONE_PATH) {
+            if (ui->sampler->waves.find(p) == ui->sampler->waves.end()) {
+              ui->sampler->waves[p] = jm::parse_wave(p);
+            }
+          }
+
+          ui->sampler->update_zone(index, key, p);
+      }
       else {
         uint8_t buf[128];
         lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
         //cerr << "UI: ui stdout message: " << ui->buf << endl;
         LV2_Atom* obj;
-        if (!strncmp(ui->buf, "update_zone:", 12)) {
-          obj = handle_update_zone(ui, ui->buf + 12);
-        }
-        else if (!strncmp(ui->buf, "remove_zone:", 12)) {
+
+        if (!strncmp(ui->buf, "remove_zone:", 12)) {
           //cerr << "UI: ui remove zone: " << ui->buf + 12 << endl;
           LV2_Atom_Forge_Frame obj_frame;
           obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_removeZone);
