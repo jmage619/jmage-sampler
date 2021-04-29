@@ -45,6 +45,7 @@ using std::endl;
 #include <config.h>
 #include <lib/zone.h>
 #include <lib/lv2_uris.h>
+#include <lib/jmsampler.h>
 #include <lib/lv2sampler.h>
 
 #define BUF_SIZE 513
