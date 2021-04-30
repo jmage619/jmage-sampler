@@ -483,22 +483,18 @@ static int ui_idle(LV2UI_Handle handle) {
 
         ui->sampler->add_zone_from_wave(index, p);
       }
+      else if (!strncmp(ui->buf, "dup_zone:", 9)) {
+        char* p = strtok(ui->buf + 9, ",");
+        int index = atoi(p);
+        ui->sampler->duplicate_zone(index);
+      }
       else {
         uint8_t buf[128];
         lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
         //cerr << "UI: ui stdout message: " << ui->buf << endl;
         LV2_Atom* obj;
 
-        if (!strncmp(ui->buf, "dup_zone:", 9)) {
-          //cerr << "UI: ui dup zone: " << ui->buf + 9 << endl;
-          LV2_Atom_Forge_Frame obj_frame;
-          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_dupZone);
-          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
-          int index = atoi(ui->buf + 9);
-          lv2_atom_forge_int(&ui->forge, index);
-          lv2_atom_forge_pop(&ui->forge, &obj_frame);
-        }
-        else if (!strncmp(ui->buf, "load_patch:", 11)) {
+        if (!strncmp(ui->buf, "load_patch:", 11)) {
           LV2_Atom_Forge_Frame obj_frame;
           obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_loadPatch);
           lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
