@@ -23,6 +23,7 @@
 #include <vector>
 #include <map>
 #include <pthread.h>
+#include <cstdio>
 
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
@@ -47,6 +48,7 @@ class LV2Sampler: public JMSampler {
     LV2_Atom_Forge_Frame seq_frame;
     char wav_path[256];
     char patch_path[256];
+    FILE* fout;
 
     LV2Sampler(int sample_rate, size_t in_nframes, size_t out_nframes):
       JMSampler(sample_rate, in_nframes, out_nframes) {patch_path[0] = '\0';};

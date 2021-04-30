@@ -384,6 +384,7 @@ static int ui_show(LV2UI_Handle handle) {
 
   ui->fdin = from_child_pipe[0];
   ui->fout = fdopen(to_child_pipe[1], "w");
+  ui->sampler->fout = ui->fout;
   ui->pid = pid;
   ui->tot_read = 0;
 
@@ -471,28 +472,24 @@ static int ui_idle(LV2UI_Handle handle) {
         fprintf(ui->fout, "remove_zone:%i\n", index);
         fflush(ui->fout);
       }
+      else if (!strncmp(ui->buf, "add_zone:", 9)) {
+        char* p = strtok(ui->buf + 9, ",");
+        int index = atoi(p);
+        p = strtok(NULL, ",");
+
+        if (ui->sampler->waves.find(p) == ui->sampler->waves.end()) {
+          ui->sampler->waves[p] = jm::parse_wave(p);
+        }
+
+        ui->sampler->add_zone_from_wave(index, p);
+      }
       else {
         uint8_t buf[128];
         lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
         //cerr << "UI: ui stdout message: " << ui->buf << endl;
         LV2_Atom* obj;
 
-        if (!strncmp(ui->buf, "add_zone:", 9)) {
-          //cerr << "UI: ui add zone: " << ui->buf + 9 << "; len: " << strlen(ui->buf + 9) << endl;
-          LV2_Atom_Forge_Frame obj_frame;
-          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_addZone);
-          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
-          LV2_Atom_Forge_Frame tuple_frame;
-          lv2_atom_forge_tuple(&ui->forge, &tuple_frame);
-          char* p = strtok(ui->buf + 9, ",");
-          int index = atoi(p);
-          lv2_atom_forge_int(&ui->forge, index);
-          p = strtok(NULL, ",");
-          lv2_atom_forge_string(&ui->forge, p, strlen(p));
-          lv2_atom_forge_pop(&ui->forge, &tuple_frame);
-          lv2_atom_forge_pop(&ui->forge, &obj_frame);
-        }
-        else if (!strncmp(ui->buf, "dup_zone:", 9)) {
+        if (!strncmp(ui->buf, "dup_zone:", 9)) {
           //cerr << "UI: ui dup zone: " << ui->buf + 9 << endl;
           LV2_Atom_Forge_Frame obj_frame;
           obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_dupZone);

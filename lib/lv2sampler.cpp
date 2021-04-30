@@ -56,12 +56,13 @@ void LV2Sampler::send_zone_vect() {
 }
 
 void LV2Sampler::send_add_zone(int index) {
-  lv2_atom_forge_frame_time(&forge, 0);
-  LV2_Atom_Forge_Frame obj_frame;
-  lv2_atom_forge_object(&forge, &obj_frame, 0, uris.jm_addZone);
-  lv2_atom_forge_key(&forge, uris.jm_params);
-  lv2_atom_forge_int(&forge, index);
-  lv2_atom_forge_pop(&forge, &obj_frame);
+  char outstr[256];
+  char* p = outstr;
+  sprintf(p, "add_zone:");
+  p += strlen(p);
+  jm::build_zone_str(p, zones, index);
+  fprintf(fout, outstr);
+  fflush(fout);
 
   //fprintf(stderr, "SAMPLER: add zone sent!! %i: %s\n", index, zones[index].name);
 }
