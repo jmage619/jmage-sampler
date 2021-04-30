@@ -464,22 +464,20 @@ static int ui_idle(LV2UI_Handle handle) {
 
           ui->sampler->update_zone(index, key, p);
       }
+      else if (!strncmp(ui->buf, "remove_zone:", 12)) {
+        int index = atoi(ui->buf + 12);
+        ui->sampler->remove_zone(index);
+
+        fprintf(ui->fout, "remove_zone:%i\n", index);
+        fflush(ui->fout);
+      }
       else {
         uint8_t buf[128];
         lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
         //cerr << "UI: ui stdout message: " << ui->buf << endl;
         LV2_Atom* obj;
 
-        if (!strncmp(ui->buf, "remove_zone:", 12)) {
-          //cerr << "UI: ui remove zone: " << ui->buf + 12 << endl;
-          LV2_Atom_Forge_Frame obj_frame;
-          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_removeZone);
-          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
-          int index = atoi(ui->buf + 12);
-          lv2_atom_forge_int(&ui->forge, index);
-          lv2_atom_forge_pop(&ui->forge, &obj_frame);
-        }
-        else if (!strncmp(ui->buf, "add_zone:", 9)) {
+        if (!strncmp(ui->buf, "add_zone:", 9)) {
           //cerr << "UI: ui add zone: " << ui->buf + 9 << "; len: " << strlen(ui->buf + 9) << endl;
           LV2_Atom_Forge_Frame obj_frame;
           obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_addZone);
