@@ -488,20 +488,40 @@ static int ui_idle(LV2UI_Handle handle) {
         int index = atoi(p);
         ui->sampler->duplicate_zone(index);
       }
+      else if (!strncmp(ui->buf, "load_patch:", 11)) {
+        ui->sampler->load_patch(ui->buf + 11);
+
+        fprintf(ui->fout, "clear_zones\n");
+        fflush(ui->fout);
+
+        std::map<std::string, SFZValue>::iterator c_it = ui->sampler->patch.control.find("jm_vol");
+        if (c_it != ui->sampler->patch.control.end()) {
+          *ui->sampler->volume = c_it->second.get_double();
+          *ui->sampler->channel =  ui->sampler->patch.control["jm_chan"].get_int() - 1;
+        }
+        else {
+          *ui->sampler->volume = 0;
+          *ui->sampler->channel = 0;
+        }
+
+        fprintf(ui->fout, "update_vol:%f\n", *ui->sampler->volume);
+        fflush(ui->fout);
+
+        fprintf(ui->fout, "update_chan:%i\n", (int) *ui->sampler->channel);
+        fflush(ui->fout);
+
+        int num_zones = ui->sampler->zones.size();
+
+        for (int i = 0; i < num_zones; ++i)
+          ui->sampler->send_add_zone(i);
+      }
       else {
         uint8_t buf[128];
         lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
         //cerr << "UI: ui stdout message: " << ui->buf << endl;
         LV2_Atom* obj;
 
-        if (!strncmp(ui->buf, "load_patch:", 11)) {
-          LV2_Atom_Forge_Frame obj_frame;
-          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_loadPatch);
-          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
-          lv2_atom_forge_string(&ui->forge, ui->buf + 11, strlen(ui->buf + 11));
-          lv2_atom_forge_pop(&ui->forge, &obj_frame);
-        }
-        else if (!strncmp(ui->buf, "save_patch:", 11)) {
+        if (!strncmp(ui->buf, "save_patch:", 11)) {
           LV2_Atom_Forge_Frame obj_frame;
           obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_savePatch);
           lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
