@@ -515,20 +515,16 @@ static int ui_idle(LV2UI_Handle handle) {
         for (int i = 0; i < num_zones; ++i)
           ui->sampler->send_add_zone(i);
       }
+      else if (!strncmp(ui->buf, "save_patch:", 11)) {
+        ui->sampler->save_patch(ui->buf + 11);
+      }
       else {
         uint8_t buf[128];
         lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
         //cerr << "UI: ui stdout message: " << ui->buf << endl;
         LV2_Atom* obj;
 
-        if (!strncmp(ui->buf, "save_patch:", 11)) {
-          LV2_Atom_Forge_Frame obj_frame;
-          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_savePatch);
-          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
-          lv2_atom_forge_string(&ui->forge, ui->buf + 11, strlen(ui->buf + 11));
-          lv2_atom_forge_pop(&ui->forge, &obj_frame);
-        }
-        else if (!strncmp(ui->buf, "refresh", 7)) {
+        if (!strncmp(ui->buf, "refresh", 7)) {
           //cerr << "UI: ui refresh" << endl;
           LV2_Atom_Forge_Frame obj_frame;
           obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_refresh);
