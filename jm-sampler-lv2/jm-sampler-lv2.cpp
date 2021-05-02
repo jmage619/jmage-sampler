@@ -296,21 +296,6 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
         strcpy(sampler->patch_path, path);
         sampler->schedule->schedule_work(sampler->schedule->handle, sizeof(worker_msg), &msg);
       }
-      else if (obj->body.otype == sampler->uris.jm_savePatch) {
-        LV2_Atom* params = NULL;
-
-        lv2_atom_object_get(obj, sampler->uris.jm_params, &params, 0);
-        char* path = (char*)(params + 1);
-        worker_msg msg;
-        msg.type =  WORKER_SAVE_PATCH;
-        strcpy(sampler->patch_path, path);
-        sampler->schedule->schedule_work(sampler->schedule->handle, sizeof(worker_msg), &msg);
-      }
-      else if (obj->body.otype == sampler->uris.jm_refresh) {
-        worker_msg msg;
-        msg.type =  WORKER_REFRESH;
-        sampler->schedule->schedule_work(sampler->schedule->handle, sizeof(worker_msg), &msg);
-      }
     }
   }
 
