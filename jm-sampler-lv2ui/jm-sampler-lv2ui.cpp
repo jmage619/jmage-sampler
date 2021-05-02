@@ -388,21 +388,9 @@ static int ui_show(LV2UI_Handle handle) {
   ui->pid = pid;
   ui->tot_read = 0;
 
-  uint8_t buf[128];
+  fprintf(ui->fout, "set_sample_rate:%i\n", ui->sampler->sample_rate);
+  fflush(ui->fout);
 
-  lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
-  LV2_Atom_Forge_Frame obj_frame;
-  LV2_Atom* obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_getSampleRate);
-  lv2_atom_forge_pop(&ui->forge, &obj_frame);
-
-  ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
-
-  ui->zones = NULL;
-
-  obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_getZoneVect);
-  lv2_atom_forge_pop(&ui->forge, &obj_frame);
-
-  ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
   fprintf(ui->fout, "update_vol:%f\n", ui->volume);
   fprintf(ui->fout, "update_chan:%f\n", ui->channel);
   fflush(ui->fout);

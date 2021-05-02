@@ -285,13 +285,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
   LV2_ATOM_SEQUENCE_FOREACH(sampler->control_port, ev) {
     if (lv2_atom_forge_is_object_type(&sampler->forge, ev->body.type)) {
       const LV2_Atom_Object* obj = (const LV2_Atom_Object*)&ev->body;
-      if (obj->body.otype == sampler->uris.jm_getSampleRate) {
-        sampler->send_sample_rate();
-      }
-      else if (obj->body.otype == sampler->uris.jm_getZoneVect) {
-        sampler->send_zone_vect();
-      }
-      else if (obj->body.otype == sampler->uris.jm_updateZone) {
+      if (obj->body.otype == sampler->uris.jm_updateZone) {
         //fprintf(stderr, "SAMPLER: update zone received!!\n");
         LV2_Atom* params = NULL;
 
