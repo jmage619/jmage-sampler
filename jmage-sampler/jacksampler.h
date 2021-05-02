@@ -38,6 +38,8 @@ MT_VOLUME,
 MT_CHANNEL
 };
 
+#define MSG_Q_SIZE 32
+
 struct jm_msg {
   msg_type type;
   union {
@@ -53,12 +55,14 @@ class JackSampler: public JMSampler {
     jack_port_t* output_port2;
     float _volume;
     float _channel;
-    FILE* fout;
     JMQueue<jm_msg> msg_q;
 
-    JackSampler(int sample_rate, size_t in_nframes, size_t out_nframes);
-    void send_add_zone(int index);
-    void send_update_wave(int index);
+    JackSampler(int sample_rate, size_t in_nframes, size_t out_nframes):
+        JMSampler(sample_rate, in_nframes, out_nframes), _volume(0), _channel(0),
+        msg_q(MSG_Q_SIZE) {
+      volume = &_volume;
+      channel = &_channel;
+    }
 };
 
 #endif

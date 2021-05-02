@@ -6,7 +6,7 @@ include_directories(../ ${LIBLV2_INCLUDE_DIRS})
 
 add_library(jm-sampler-lv2 SHARED jm-sampler-lv2.cpp
   $<TARGET_OBJECTS:wave> $<TARGET_OBJECTS:sfzparser> $<TARGET_OBJECTS:jmsampler>
-  $<TARGET_OBJECTS:components> $<TARGET_OBJECTS:lv2sampler>)
+  $<TARGET_OBJECTS:components>)
 set_target_properties(jm-sampler-lv2 PROPERTIES PREFIX "")
 target_link_libraries(jm-sampler-lv2 ${LIBSNDFILE_LIBRARIES} ${LIBSAMPLERATE_LIBRARIES})
 

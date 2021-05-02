@@ -215,12 +215,12 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
 
         fprintf(sampler->fout, "update_chan:%i\n", (int) *sampler->channel);
         fflush(sampler->fout);
+
+        int num_zones = sampler->zones.size();
+
+        for (int i = 0; i < num_zones; ++i)
+          sampler->send_add_zone(i);
     }
-
-    int num_zones = sampler->zones.size();
-
-    for (int i = 0; i < num_zones; ++i)
-      sampler->send_add_zone(i);
   }
 
   return LV2_WORKER_SUCCESS;

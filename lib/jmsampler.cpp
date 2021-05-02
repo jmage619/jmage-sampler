@@ -45,6 +45,7 @@ JMSampler::JMSampler(int sample_rate, size_t in_nframes, size_t out_nframes):
     sound_gens(POLYPHONY),
     playhead_pool(POLYPHONY),
     amp_gen_pool(POLYPHONY),
+    fout(NULL),
     sample_rate(sample_rate) {
   // pre-allocate vector to prevent allocations later in RT thread
   zones.reserve(100);
@@ -75,6 +76,46 @@ JMSampler::~JMSampler() {
     jm::free_wave(it->second);
 
   pthread_mutex_destroy(&zone_lock);
+}
+
+void JMSampler::send_add_zone(int index) {
+  char outstr[256];
+  char* p = outstr;
+  sprintf(p, "add_zone:");
+  p += strlen(p);
+  jm::build_zone_str(p, zones, index);
+  fprintf(fout, outstr);
+  fflush(fout);
+
+  //fprintf(stderr, "SAMPLER: add zone sent!! %i: %s\n", index, zones[index].name);
+}
+
+void JMSampler::send_update_wave(int index) {
+  char outstr[256];
+  char* p = outstr;
+  sprintf(p, "update_wave:");
+  // index
+  p += strlen(p);
+  sprintf(p, "%i,", index);
+  // path
+  p += strlen(p);
+  sprintf(p, "%s,", zones[index].path);
+  // wave length
+  p += strlen(p);
+  sprintf(p, "%i,", zones[index].wave_length);
+  // start
+  p += strlen(p);
+  sprintf(p, "%i,", zones[index].start);
+  // left
+  p += strlen(p);
+  sprintf(p, "%i,", zones[index].left);
+  // right
+  p += strlen(p);
+  sprintf(p, "%i\n", zones[index].right);
+  fprintf(fout, outstr);
+  fflush(fout);
+
+  //fprintf(stderr, "SAMPLER: update wave sent!! %i: %s\n", index, zones[index].path);
 }
 
 void JMSampler::add_zone_from_wave(int index, const char* path) {

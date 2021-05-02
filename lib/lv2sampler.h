@@ -46,14 +46,10 @@ class LV2Sampler: public JMSampler {
     LV2_Worker_Schedule* schedule;
     LV2_Atom_Forge forge;
     LV2_Atom_Forge_Frame seq_frame;
-    char wav_path[256];
     char patch_path[256];
-    FILE* fout;
 
     LV2Sampler(int sample_rate, size_t in_nframes, size_t out_nframes):
-      JMSampler(sample_rate, in_nframes, out_nframes), fout(NULL) {patch_path[0] = '\0';};
-    void send_add_zone(int index);
-    void send_update_wave(int index);
+      JMSampler(sample_rate, in_nframes, out_nframes) {patch_path[0] = '\0';};
 };
 
 #endif
