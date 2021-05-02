@@ -94,62 +94,6 @@ static void strmov(char* dest, char* source) {
   dest[i] = '\0';
 }
 
-static LV2_Atom* handle_update_zone(jm_sampler_ui* ui, char* params) {
-  LV2_Atom_Forge_Frame obj_frame;
-  LV2_Atom* obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_updateZone);
-  lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
-  LV2_Atom_Forge_Frame tuple_frame;
-  lv2_atom_forge_tuple(&ui->forge, &tuple_frame);
-  char* p = strtok(params, ",");
-  int index = atoi(p);
-  lv2_atom_forge_int(&ui->forge, index);
-  p = strtok(NULL, ",");
-  int type = atoi(p);
-  lv2_atom_forge_int(&ui->forge, type);
-  p = strtok(NULL, ",");
-  lv2_atom_forge_string(&ui->forge, p, strlen(p));
-  lv2_atom_forge_pop(&ui->forge, &tuple_frame);
-  lv2_atom_forge_pop(&ui->forge, &obj_frame);
-
-  return obj;
-}
-
-static void send_add_zone(jm_sampler_ui* ui, int index) {
-  char outstr[256];
-  char* p = outstr;
-  sprintf(p, "add_zone:");
-  p += strlen(p);
-  jm::build_zone_str(p, *ui->zones, index);
-  fprintf(ui->fout, outstr);
-  fflush(ui->fout);
-}
-
-static void send_update_wave(jm_sampler_ui* ui, int index) {
-  char outstr[256];
-  char* p = outstr;
-  sprintf(p, "update_wave:");
-  // index
-  p += strlen(p);
-  sprintf(p, "%i,", index);
-  // path
-  p += strlen(p);
-  sprintf(p, "%s,", (*ui->zones)[index].path);
-  // wave length
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[index].wave_length);
-  // start
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[index].start);
-  // left
-  p += strlen(p);
-  sprintf(p, "%i,", (*ui->zones)[index].left);
-  // right
-  p += strlen(p);
-  sprintf(p, "%i\n", (*ui->zones)[index].right);
-  fprintf(ui->fout, outstr);
-  fflush(ui->fout);
-}
-
 static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
     const char*, const char*,
     LV2UI_Write_Function write_function, LV2UI_Controller controller,
