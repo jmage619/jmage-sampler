@@ -63,12 +63,10 @@ struct jm_sampler_ui {
   // use raw fd for messages from ui
   // because we need non-blocking io
   int fdin; 
-  FILE* fout;
   pid_t pid;
   int tot_read;
   char buf[BUF_SIZE];
   char title[256];
-  const std::vector<jm::zone>* zones;
   bool spawned;
   float volume;
   float channel;
@@ -190,15 +188,15 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
     if (port_index == 1) {
       ui->volume = *(float*) buffer;
       if (ui->spawned) {
-        fprintf(ui->fout, "update_vol:%f\n", ui->volume);
-        fflush(ui->fout);
+        fprintf(ui->sampler->fout, "update_vol:%f\n", ui->volume);
+        fflush(ui->sampler->fout);
       }
     }
     else if (port_index == 2) {
       ui->channel = *(float*) buffer;
       if (ui->spawned) {
-        fprintf(ui->fout, "update_chan:%f\n", ui->channel);
-        fflush(ui->fout);
+        fprintf(ui->sampler->fout, "update_chan:%f\n", ui->channel);
+        fflush(ui->sampler->fout);
       }
     }
   }
@@ -244,17 +242,16 @@ static int ui_show(LV2UI_Handle handle) {
   fcntl(to_child_pipe[1], F_SETFD, FD_CLOEXEC); 
 
   ui->fdin = from_child_pipe[0];
-  ui->fout = fdopen(to_child_pipe[1], "w");
-  ui->sampler->fout = ui->fout;
+  ui->sampler->fout = fdopen(to_child_pipe[1], "w");
   ui->pid = pid;
   ui->tot_read = 0;
 
-  fprintf(ui->fout, "set_sample_rate:%i\n", ui->sampler->sample_rate);
-  fflush(ui->fout);
+  fprintf(ui->sampler->fout, "set_sample_rate:%i\n", ui->sampler->sample_rate);
+  fflush(ui->sampler->fout);
 
-  fprintf(ui->fout, "update_vol:%f\n", ui->volume);
-  fprintf(ui->fout, "update_chan:%f\n", ui->channel);
-  fflush(ui->fout);
+  fprintf(ui->sampler->fout, "update_vol:%f\n", ui->volume);
+  fprintf(ui->sampler->fout, "update_chan:%f\n", ui->channel);
+  fflush(ui->sampler->fout);
 
   ui->spawned = true;
 
@@ -267,7 +264,7 @@ static int ui_hide(LV2UI_Handle handle) {
 
   //cerr << "UI: " << get_time_str() <<  " hide called" << endl;
 
-  fclose(ui->fout);
+  fclose(ui->sampler->fout);
   waitpid(ui->pid, NULL, 0);
 
   ui->spawned = false;
@@ -318,8 +315,8 @@ static int ui_idle(LV2UI_Handle handle) {
         int index = atoi(ui->buf + 12);
         ui->sampler->remove_zone(index);
 
-        fprintf(ui->fout, "remove_zone:%i\n", index);
-        fflush(ui->fout);
+        fprintf(ui->sampler->fout, "remove_zone:%i\n", index);
+        fflush(ui->sampler->fout);
       }
       else if (!strncmp(ui->buf, "add_zone:", 9)) {
         char* p = strtok(ui->buf + 9, ",");
