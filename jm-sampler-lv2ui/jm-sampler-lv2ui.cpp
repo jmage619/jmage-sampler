@@ -488,33 +488,6 @@ static int ui_idle(LV2UI_Handle handle) {
         int index = atoi(p);
         ui->sampler->duplicate_zone(index);
       }
-      else if (!strncmp(ui->buf, "load_patch:", 11)) {
-        ui->sampler->load_patch(ui->buf + 11);
-
-        fprintf(ui->fout, "clear_zones\n");
-        fflush(ui->fout);
-
-        std::map<std::string, SFZValue>::iterator c_it = ui->sampler->patch.control.find("jm_vol");
-        if (c_it != ui->sampler->patch.control.end()) {
-          *ui->sampler->volume = c_it->second.get_double();
-          *ui->sampler->channel =  ui->sampler->patch.control["jm_chan"].get_int() - 1;
-        }
-        else {
-          *ui->sampler->volume = 0;
-          *ui->sampler->channel = 0;
-        }
-
-        fprintf(ui->fout, "update_vol:%f\n", *ui->sampler->volume);
-        fflush(ui->fout);
-
-        fprintf(ui->fout, "update_chan:%i\n", (int) *ui->sampler->channel);
-        fflush(ui->fout);
-
-        int num_zones = ui->sampler->zones.size();
-
-        for (int i = 0; i < num_zones; ++i)
-          ui->sampler->send_add_zone(i);
-      }
       else if (!strncmp(ui->buf, "save_patch:", 11)) {
         ui->sampler->save_patch(ui->buf + 11);
       }
