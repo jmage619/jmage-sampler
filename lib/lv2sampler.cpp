@@ -68,12 +68,29 @@ void LV2Sampler::send_add_zone(int index) {
 }
 
 void LV2Sampler::send_update_wave(int index) {
-  lv2_atom_forge_frame_time(&forge, 0);
-  LV2_Atom_Forge_Frame obj_frame;
-  lv2_atom_forge_object(&forge, &obj_frame, 0, uris.jm_updateWave);
-  lv2_atom_forge_key(&forge, uris.jm_params);
-  lv2_atom_forge_int(&forge, index);
-  lv2_atom_forge_pop(&forge, &obj_frame);
+  char outstr[256];
+  char* p = outstr;
+  sprintf(p, "update_wave:");
+  // index
+  p += strlen(p);
+  sprintf(p, "%i,", index);
+  // path
+  p += strlen(p);
+  sprintf(p, "%s,", zones[index].path);
+  // wave length
+  p += strlen(p);
+  sprintf(p, "%i,", zones[index].wave_length);
+  // start
+  p += strlen(p);
+  sprintf(p, "%i,", zones[index].start);
+  // left
+  p += strlen(p);
+  sprintf(p, "%i,", zones[index].left);
+  // right
+  p += strlen(p);
+  sprintf(p, "%i\n", zones[index].right);
+  fprintf(fout, outstr);
+  fflush(fout);
 
   //fprintf(stderr, "SAMPLER: update wave sent!! %i: %s\n", index, zones[index].path);
 }

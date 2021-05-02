@@ -240,7 +240,6 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
     uint32_t, uint32_t format, const void* buffer) {
 
   jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
-  const LV2_Atom* atom = (const LV2_Atom*) buffer;
 
   // store vals in case vol or chan sent before show called
   if (format == 0) {
@@ -257,88 +256,6 @@ static void port_event(LV2UI_Handle handle, uint32_t port_index,
         fprintf(ui->fout, "update_chan:%f\n", ui->channel);
         fflush(ui->fout);
       }
-    }
-  }
-  else if (format == ui->uris.atom_eventTransfer && lv2_atom_forge_is_object_type(&ui->forge, atom->type)) {
-    const LV2_Atom_Object* obj = (const LV2_Atom_Object*) atom;
-    if (obj->body.otype == ui->uris.jm_getZoneVect) {
-      LV2_Atom* params = NULL;
-
-      lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
-
-      ui->zones = reinterpret_cast<const std::vector<jm::zone>*>(((LV2_Atom_Long*) params)->body);
-      //cerr << "UI: received zone pointer!! " << ui->zones << endl;
-      int num_zones = ui->zones->size();
-      for (int i = 0; i < num_zones; ++i) {
-        send_add_zone(ui, i);
-      }
-    }
-    else if (obj->body.otype == ui->uris.jm_getSampleRate) {
-      LV2_Atom* params = NULL;
-
-      lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
-
-      int sample_rate = ((LV2_Atom_Int*) params)->body;
-      //cerr << "UI: received sample rate!! " << sample_rate << endl;
-      fprintf(ui->fout, "set_sample_rate:%i\n", sample_rate);
-      fflush(ui->fout);
-    }
-    else if (obj->body.otype == ui->uris.jm_addZone) {
-      LV2_Atom* params = NULL;
-
-      lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
-
-      // index
-      int i = ((LV2_Atom_Int*) params)->body;
-      //cerr << "UI addZone received!! " << i << endl;
-
-      send_add_zone(ui, i);
-    }
-    else if (obj->body.otype == ui->uris.jm_updateWave) {
-      LV2_Atom* params = NULL;
-
-      lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
-
-      // index
-      int i = ((LV2_Atom_Int*) params)->body;
-      //cerr << "UI updateWave received!! " << i << endl;
-
-      send_update_wave(ui, i);
-    }
-    else if (obj->body.otype == ui->uris.jm_removeZone) {
-      LV2_Atom* params = NULL;
-
-      lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
-
-      int index = ((LV2_Atom_Int*) params)->body;
-      //cerr << "UI: received remove zone!! " << index << endl;
-      fprintf(ui->fout, "remove_zone:%i\n", index);
-      fflush(ui->fout);
-    }
-    else if (obj->body.otype == ui->uris.jm_clearZones) {
-      //cerr << "UI: received clear zones!!" << endl;
-      fprintf(ui->fout, "clear_zones\n");
-      fflush(ui->fout);
-    }
-    else if (obj->body.otype == ui->uris.jm_updateVol) {
-      LV2_Atom* params = NULL;
-
-      lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
-
-      float val = ((LV2_Atom_Float*) params)->body;
-      ui->write(ui->controller, 1, sizeof(float), 0, &val);
-      fprintf(ui->fout, "update_vol:%f\n", val);
-      fflush(ui->fout);
-    }
-    else if (obj->body.otype == ui->uris.jm_updateChan) {
-      LV2_Atom* params = NULL;
-
-      lv2_atom_object_get(obj, ui->uris.jm_params, &params, 0);
-
-      float val = ((LV2_Atom_Float*) params)->body;
-      ui->write(ui->controller, 2, sizeof(float), 0, &val);
-      fprintf(ui->fout, "update_chan:%i\n", (int) val);
-      fflush(ui->fout);
     }
   }
 }
