@@ -285,71 +285,7 @@ static void run(LV2_Handle instance, uint32_t n_samples) {
   LV2_ATOM_SEQUENCE_FOREACH(sampler->control_port, ev) {
     if (lv2_atom_forge_is_object_type(&sampler->forge, ev->body.type)) {
       const LV2_Atom_Object* obj = (const LV2_Atom_Object*)&ev->body;
-      if (obj->body.otype == sampler->uris.jm_updateZone) {
-        //fprintf(stderr, "SAMPLER: update zone received!!\n");
-        LV2_Atom* params = NULL;
-
-        lv2_atom_object_get(obj, sampler->uris.jm_params, &params, 0);
-        LV2_Atom* a = lv2_atom_tuple_begin((LV2_Atom_Tuple*) params);
-        int index = reinterpret_cast<LV2_Atom_Int*>(a)->body;
-        a = lv2_atom_tuple_next(a);
-        int key = reinterpret_cast<LV2_Atom_Int*>(a)->body;
-        a = lv2_atom_tuple_next(a);
-
-        // special case, update wave
-        if (key == jm::ZONE_PATH) {
-          char* path = (char*)(a + 1);
-          if (sampler->waves.find(path) == sampler->waves.end()) {
-            worker_msg msg;
-            msg.type =  WORKER_UPDATE_WAV;
-            msg.i = index;
-            strcpy(sampler->wav_path, path);
-            sampler->schedule->schedule_work(sampler->schedule->handle, sizeof(worker_msg), &msg);
-          }
-          else
-            sampler->update_zone(index, key, path);
-        }
-        else
-          sampler->update_zone(index, key, (char*)(a + 1));
-      }
-      else if (obj->body.otype == sampler->uris.jm_removeZone) {
-        LV2_Atom* params = NULL;
-
-        lv2_atom_object_get(obj, sampler->uris.jm_params, &params, 0);
-        int index = ((LV2_Atom_Int*) params)->body;
-        //fprintf(stderr, "SAMPLER: remove zone received!! index: %i\n", index);
-        sampler->remove_zone(index);
-        sampler->send_remove_zone(index);
-      }
-      else if (obj->body.otype == sampler->uris.jm_addZone) {
-        //fprintf(stderr, "SAMPLER: add zone received!!\n");
-        LV2_Atom* params = NULL;
-
-        lv2_atom_object_get(obj, sampler->uris.jm_params, &params, 0);
-        LV2_Atom* a = lv2_atom_tuple_begin((LV2_Atom_Tuple*) params);
-        int index = ((LV2_Atom_Int*) a)->body;
-        a = lv2_atom_tuple_next(a);
-        char* path = (char*)(a + 1);
- 
-        if (sampler->waves.find(path) == sampler->waves.end()) {
-          worker_msg msg;
-          msg.type =  WORKER_LOAD_PATH_WAV;
-          msg.i = index;
-          strcpy(sampler->wav_path, path);
-          sampler->schedule->schedule_work(sampler->schedule->handle, sizeof(worker_msg), &msg);
-        }
-        else
-          sampler->add_zone_from_wave(index, path);
-      }
-      else if (obj->body.otype == sampler->uris.jm_dupZone) {
-        LV2_Atom* params = NULL;
-
-        lv2_atom_object_get(obj, sampler->uris.jm_params, &params, 0);
-        int index = ((LV2_Atom_Int*) params)->body;
-        //fprintf(stderr, "SAMPLER: dup zone received!! index: %i\n", index);
-        sampler->duplicate_zone(index);
-      }
-      else if (obj->body.otype == sampler->uris.jm_loadPatch) {
+      if (obj->body.otype == sampler->uris.jm_loadPatch) {
         //fprintf(stderr, "SAMPLER: load patch received!!\n");
         LV2_Atom* params = NULL;
 
