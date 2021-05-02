@@ -55,11 +55,7 @@ enum {
 };
 
 enum worker_msg_type {
-  WORKER_LOAD_PATH_WAV,
-  WORKER_UPDATE_WAV,
   WORKER_LOAD_PATCH,
-  WORKER_SAVE_PATCH,
-  WORKER_REFRESH
 };
 
 struct worker_msg {
@@ -177,31 +173,11 @@ static LV2_Worker_Status work(LV2_Handle instance, LV2_Worker_Respond_Function r
   LV2Sampler* sampler = static_cast<LV2Sampler*>(instance);
 
   const worker_msg* msg = static_cast<const worker_msg*>(data);
-  if (msg->type == WORKER_LOAD_PATH_WAV) {
-    sampler->waves[sampler->wav_path] = jm::parse_wave(sampler->wav_path);
-
-    respond(handle, sizeof(worker_msg), msg);
-    //fprintf(stderr, "SAMPLER: work completed; parsed: %s\n", path);
-  }
-  else if (msg->type == WORKER_UPDATE_WAV) {
-    sampler->waves[sampler->wav_path] = jm::parse_wave(sampler->wav_path);
-
-    respond(handle, sizeof(worker_msg), msg); 
-    //fprintf(stderr, "SAMPLER: work completed; parsed: %s\n", path);
-  }
-  else if (msg->type == WORKER_LOAD_PATCH) {
+  if (msg->type == WORKER_LOAD_PATCH) {
     //fprintf(stderr, "SAMPLER: work loading patch: %s\n", sampler->patch_path);
     sampler->load_patch(sampler->patch_path);
 
     respond(handle, sizeof(worker_msg), msg); 
-  }
-  else if (msg->type == WORKER_SAVE_PATCH) {
-    sampler->save_patch(sampler->patch_path);
-    // probably should notify UI here that we finished!
-  }
-  else if (msg->type == WORKER_REFRESH) {
-    sampler->reload_waves();
-    // probably should notify UI here that we finished!
   }
 
   return LV2_WORKER_SUCCESS;
@@ -211,17 +187,7 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
   LV2Sampler* sampler = static_cast<LV2Sampler*>(instance);
   const worker_msg* msg = static_cast<const worker_msg*>(data);
 
-  if (msg->type == WORKER_LOAD_PATH_WAV) {
-    //LV2_Atom_Forge_Frame seq_frame;
-    //lv2_atom_forge_sequence_head(&plugin->forge, &seq_frame, 0);
-    sampler->add_zone_from_wave(msg->i, sampler->wav_path);
-    //lv2_atom_forge_pop(&plugin->forge, &seq_frame);
-    //fprintf(stderr, "SAMPLER: response completed; added: %s\n", path);
-  }
-  else if (msg->type == WORKER_UPDATE_WAV) {
-    sampler->update_zone(msg->i, jm::ZONE_PATH, sampler->wav_path);
-  }
-  else if (msg->type == WORKER_LOAD_PATCH) {
+  if (msg->type == WORKER_LOAD_PATCH) {
     //fprintf(stderr, "SAMPLER load patch response!! num regions: %i\n", (int) sampler->patch.regions.size());
 
     if (sampler->fout) {
