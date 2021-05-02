@@ -521,6 +521,21 @@ static int ui_idle(LV2UI_Handle handle) {
       else if (!strncmp(ui->buf, "refresh", 7)) {
         ui->sampler->reload_waves();
       }
+      else {
+         uint8_t buf[128];
+         lv2_atom_forge_set_buffer(&ui->forge, buf, 128);
+         //cerr << "UI: ui stdout message: " << ui->buf << endl;
+         LV2_Atom* obj;
+
+        if (!strncmp(ui->buf, "load_patch:", 11)) {
+          LV2_Atom_Forge_Frame obj_frame;
+          obj = (LV2_Atom*) lv2_atom_forge_object(&ui->forge, &obj_frame, 0, ui->uris.jm_loadPatch);
+          lv2_atom_forge_key(&ui->forge, ui->uris.jm_params);
+          lv2_atom_forge_string(&ui->forge, ui->buf + 11, strlen(ui->buf + 11));
+          lv2_atom_forge_pop(&ui->forge, &obj_frame);
+        }
+        ui->write(ui->controller, 0, lv2_atom_total_size(obj), ui->uris.atom_eventTransfer, obj);
+      }
       // shift left to prepare next value
       strmov(ui->buf, new_line + 1);
       // correct for shift

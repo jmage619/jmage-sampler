@@ -51,7 +51,7 @@ class LV2Sampler: public JMSampler {
     FILE* fout;
 
     LV2Sampler(int sample_rate, size_t in_nframes, size_t out_nframes):
-      JMSampler(sample_rate, in_nframes, out_nframes) {patch_path[0] = '\0';};
+      JMSampler(sample_rate, in_nframes, out_nframes), fout(NULL) {patch_path[0] = '\0';};
     void send_sample_rate();
     void send_zone_vect();
     void send_add_zone(int index);

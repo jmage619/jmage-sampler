@@ -224,17 +224,31 @@ static LV2_Worker_Status work_response(LV2_Handle instance, uint32_t, const void
   else if (msg->type == WORKER_LOAD_PATCH) {
     //fprintf(stderr, "SAMPLER load patch response!! num regions: %i\n", (int) sampler->patch.regions.size());
 
-    sampler->send_clear_zones();
-
-    std::map<std::string, SFZValue>::iterator c_it = sampler->patch.control.find("jm_vol");
-    if (c_it != sampler->patch.control.end()) {
-      sampler->send_update_vol(c_it->second.get_double());
-      sampler->send_update_chan(sampler->patch.control["jm_chan"].get_int() - 1);
+    if (sampler->fout) {
+       fprintf(sampler->fout, "clear_zones\n");
+       fflush(sampler->fout);
     }
-    // reset to reasonable defaults if not defined
+
+    std::map<std::string, SFZValue>::iterator c_it =sampler->patch.control.find("jm_vol");
+    if (c_it != sampler->patch.control.end()) {
+      //sampler->send_update_vol(c_it->second.get_double());
+      //sampler->send_update_chan(sampler->patch.control["jm_chan"].get_int() - 1);
+      *sampler->volume = c_it->second.get_double();
+      *sampler->channel =  sampler->patch.control["jm_chan"].get_int() - 1;
+    }
     else {
-      sampler->send_update_vol(0.f);
-      sampler->send_update_chan(0);
+      //sampler->send_update_vol(0.f);
+      //sampler->send_update_chan(0);
+      *sampler->volume = 0;
+      *sampler->channel = 0;
+    }
+
+    if (sampler->fout) {
+        fprintf(sampler->fout, "update_vol:%f\n", *sampler->volume);
+        fflush(sampler->fout);
+
+        fprintf(sampler->fout, "update_chan:%i\n", (int) *sampler->channel);
+        fflush(sampler->fout);
     }
 
     int num_zones = sampler->zones.size();
