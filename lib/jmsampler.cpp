@@ -146,6 +146,23 @@ void JMSampler::add_zone_from_wave(int index, const char* path) {
   }
 }
 
+void JMSampler::update_zone_from_wave(int index, const char* path) {
+  jm::wave& wav = waves[path];
+  zones[index].wave = wav.wave;
+  zones[index].num_channels = wav.num_channels;
+  zones[index].sample_rate = wav.sample_rate;
+  zones[index].wave_length = wav.length;
+
+  if (zones[index].start > wav.length)
+    zones[index].start = wav.length;
+  if (zones[index].left > wav.length)
+    zones[index].left = wav.length;
+  if (zones[index].right > wav.length)
+    zones[index].right = wav.length;
+
+  send_update_wave(index);
+}
+
 void JMSampler::add_zone_from_region(const std::map<std::string, SFZValue>& region) {
   jm::wave& wav = waves[region.find("sample")->second.get_str()];
   jm::zone zone;
@@ -320,11 +337,12 @@ void JMSampler::reload_waves() {
 
   waves.clear();
 
-  std::vector<jm::zone>::const_iterator zit;
-  for (zit = zones.begin(); zit != zones.end(); ++zit) {
-    if (waves.find(zit->path) == waves.end()) {
-      waves[zit->path] = jm::parse_wave(zit->path);
+  for (int i = 0; i < zones.size(); ++i) {
+    if (waves.find(zones[i].path) == waves.end()) {
+      waves[zones[i].path] = jm::parse_wave(zones[i].path);
     }
+
+    update_zone_from_wave(i, zones[i].path);
   }
 
   pthread_mutex_unlock(&zone_lock);
