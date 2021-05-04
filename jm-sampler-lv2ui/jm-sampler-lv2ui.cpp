@@ -253,6 +253,9 @@ static int ui_show(LV2UI_Handle handle) {
   fprintf(ui->sampler->fout, "update_chan:%f\n", ui->channel);
   fflush(ui->sampler->fout);
 
+  for (int i = 0; i < ui->sampler->zones.size(); ++i)
+    ui->sampler->send_add_zone(i);
+
   ui->spawned = true;
 
   //cerr << get_time_str() << " UI: show completed" << endl;
