@@ -47,6 +47,7 @@ using std::endl;
 #include <lib/lv2_uris.h>
 #include <lib/jmsampler.h>
 #include <lib/lv2sampler.h>
+#include "lv2_external_ui.h"
 
 #define BUF_SIZE 513
 #define SAMPLE_RATE 44100
@@ -54,12 +55,14 @@ using std::endl;
 #define JM_SAMPLER_UI_URI JM_SAMPLER_URI "#ui"
 
 struct jm_sampler_ui {
+  LV2_External_UI_Widget widget;
   LV2Sampler* sampler;
   LV2_URID_Map* map;
   jm::uris uris;
   LV2UI_Write_Function write;
   LV2UI_Controller controller;
   LV2_Atom_Forge forge;
+  LV2_External_UI_Host* host;
   // use raw fd for messages from ui
   // because we need non-blocking io
   int fdin; 
@@ -92,119 +95,7 @@ static void strmov(char* dest, char* source) {
   dest[i] = '\0';
 }
 
-static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
-    const char*, const char*,
-    LV2UI_Write_Function write_function, LV2UI_Controller controller,
-    LV2UI_Widget* widget, const LV2_Feature* const* features) {
-  jm_sampler_ui* ui = new jm_sampler_ui;
-
-  // Scan host features for URID map
-  LV2_URID_Map* map = NULL;
-  //LV2_URID_Unmap* unmap = NULL;
-  LV2_Options_Option* opt = NULL;
-
-  for (int i = 0; features[i]; ++i) {
-    if (!strcmp(features[i]->URI, LV2_URID__map))
-      map = (LV2_URID_Map*)features[i]->data;
-    //else if (!strcmp(features[i]->URI, LV2_URID__unmap))
-    //  unmap = (LV2_URID_Unmap*)features[i]->data;
-    else if (!strcmp(features[i]->URI, LV2_OPTIONS__options))
-      opt = (LV2_Options_Option*)features[i]->data;
-    else if (!strcmp(features[i]->URI, LV2_INSTANCE_ACCESS_URI)) {
-      ui->sampler = reinterpret_cast<LV2Sampler*>(features[i]->data);
-    }
-  }
-  if (!map) {
-    //cerr << "Host does not support urid:map." << endl;
-    delete ui;
-    return NULL;
-  }
-  if (!ui->sampler) {
-    //cerr << "Host does not support urid:map." << endl;
-    delete ui;
-    return NULL;
-  }
-  /*if (!unmap) {
-    cerr << "Host does not support urid:unmap." << endl;
-    free(ui);
-    return NULL;
-  }
-  */
-
-  // Map URIS
-  ui->map = map;
-  jm::map_uris(ui->map, &ui->uris);
-
-  int index = 0;
-
-  if (opt != NULL) {
-    while (1) {
-      if (opt[index].key == 0)
-        break;
-
-      //cerr << "UI host option: " << unmap->unmap(unmap->handle, opt[index].key) << endl;
-      if (opt[index].key == ui->uris.ui_windowTitle) {
-        //cerr << "UI window title: " <<  (const char*) opt[index].value << endl;
-        strcpy(ui->title, (const char*) opt[index].value);
-        break;
-      }
-      else
-        ui->title[0] = '\0';
-
-      ++index;
-    }
-  }
-
-
-  ui->write = write_function;
-  ui->controller = controller;
-
-  lv2_atom_forge_init(&ui->forge, ui->map);
-
-  ui->spawned = false;
-  ui->volume = 0.f;
-  ui->channel = 0;
-
-  //cerr << get_time_str() << " UI: ui instantiated" << endl;
-
-  return ui;
-}
-
-static void cleanup(LV2UI_Handle handle) {
-  jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
-
-  //cerr << "UI: " << get_time_str() <<  " cleanup called" << endl;
-
-  delete ui;
-}
-
-static void port_event(LV2UI_Handle handle, uint32_t port_index,
-    uint32_t, uint32_t format, const void* buffer) {
-
-  jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
-
-  // store vals in case vol or chan sent before show called
-  if (format == 0) {
-    if (port_index == 1) {
-      ui->volume = *(float*) buffer;
-      if (ui->spawned) {
-        fprintf(ui->sampler->fout, "update_vol:%f\n", ui->volume);
-        fflush(ui->sampler->fout);
-      }
-    }
-    else if (port_index == 2) {
-      ui->channel = *(float*) buffer;
-      if (ui->spawned) {
-        fprintf(ui->sampler->fout, "update_chan:%f\n", ui->channel);
-        fflush(ui->sampler->fout);
-      }
-    }
-  }
-}
-
-static int ui_show(LV2UI_Handle handle) {
-  jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
-  //cerr << "UI: " << get_time_str() <<  " show called" << endl;
+static int ui_show(jm_sampler_ui* ui) {
   if (ui->spawned)
     return 0;
 
@@ -262,25 +153,7 @@ static int ui_show(LV2UI_Handle handle) {
   return 0;
 }
 
-static int ui_hide(LV2UI_Handle handle) {
-  jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
-
-  //cerr << "UI: " << get_time_str() <<  " hide called" << endl;
-
-  fclose(ui->sampler->fout);
-  waitpid(ui->pid, NULL, 0);
-
-  ui->spawned = false;
-
-  //cerr << "UI: " << get_time_str() <<  " ui closed" << endl;
-
-  return 0;
-}
-
-static int ui_idle(LV2UI_Handle handle) {
-  jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
-
-  //cerr << "UI: " << get_time_str() <<  " idle called" << endl;
+static int ui_run(jm_sampler_ui* ui) {
   int num_read;
   while ((num_read = read(ui->fdin, ui->buf + ui->tot_read, BUF_SIZE - 1 - ui->tot_read)) > 0) {
     // add null char
@@ -367,19 +240,180 @@ static int ui_idle(LV2UI_Handle handle) {
   }
 
   // if exactly 0 the child stream is closed due to exiting
-  if (num_read == 0)
+  if (num_read == 0) {
+    fclose(ui->sampler->fout);
+    waitpid(ui->pid, NULL, 0);
+
+    ui->spawned = false;
+
     return 1;
+  }
 
   return 0;
 }
 
+static void ext_show(LV2_External_UI_Widget* widget) {
+  jm_sampler_ui* ui = reinterpret_cast<jm_sampler_ui*>(widget);
+  //cerr << "UI: " << get_time_str() <<  "ext show called" << endl;
+  ui_show(ui);
+}
+
+static void ext_hide(LV2_External_UI_Widget* widget) {
+  //cerr << "UI: " << get_time_str() <<  "ext hide called" << endl;
+}
+
+static void ext_run(LV2_External_UI_Widget* widget) {
+  jm_sampler_ui* ui = reinterpret_cast<jm_sampler_ui*>(widget);
+  //cerr << "UI: " << get_time_str() <<  "ext run called" << endl;
+  if (ui_run(ui))
+    ui->host->ui_closed(ui->controller);
+}
+
+static int show(LV2UI_Handle handle) {
+  jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
+  //cerr << "UI: " << get_time_str() <<  " show called" << endl;
+  return ui_show(ui);
+}
+
+static int hide(LV2UI_Handle handle) {
+  jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
+
+  //cerr << "UI: " << get_time_str() <<  " hide called" << endl;
+
+  return 0;
+}
+
+static int idle(LV2UI_Handle handle) {
+  jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
+
+  //cerr << "UI: " << get_time_str() <<  " idle called" << endl;
+  return ui_run(ui);
+}
+
+static LV2UI_Handle instantiate(const LV2UI_Descriptor*,
+    const char*, const char*,
+    LV2UI_Write_Function write_function, LV2UI_Controller controller,
+    LV2UI_Widget* widget, const LV2_Feature* const* features) {
+  jm_sampler_ui* ui = new jm_sampler_ui;
+
+  // Scan host features for URID map
+  LV2_URID_Map* map = NULL;
+  //LV2_URID_Unmap* unmap = NULL;
+  LV2_Options_Option* opt = NULL;
+
+  for (int i = 0; features[i]; ++i) {
+    if (!strcmp(features[i]->URI, LV2_URID__map))
+      map = (LV2_URID_Map*)features[i]->data;
+    //else if (!strcmp(features[i]->URI, LV2_URID__unmap))
+    //  unmap = (LV2_URID_Unmap*)features[i]->data;
+    else if (!strcmp(features[i]->URI, LV2_OPTIONS__options))
+      opt = (LV2_Options_Option*)features[i]->data;
+    else if (!strcmp(features[i]->URI, LV2_INSTANCE_ACCESS_URI)) {
+      ui->sampler = reinterpret_cast<LV2Sampler*>(features[i]->data);
+    }
+    else if (!strcmp(features[i]->URI, LV2_EXTERNAL_UI__Host)) {
+      ui->host = reinterpret_cast<LV2_External_UI_Host*>(features[i]->data);
+    }
+  }
+  if (!map) {
+    //cerr << "Host does not support urid:map." << endl;
+    delete ui;
+    return NULL;
+  }
+  if (!ui->sampler) {
+    //cerr << "Host does not support urid:map." << endl;
+    delete ui;
+    return NULL;
+  }
+  /*if (!unmap) {
+    cerr << "Host does not support urid:unmap." << endl;
+    free(ui);
+    return NULL;
+  }
+  */
+
+  // Map URIS
+  ui->map = map;
+  jm::map_uris(ui->map, &ui->uris);
+
+  int index = 0;
+
+  if (opt != NULL) {
+    while (1) {
+      if (opt[index].key == 0)
+        break;
+
+      //cerr << "UI host option: " << unmap->unmap(unmap->handle, opt[index].key) << endl;
+      if (opt[index].key == ui->uris.ui_windowTitle) {
+        //cerr << "UI window title: " <<  (const char*) opt[index].value << endl;
+        strcpy(ui->title, (const char*) opt[index].value);
+        break;
+      }
+      else
+        ui->title[0] = '\0';
+
+      ++index;
+    }
+  }
+
+  ui->write = write_function;
+  ui->controller = controller;
+
+  ui->widget.show = ext_show;
+  ui->widget.hide = ext_hide;
+  ui->widget.run = ext_run;
+  *widget = ui;
+
+  lv2_atom_forge_init(&ui->forge, ui->map);
+
+  ui->spawned = false;
+  ui->volume = 0.f;
+  ui->channel = 0;
+
+  //cerr << get_time_str() << " UI: ui instantiated" << endl;
+
+  return ui;
+}
+
+static void cleanup(LV2UI_Handle handle) {
+  jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
+
+  //cerr << "UI: " << get_time_str() <<  " cleanup called" << endl;
+
+  delete ui;
+}
+
+static void port_event(LV2UI_Handle handle, uint32_t port_index,
+    uint32_t, uint32_t format, const void* buffer) {
+
+  jm_sampler_ui* ui = static_cast<jm_sampler_ui*>(handle);
+
+  // store vals in case vol or chan sent before show called
+  if (format == 0) {
+    if (port_index == 1) {
+      ui->volume = *(float*) buffer;
+      if (ui->spawned) {
+        fprintf(ui->sampler->fout, "update_vol:%f\n", ui->volume);
+        fflush(ui->sampler->fout);
+      }
+    }
+    else if (port_index == 2) {
+      ui->channel = *(float*) buffer;
+      if (ui->spawned) {
+        fprintf(ui->sampler->fout, "update_chan:%f\n", ui->channel);
+        fflush(ui->sampler->fout);
+      }
+    }
+  }
+}
+
 static const void* extension_data(const char* uri) {
-  static const LV2UI_Show_Interface show = { ui_show, ui_hide };
-  static const LV2UI_Idle_Interface idle = { ui_idle };
+  static const LV2UI_Show_Interface show_interface = { show, hide };
+  static const LV2UI_Idle_Interface idle_interface = { idle };
   if (!strcmp(uri, LV2_UI__showInterface)) {
-    return &show;
+    return &show_interface;
   } else if (!strcmp(uri, LV2_UI__idleInterface)) {
-    return &idle;
+    return &idle_interface;
   }
   return NULL;
 }
