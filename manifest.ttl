@@ -3,11 +3,11 @@
 @prefix ui:   <http://lv2plug.in/ns/extensions/ui#> .
 
 <https://github.com/jmage619/jmage-sampler>
-	a lv2:Plugin ;
-	lv2:binary <jm-sampler-lv2.so>  ;
-	rdfs:seeAlso <jm-sampler.ttl> .
+  a lv2:Plugin ;
+  lv2:binary <jm-sampler-lv2.so>  ;
+  rdfs:seeAlso <jm-sampler.ttl> .
 
 <https://github.com/jmage619/jmage-sampler#ui>
-	a ui:UI ;
-	ui:binary <jm-sampler-lv2ui.so> ;
-	rdfs:seeAlso <jm-sampler.ttl> .
+  a ui:UI ;
+  ui:binary <jm-sampler-lv2ui.so> ;
+  rdfs:seeAlso <jm-sampler.ttl> .
